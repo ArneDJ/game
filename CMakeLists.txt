@@ -10,7 +10,14 @@ find_package(OpenGL REQUIRED COMPONENTS OpenGL)
 find_package(GLEW REQUIRED)
 include_directories(GLEW::GLEW)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+file(GLOB all_SRCS
+        "${PROJECT_SOURCE_DIR}/src/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/*.h"
+        "${PROJECT_SOURCE_DIR}/src/core/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/core/*.h"
+)
+
+add_executable(${PROJECT_NAME} ${all_SRCS})
 target_link_libraries(${PROJECT_NAME} SDL2::SDL2 SDL2::SDL2main)
 target_link_libraries(${PROJECT_NAME} GLEW::GLEW)
 if (UNIX)

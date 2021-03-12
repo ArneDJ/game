@@ -46,3 +46,7 @@ _deps
 
 # ctags
 tags
+
+# log files
+error.txt
+runtime.txt

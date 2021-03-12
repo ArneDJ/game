@@ -3,40 +3,28 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 
+#include "core/window.h"
+
 int main(int argc, char *argv[])
 {
-	SDL_Init(SDL_INIT_VIDEO);
-
-	SDL_Window *window = SDL_CreateWindow("An SDL2 window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 480, SDL_WINDOW_OPENGL);
-
-	// Check that the window was successfully created
-	if (window == NULL) {
-		// In the case that the window could not be made...
-		printf("Could not create window: %s\n", SDL_GetError());
-		return 1;
+	WindowManager windowman;
+	if (!windowman.init(640, 480, SDL_WINDOW_BORDERLESS)) {
+		exit(EXIT_FAILURE);
 	}
 
-	SDL_GLContext glcontext = SDL_GL_CreateContext(window);
-
-	GLenum error = glewInit();
-	if (error != GLEW_OK) {
-		return 1;
-	}
-
+	// set OpenGL states
+	// TODO rendermanager should do this
 	glClearColor(1.f, 0.f, 1.f, 1.f);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	// The window is open: could enter program loop here (see SDL_PollEvent())
-	SDL_GL_SwapWindow(window);
+	windowman.swap();
 
-	SDL_Delay(3000);  // Pause execution for 3000 milliseconds, for example
+	SDL_Delay(3000);
 
-	SDL_GL_DeleteContext(glcontext);
-	// Close and destroy the window
-	SDL_DestroyWindow(window);
-
-	// Clean up
-	SDL_Quit();
+	windowman.teardown();
 
 	return 0;
 }
