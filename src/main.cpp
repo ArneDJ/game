@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_map>
+#include <chrono>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -7,6 +8,7 @@
 
 #include "core/window.h"
 #include "core/input.h"
+#include "core/timer.h"
 
 class Game {
 public:
@@ -15,11 +17,16 @@ private:
 	bool running;
 	WindowManager windowman;
 	InputManager inputman;
+	Timer timer;
 private:
+	void init(void);
+	void teardown(void);
+	void update(void);
+	void display(void);
 	void input_event(const SDL_Event *event);
 };
 
-void Game::run(void)
+void Game::init(void)
 {
 	running = true;
 
@@ -32,18 +39,38 @@ void Game::run(void)
 	glClearColor(1.f, 0.f, 1.f, 1.f);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void Game::teardown(void)
+{
+	windowman.teardown();
+}
+
+void Game::update(void)
+{
+	SDL_Event event;
+	while (SDL_PollEvent(&event)) { input_event(&event); }
+	inputman.update();
+}
+
+void Game::display(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void Game::run(void)
+{
+	init();
 
 	while (running) {
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) { input_event(&event); }
-		inputman.update();
-
-		glClear(GL_COLOR_BUFFER_BIT);
-
+		timer.begin();
+		update();
+		display();
 		windowman.swap();
+		timer.end();
 	}
 
-	windowman.teardown();
+	teardown();
 }
 
 void Game::input_event(const SDL_Event *event)
