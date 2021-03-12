@@ -1,13 +1,28 @@
 #include <iostream>
+#include <unordered_map>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
+#include <glm/glm.hpp>
 
 #include "core/window.h"
+#include "core/input.h"
 
-int main(int argc, char *argv[])
-{
+class Game {
+public:
+	void run(void);
+private:
+	bool running;
 	WindowManager windowman;
+	InputManager inputman;
+private:
+	void input_event(const SDL_Event *event);
+};
+
+void Game::run(void)
+{
+	running = true;
+
 	if (!windowman.init(640, 480, SDL_WINDOW_BORDERLESS)) {
 		exit(EXIT_FAILURE);
 	}
@@ -18,13 +33,47 @@ int main(int argc, char *argv[])
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	while (running) {
+		SDL_Event event;
+		while (SDL_PollEvent(&event)) { input_event(&event); }
+		inputman.update();
 
-	windowman.swap();
+		glClear(GL_COLOR_BUFFER_BIT);
 
-	SDL_Delay(3000);
+		windowman.swap();
+	}
 
 	windowman.teardown();
+}
+
+void Game::input_event(const SDL_Event *event)
+{
+	if (event->type == SDL_QUIT) { running = false; }
+
+	if (event->type == SDL_MOUSEMOTION) {
+		inputman.set_abs_mousecoords(event->motion.x, event->motion.y);
+		inputman.set_rel_mousecoords(event->motion.xrel, event->motion.yrel);
+	}
+
+	if (event->type == SDL_KEYDOWN) {
+		inputman.press_key(event->key.keysym.sym);
+	}
+	if (event->type == SDL_KEYUP) {
+		inputman.release_key(event->key.keysym.sym);
+	}
+
+	if (event->type == SDL_MOUSEBUTTONDOWN) {
+		inputman.press_key(event->button.button);
+	}
+	if (event->type == SDL_MOUSEBUTTONUP) {
+		inputman.release_key(event->button.button);
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	Game game;
+	game.run();
 
 	return 0;
 }

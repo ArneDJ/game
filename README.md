@@ -4,7 +4,7 @@ Strategy action game.
 ## Building
 
 ### Dynamic Libraries
-On Linux install these libraries using your distro's package manager.
+On Linux install these libraries using your distro's package manager.\
 On Windows install the 64-bit version libraries using [vcpkg](https://github.com/microsoft/vcpkg).
 
 * [SDL2](https://www.libsdl.org/download-2.0.php)
