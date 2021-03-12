@@ -23,7 +23,7 @@ void Game::run(void)
 {
 	running = true;
 
-	if (!windowman.init(640, 480, SDL_WINDOW_BORDERLESS)) {
+	if (!windowman.init(640, 480, 0)) {
 		exit(EXIT_FAILURE);
 	}
 
@@ -51,8 +51,8 @@ void Game::input_event(const SDL_Event *event)
 	if (event->type == SDL_QUIT) { running = false; }
 
 	if (event->type == SDL_MOUSEMOTION) {
-		inputman.set_abs_mousecoords(event->motion.x, event->motion.y);
-		inputman.set_rel_mousecoords(event->motion.xrel, event->motion.yrel);
+		inputman.set_abs_mousecoords(float(event->motion.x), float(event->motion.y));
+		inputman.set_rel_mousecoords(float(event->motion.xrel), float(event->motion.yrel));
 	}
 
 	if (event->type == SDL_KEYDOWN) {
