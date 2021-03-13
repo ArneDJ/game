@@ -14,6 +14,8 @@
 #include "core/shader.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
+#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+
 class Game {
 public:
 	void run(void);
@@ -27,7 +29,6 @@ private:
 	void init(void);
 	void teardown(void);
 	void update(void);
-	void display(void);
 	void input_event(const SDL_Event *event);
 };
 
@@ -45,6 +46,7 @@ void Game::init(void)
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	// load shaders
 	shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
 	shader.link();
@@ -62,23 +64,42 @@ void Game::update(void)
 	inputman.update();
 }
 
-void Game::display(void)
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	shader.use();
-}
-
 void Game::run(void)
 {
 	init();
 
+	GLuint VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	const GLfloat vertices[] = {
+		-0.5f, -0.5f, 0.0f,
+		0.5f, -0.5f, 0.0f,
+		0.0f,  0.5f, 0.0f
+	};
+	GLuint VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0)); 
+	glEnableVertexAttribArray(0);
+
 	while (running) {
 		timer.begin();
 		update();
-		display();
+
+		glClear(GL_COLOR_BUFFER_BIT);
+		shader.use();
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
 		windowman.swap();
 		timer.end();
 	}
+
+	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &VAO);
 }
 
 void Game::input_event(const SDL_Event *event)
