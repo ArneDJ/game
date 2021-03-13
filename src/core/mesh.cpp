@@ -1,6 +1,8 @@
+#include <iostream>
 #include <vector>
+#include <utility>
 #include <GL/glew.h>
-#include <GL/gl.h>
+#include <GL/gl.h> 
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -10,6 +12,28 @@
 #include "mesh.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
+
+Mesh::Mesh(const std::vector<glm::vec3> &positions)
+{
+	// create the OpenGL buffers
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*positions.size(), positions.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0)); 
+	glEnableVertexAttribArray(0);
+
+	// tell OpenGL how to render the buffer
+	struct primitive primi = {
+		0, 0, 0, GLsizei(positions.size()),
+		GL_TRIANGLES, false
+	};
+
+	primitives.push_back(primi);
+}
 
 Mesh::~Mesh(void)
 {
@@ -29,35 +53,4 @@ void Mesh::draw(void) const
 			glDrawArrays(prim.mode, prim.firstvertex, prim.vertexcount);
 		}
 	}
-}
-
-void triangle_mesh(Mesh *triangle)
-{
-	//Mesh triangle;
-
-	// create the buffers
-	glGenVertexArrays(1, &triangle->VAO);
-	glBindVertexArray(triangle->VAO);
-
-	const std::vector<glm::vec3> vertices = {
-		{ -0.5f, -0.5f, 0.0f }, 
-		{ 0.5f, -0.5f, 0.0f },
-		{ 0.0f,  0.5f, 0.0f }
-	};
-
-	glGenBuffers(1, &triangle->VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, triangle->VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*vertices.size(), vertices.data(), GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0)); 
-	glEnableVertexAttribArray(0);
-
-	// tell OpenGL how to render the buffer
-	struct primitive primi = {
-		0, 0, 0, GLsizei(vertices.size()),
-		GL_TRIANGLES, false
-	};
-	triangle->primitives.push_back(primi);
-
-	//return triangle;
 }

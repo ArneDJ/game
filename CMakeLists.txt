@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 set(CMAKE_CXX_STANDARD 14)
 
-project(game.out)
+project(game)
 
 find_package(SDL2 REQUIRED)
 

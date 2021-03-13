@@ -71,8 +71,12 @@ void Game::run(void)
 {
 	init();
 
-	Mesh triangle;
-	triangle_mesh(&triangle);
+	const std::vector<glm::vec3> vertices = {
+		{ -0.5f, -0.5f, 0.0f }, 
+		{ 0.5f, -0.5f, 0.0f },
+		{ 0.0f,  0.5f, 0.0f }
+	};
+	Mesh triangle = { vertices };
 
 	while (running) {
 		timer.begin();

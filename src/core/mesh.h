@@ -10,14 +10,13 @@ struct primitive {
 
 class Mesh {
 public:
+	Mesh(const std::vector<glm::vec3> &positions);
 	~Mesh(void);
 	void draw(void) const;
-public:
+private:
 	GLuint VAO = 0; // Vertex Array Object
 	GLuint VBO = 0; // Vertex Buffer Object
 	GLuint EBO = 0; // Element Buffer Object
 	GLenum indextype = GL_UNSIGNED_BYTE; // (GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, or GL_UNSIGNED_INT)
 	std::vector<struct primitive> primitives;
 };
-
-void triangle_mesh(Mesh *triangle);
