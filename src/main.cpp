@@ -3,7 +3,6 @@
 #include <chrono>
 #include <map>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_mixer.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <glm/glm.hpp>
@@ -11,7 +10,7 @@
 #include "core/window.h"
 #include "core/input.h"
 #include "core/timer.h"
-#include "core/sound.h"
+//#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 class Game {
 public:
@@ -20,8 +19,6 @@ private:
 	bool running;
 	WindowManager windowman;
 	InputManager inputman;
-	SoundManager soundman;
-	Music testmusic;
 	Timer timer;
 private:
 	void init(void);
@@ -39,10 +36,6 @@ void Game::init(void)
 		exit(EXIT_FAILURE);
 	}
 
-	soundman.init();
-	//soundman.change_volume(32);
-	testmusic = soundman.load_music("media/music/bensound-epic.mp3");
-
 	// set OpenGL states
 	// TODO rendermanager should do this
 	glClearColor(1.f, 0.f, 1.f, 1.f);
@@ -52,7 +45,6 @@ void Game::init(void)
 
 void Game::teardown(void)
 {
-	soundman.teardown();
 	windowman.teardown();
 }
 
@@ -72,8 +64,6 @@ void Game::run(void)
 {
 	init();
 
-	testmusic.play();
-
 	while (running) {
 		timer.begin();
 		update();
@@ -81,8 +71,6 @@ void Game::run(void)
 		windowman.swap();
 		timer.end();
 	}
-
-	teardown();
 }
 
 void Game::input_event(const SDL_Event *event)
