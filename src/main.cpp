@@ -12,6 +12,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "core/entity.h"
 #include "core/window.h"
 #include "core/input.h"
 #include "core/timer.h"
@@ -27,9 +28,9 @@ private:
 	bool running;
 	WindowManager windowman;
 	InputManager inputman;
+	TextureManager textureman;
 	Timer timer;
 	Shader shader;
-	TextureCache texturecache;
 private:
 	void init(void);
 	void teardown(void);
@@ -91,7 +92,7 @@ void Game::run(void)
 	};
 	Mesh triangle = { vertices, texcoords };
 
-	const Texture *texture = texturecache.add("media/textures/pepper.dds");
+	const Texture *texture = textureman.add("media/textures/pepper.dds");
 
 	while (running) {
 		timer.begin();

@@ -1,6 +1,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <functional>
 #include <fstream>
 #include <GL/glew.h>
 #include <GL/gl.h> 
@@ -54,7 +55,7 @@ void Texture::bind(GLenum unit) const
 	glBindTexture(target, handle);
 }
 
-TextureCache::~TextureCache(void)
+TextureManager::~TextureManager(void)
 {
 	for (auto it = textures.begin(); it != textures.end(); it++) {
 		Texture *texture = it->second;
@@ -62,10 +63,11 @@ TextureCache::~TextureCache(void)
 	}
 }
 	
-const Texture* TextureCache::add(const std::string &filepath)
+const Texture* TextureManager::add(const std::string &filepath)
 {
 	// lookup the texture and see if its in the map
-	auto mit = textures.find(filepath);
+	uint64_t key = std::hash<std::string>()(filepath);
+	auto mit = textures.find(key);
 
 	// check if its not in the map
 	if (mit == textures.end()) {
@@ -73,7 +75,7 @@ const Texture* TextureCache::add(const std::string &filepath)
 		Texture *texture = new Texture { filepath };
 
 		// insert it into the map
-		textures.insert(make_pair(filepath, texture));
+		textures.insert(std::make_pair(key, texture));
 
 		return texture;
 	}

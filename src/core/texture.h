@@ -12,10 +12,10 @@ private:
 };
 
 // to prevent duplicate textures
-class TextureCache {
+class TextureManager {
 public:
 	const Texture* add(const std::string &filepath);
-	~TextureCache(void);
+	~TextureManager(void);
 private:
-	std::map<std::string, Texture*> textures; // TODO hash string
+	std::map<uint64_t, Texture*> textures;
 };
