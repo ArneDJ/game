@@ -16,9 +16,8 @@
 #include "core/input.h"
 #include "core/timer.h"
 #include "core/shader.h"
+#include "core/mesh.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
-
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 class Game {
 public:
@@ -72,22 +71,7 @@ void Game::run(void)
 {
 	init();
 
-	GLuint VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	const GLfloat vertices[] = {
-		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		0.0f,  0.5f, 0.0f
-	};
-	GLuint VBO;
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0)); 
-	glEnableVertexAttribArray(0);
+	Mesh triangle = triangle_mesh();
 
 	while (running) {
 		timer.begin();
@@ -95,16 +79,12 @@ void Game::run(void)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		shader.use();
-		shader.uniform_vec3("COLOR", glm::vec3(sin(timer.elapsed), cos(timer.elapsed), sin(timer.elapsed)));
-		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
+		triangle.draw();
 
 		windowman.swap();
 		timer.end();
 	}
-
-	glDeleteBuffers(1, &VBO);
-	glDeleteVertexArrays(1, &VAO);
 }
 
 void Game::input_event(const SDL_Event *event)
