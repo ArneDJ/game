@@ -9,7 +9,13 @@ public:
 private:
 	GLuint handle = 0;
 	GLenum target = GL_TEXTURE_2D; // usually GL_TEXTURE_2D
-	GLsizei width = 0;
-	GLsizei height = 0;
-	GLsizei length = 0; // only for 3D textures
+};
+
+// to prevent duplicate textures
+class TextureCache {
+public:
+	const Texture* add(const std::string &filepath);
+	~TextureCache(void);
+private:
+	std::map<std::string, Texture*> textures; // TODO hash string
 };

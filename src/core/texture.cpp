@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <map>
 #include <fstream>
 #include <GL/glew.h>
 #include <GL/gl.h> 
@@ -53,6 +54,33 @@ void Texture::bind(GLenum unit) const
 	glBindTexture(target, handle);
 }
 
+TextureCache::~TextureCache(void)
+{
+	for (auto it = textures.begin(); it != textures.end(); it++) {
+		Texture *texture = it->second;
+		delete texture;
+	}
+}
+	
+const Texture* TextureCache::add(const std::string &filepath)
+{
+	// lookup the texture and see if its in the map
+	auto mit = textures.find(filepath);
+
+	// check if its not in the map
+	if (mit == textures.end()) {
+		// load the texture
+		Texture *texture = new Texture { filepath };
+
+		// insert it into the map
+		textures.insert(make_pair(filepath, texture));
+
+		return texture;
+	}
+
+	return mit->second;
+}
+	
 static inline GLenum texture_format(ddsktx_format format)
 {
 	switch (format) {
@@ -73,7 +101,10 @@ static GLuint DDS_to_texture(const uint8_t *blob, const size_t size)
 	ddsktx_error error;
 	if (ddsktx_parse(&tc, blob, size, &error)) {
 		GLenum format = texture_format(tc.format);
-		if (!format) { printf("invalid format\n"); return 0; }
+		if (!format) { 
+			write_log(LogType::ERROR, "DDS error: Invalid texture format");
+			return 0; 
+		}
 
 		// Create GPU texture from tc data
 		glGenTextures(1, &tex);
