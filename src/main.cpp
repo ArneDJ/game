@@ -81,14 +81,16 @@ void Game::run(void)
 		{ 0.5f, 0.5f, 0.0f } 
 	};
 	const std::vector<glm::vec2> texcoords = {
+		{ 0.f, 1.f },
+		{ 1.f, 1.f },
+		{ 0.f,  0.f },
+		{ 1.f, 1.f },
 		{ 0.f, 0.f },
-		{ 1.f, 0.f },
-		{ 0.f,  1.f },
-		{ 0.f, 0.f },
-		{ 1.f, 0.f },
-		{ 1.,  1.f }
+		{ 1.,  0.f }
 	};
 	Mesh triangle = { vertices, texcoords };
+
+	Texture texture = { "media/textures/pepper.dds" };
 
 	while (running) {
 		timer.begin();
@@ -97,6 +99,7 @@ void Game::run(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		shader.use();
 		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
+		texture.bind(GL_TEXTURE0);
 		triangle.draw();
 
 		windowman.swap();
