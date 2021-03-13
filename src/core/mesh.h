@@ -20,4 +20,4 @@ public:
 	std::vector<struct primitive> primitives;
 };
 
-Mesh triangle_mesh(void);
+void triangle_mesh(Mesh *triangle);

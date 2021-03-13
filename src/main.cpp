@@ -71,7 +71,8 @@ void Game::run(void)
 {
 	init();
 
-	Mesh triangle = triangle_mesh();
+	Mesh triangle;
+	triangle_mesh(&triangle);
 
 	while (running) {
 		timer.begin();
