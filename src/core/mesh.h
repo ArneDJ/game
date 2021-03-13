@@ -1,4 +1,9 @@
 
+struct vertex {
+	glm::vec3 position;
+	glm::vec2 texcoord;
+};
+
 struct primitive {
 	GLuint firstindex = 0;
 	GLsizei indexcount = 0;
@@ -10,7 +15,7 @@ struct primitive {
 
 class Mesh {
 public:
-	Mesh(const std::vector<glm::vec3> &positions);
+	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords);
 	~Mesh(void);
 	void draw(void) const;
 private:

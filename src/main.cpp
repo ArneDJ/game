@@ -17,6 +17,7 @@
 #include "core/timer.h"
 #include "core/shader.h"
 #include "core/mesh.h"
+#include "core/texture.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 class Game {
@@ -74,9 +75,20 @@ void Game::run(void)
 	const std::vector<glm::vec3> vertices = {
 		{ -0.5f, -0.5f, 0.0f }, 
 		{ 0.5f, -0.5f, 0.0f },
-		{ 0.0f,  0.5f, 0.0f }
+		{ -0.5f,  0.5f, 0.0f },
+		{ 0.5f, -0.5f, 0.0f },
+		{ -0.5f,  0.5f, 0.0f },
+		{ 0.5f, 0.5f, 0.0f } 
 	};
-	Mesh triangle = { vertices };
+	const std::vector<glm::vec2> texcoords = {
+		{ 0.f, 0.f },
+		{ 1.f, 0.f },
+		{ 0.f,  1.f },
+		{ 0.f, 0.f },
+		{ 1.f, 0.f },
+		{ 1.,  1.f }
+	};
+	Mesh triangle = { vertices, texcoords };
 
 	while (running) {
 		timer.begin();

@@ -13,18 +13,37 @@
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
-Mesh::Mesh(const std::vector<glm::vec3> &positions)
+static size_t typesize(GLenum type)
 {
+	switch (type) {
+	case GL_UNSIGNED_BYTE: return sizeof(GLubyte);
+	case GL_UNSIGNED_SHORT: return sizeof(GLushort);
+	case GL_UNSIGNED_INT: return sizeof(GLuint);
+	};
+
+	return 0;
+}
+
+Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords)
+{
+	const size_t position_size = sizeof(glm::vec3) * positions.size();
+	const size_t texcoord_size = sizeof(glm::vec2) * texcoords.size();
+
 	// create the OpenGL buffers
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*positions.size(), positions.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, position_size + texcoord_size, NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, position_size, positions.data());
+	glBufferSubData(GL_ARRAY_BUFFER, position_size, texcoord_size, texcoords.data());
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0)); 
 	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(position_size));
 
 	// tell OpenGL how to render the buffer
 	struct primitive primi = {
@@ -48,7 +67,7 @@ void Mesh::draw(void) const
 
 	for (const auto &prim : primitives) {
 		if (prim.indexed) {
-			glDrawElementsBaseVertex(prim.mode, prim.indexcount, indextype, (GLvoid *)((prim.firstindex)*sizeof(GLushort)), prim.firstvertex);
+			glDrawElementsBaseVertex(prim.mode, prim.indexcount, indextype, (GLvoid *)((prim.firstindex)*typesize(indextype)), prim.firstvertex);
 		} else {
 			glDrawArrays(prim.mode, prim.firstvertex, prim.vertexcount);
 		}
