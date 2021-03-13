@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <map>
+#include <vector>
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -10,6 +11,7 @@
 #include "core/window.h"
 #include "core/input.h"
 #include "core/timer.h"
+#include "core/shader.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 class Game {
@@ -20,6 +22,7 @@ private:
 	WindowManager windowman;
 	InputManager inputman;
 	Timer timer;
+	Shader shader;
 private:
 	void init(void);
 	void teardown(void);
@@ -41,6 +44,10 @@ void Game::init(void)
 	glClearColor(1.f, 0.f, 1.f, 1.f);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
+	shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
+	shader.link();
 }
 
 void Game::teardown(void)
@@ -58,6 +65,7 @@ void Game::update(void)
 void Game::display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
+	shader.use();
 }
 
 void Game::run(void)
