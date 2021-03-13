@@ -50,7 +50,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 		GLsizei len = 0;
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
 		std::vector<GLchar> log(len);
-		glGetShaderInfoLog(shader, len, &len, &log[0]);
+		glGetShaderInfoLog(shader, len, &len, log.data());
 		std::string err(log.begin(), log.end());
 		write_log(LogType::ERROR, "Shader compilation failed: " + err);
 
@@ -83,7 +83,7 @@ void Shader::link(void)
 		GLsizei len;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
 		std::vector<GLchar> log(len);
-		glGetProgramInfoLog(program, len, &len, &log[0]);
+		glGetProgramInfoLog(program, len, &len, log.data());
 		std::string err(log.begin(), log.end());
 		write_log(LogType::ERROR, "Shader program linking failed: " + err);
 
