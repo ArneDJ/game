@@ -3,6 +3,10 @@
 #include <vector>
 #include <GL/glew.h>
 #include <GL/gl.h>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "logger.h"
 #include "shader.h"
@@ -98,4 +102,24 @@ void Shader::link(void)
 void Shader::use(void) const
 {
 	glUseProgram(program);
+}
+
+void Shader::uniform_bool(const GLchar *name, bool boolean) const
+{
+	glUniform1i(glGetUniformLocation(program, name), boolean);
+}
+
+void Shader::uniform_float(const GLchar *name, GLfloat scalar) const
+{
+	glUniform1f(glGetUniformLocation(program, name), scalar);
+}
+
+void Shader::uniform_vec3(const GLchar *name, glm::vec3 vector) const
+{
+	glUniform3fv(glGetUniformLocation(program, name), 1, glm::value_ptr(vector));
+}
+
+void Shader::uniform_mat4(const GLchar *name, glm::mat4 matrix) const
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(matrix));
 }

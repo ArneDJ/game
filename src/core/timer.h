@@ -1,7 +1,8 @@
 
 class Timer {
 public:
-	float delta = 0.0; // time of a frame in seconds
+	float delta = 0.f; // time of a frame in seconds
+	float elapsed = 0.f;
 public:
 	void begin(void);
 	void end(void);

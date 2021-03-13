@@ -7,6 +7,10 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <glm/glm.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "core/window.h"
 #include "core/input.h"
@@ -91,6 +95,7 @@ void Game::run(void)
 
 		glClear(GL_COLOR_BUFFER_BIT);
 		shader.use();
+		shader.uniform_vec3("COLOR", glm::vec3(sin(timer.elapsed), cos(timer.elapsed), sin(timer.elapsed)));
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 

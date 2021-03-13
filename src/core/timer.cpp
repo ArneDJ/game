@@ -10,7 +10,8 @@ void Timer::begin(void)
 void Timer::end(void)
 {
 	auto timenow = std::chrono::steady_clock::now();
-	std::chrono::duration<float> elapsed = timenow - ticks;
+	std::chrono::duration<float> duration = timenow - ticks;
 
-	delta = elapsed.count();
+	delta = duration.count();
+	elapsed += delta;
 }
