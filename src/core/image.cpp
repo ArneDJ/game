@@ -9,7 +9,6 @@
 
 #include "../extern/fastgaussianblur/fast_gaussian_blur.h"
 #include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
-//#include "../extern/fastgaussianblur/blur_uchar_rgb.h"
 
 #include "image.h"
 
@@ -72,18 +71,9 @@ void Image::plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color)
 	
 void Image::blur(float sigma)
 {
-	   // output channels r,g,b
-	auto start = std::chrono::system_clock::now();
-	uchar *copy = new uchar[size];
-	fast_gaussian_blur_template(data, copy, width, height, channels, sigma);
-    	//fast_gaussian_blur_rgb(data, copy, width, height, channels, sigma);
-	std::memcpy(data, copy, size);
-	delete [] copy;
+	uint8_t *blurred = new uint8_t[size];
+	fast_gaussian_blur_template(data, blurred, width, height, channels, sigma);
+	std::memcpy(data, blurred, size);
 
-	auto end = std::chrono::system_clock::now();
-
-	// stats
-	float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
-	std::cout << "blur time " << elapsed << "ms" << std::endl;
-
+	delete [] blurred;
 }

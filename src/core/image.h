@@ -26,11 +26,12 @@ public:
 	void clear(void);
 	// save to file
 	void write(const std::string &filepath);
-private:
+public:
 	uint16_t width = 0;
 	uint16_t height = 0;
 	uint8_t channels = 0;
 	uint8_t *data = nullptr;
 	size_t size = 0;
+private:
 	bool malloced = false;
 };

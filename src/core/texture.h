@@ -3,7 +3,7 @@
 class Texture {
 public:
 	Texture(const std::string &filepath); // load image texture from file
-	//Texture(const Image *image); // load image texture from memory
+	Texture(const Image *image); // load image texture from memory
 	~Texture(void);
 	void bind(GLenum unit) const;
 private:

@@ -93,7 +93,11 @@ void Game::run(void)
 	};
 	Mesh triangle = { vertices, texcoords };
 
-	const Texture *texture = textureman.add("media/textures/pepper.dds");
+	Image image = { "media/textures/pepper.png" };
+	image.blur(50.f);
+
+	//const Texture *texture = textureman.add("media/textures/pepper.dds");
+	Texture texture = { &image };
 
 	while (running) {
 		timer.begin();
@@ -102,7 +106,7 @@ void Game::run(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		shader.use();
 		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
-		texture->bind(GL_TEXTURE0);
+		texture.bind(GL_TEXTURE0);
 		triangle.draw();
 
 		windowman.swap();
@@ -136,22 +140,15 @@ void Game::input_event(const SDL_Event *event)
 
 int main(int argc, char *argv[])
 {
-	//Game game;
-	//game.run();
+	Game game;
+	game.run();
+	/*
 	Image image = { "media/textures/pepper.png" };
 	printf("%d\n", image.rows());
 	printf("%d\n", image.columns());
-	/*
-	for (int i = 0; i < image.rows(); i++) {
-		for (int j = 0; j < image.columns(); j++) {
-			image.plot(i, j, CHANNEL_RED, 0);
-			//image.plot(i, j, 1, 0);
-			image.plot(i, j, CHANNEL_BLUE, 0);
-		}
-	}
-	*/
 	image.blur(10.f);
 	image.write("media/textures/altered.png");
+	*/
 
 	return 0;
 }

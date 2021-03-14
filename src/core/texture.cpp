@@ -10,6 +10,7 @@
 #include "../extern/ddsktx/dds-ktx.h"
 
 #include "logger.h"
+#include "image.h"
 #include "texture.h"
 
 static inline GLenum texture_format(ddsktx_format format);
@@ -38,6 +39,49 @@ Texture::Texture(const std::string &filepath)
 	handle = DDS_to_texture(buffer, size);
 
 	delete [] buffer;
+}
+	
+// create uncompressed texture
+Texture::Texture(const Image *image)
+{
+	//target = (image->channels < 5) ? GL_TEXTURE_2D : GL_TEXTURE_ARRAY;
+	target = GL_TEXTURE_2D;
+
+	GLenum internalformat = 0;
+	GLenum format = 0;
+	switch (image->channels) {
+	case 1: 
+		internalformat = GL_R8; 
+		format = GL_RED; 
+		break;
+	case 2: 
+		internalformat = GL_RG8; 
+		format = GL_RG; 
+		break;
+	case 3:
+		internalformat = GL_RGB8; 
+		format = GL_RGB; 
+		break;
+	case 4:
+		internalformat = GL_RGBA8; 
+		format = GL_RGBA; 
+		break;
+	}
+
+	GLenum type = GL_UNSIGNED_BYTE;
+
+	glGenTextures(1, &handle);
+	glBindTexture(GL_TEXTURE_2D, handle);
+	glTexStorage2D(GL_TEXTURE_2D, 1, internalformat, image->width, image->height);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, type, image->data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 //Texture(const Image *image); // load image texture from memory
