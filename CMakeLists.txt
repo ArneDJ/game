@@ -11,6 +11,8 @@ find_package(OpenGL REQUIRED COMPONENTS OpenGL)
 find_package(GLEW REQUIRED)
 include_directories(GLEW::GLEW)
 
+find_package(OpenMP REQUIRED)
+
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/*.h"
@@ -24,3 +26,5 @@ target_link_libraries(${PROJECT_NAME} GLEW::GLEW)
 if (UNIX)
 	target_link_libraries(${PROJECT_NAME} OpenGL::OpenGL)
 endif()
+target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+

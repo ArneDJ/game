@@ -20,7 +20,11 @@ public:
 	uint16_t rows(void) const { return width; };
 	uint16_t columns(void) const { return height; };
 	void plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color);
+	// gaussian blur
+	void blur(float sigma);
+	// wipe image clean but do not free memory
 	void clear(void);
+	// save to file
 	void write(const std::string &filepath);
 private:
 	uint16_t width = 0;

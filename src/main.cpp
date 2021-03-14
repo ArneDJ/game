@@ -141,6 +141,7 @@ int main(int argc, char *argv[])
 	Image image = { "media/textures/pepper.png" };
 	printf("%d\n", image.rows());
 	printf("%d\n", image.columns());
+	/*
 	for (int i = 0; i < image.rows(); i++) {
 		for (int j = 0; j < image.columns(); j++) {
 			image.plot(i, j, CHANNEL_RED, 0);
@@ -148,6 +149,8 @@ int main(int argc, char *argv[])
 			image.plot(i, j, CHANNEL_BLUE, 0);
 		}
 	}
+	*/
+	image.blur(10.f);
 	image.write("media/textures/altered.png");
 
 	return 0;

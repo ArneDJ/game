@@ -17,3 +17,4 @@ On Windows install the 64-bit version libraries using [vcpkg](https://github.com
 
 * [dds-ktx](https://github.com/septag/dds-ktx)
 * [stb image](https://github.com/nothings/stb)
+* [FastGaussianBlur](https://github.com/bfraboni/FastGaussianBlur)

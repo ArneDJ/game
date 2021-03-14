@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <cstring>
 
@@ -5,6 +6,10 @@
 #include "../extern/stbimage/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../extern/stbimage/stb_image_write.h"
+
+#include "../extern/fastgaussianblur/fast_gaussian_blur.h"
+#include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
+//#include "../extern/fastgaussianblur/blur_uchar_rgb.h"
 
 #include "image.h"
 
@@ -63,4 +68,22 @@ void Image::plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color)
 
 	const size_t index = y * width * channels + x * channels + chan;
 	data[index] = color;
+}
+	
+void Image::blur(float sigma)
+{
+	   // output channels r,g,b
+	auto start = std::chrono::system_clock::now();
+	uchar *copy = new uchar[size];
+	fast_gaussian_blur_template(data, copy, width, height, channels, sigma);
+    	//fast_gaussian_blur_rgb(data, copy, width, height, channels, sigma);
+	std::memcpy(data, copy, size);
+	delete [] copy;
+
+	auto end = std::chrono::system_clock::now();
+
+	// stats
+	float elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count();
+	std::cout << "blur time " << elapsed << "ms" << std::endl;
+
 }
