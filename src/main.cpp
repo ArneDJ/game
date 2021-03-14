@@ -12,6 +12,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "core/image.h"
 #include "core/entity.h"
 #include "core/window.h"
 #include "core/input.h"
@@ -135,8 +136,19 @@ void Game::input_event(const SDL_Event *event)
 
 int main(int argc, char *argv[])
 {
-	Game game;
-	game.run();
+	//Game game;
+	//game.run();
+	Image image = { "media/textures/pepper.png" };
+	printf("%d\n", image.rows());
+	printf("%d\n", image.columns());
+	for (int i = 0; i < image.rows(); i++) {
+		for (int j = 0; j < image.columns(); j++) {
+			image.plot(i, j, CHANNEL_RED, 0);
+			//image.plot(i, j, 1, 0);
+			image.plot(i, j, CHANNEL_BLUE, 0);
+		}
+	}
+	image.write("media/textures/altered.png");
 
 	return 0;
 }

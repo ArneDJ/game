@@ -12,16 +12,21 @@ enum COLORSPACE_TYPE : uint8_t {
 	COLORSPACE_RGBA = 4
 };
 
-template <class T>
 class Image {
 public:
+	Image(const std::string &filepath);
 	Image(uint16_t w, uint16_t h, uint8_t chan);
 	~Image(void);
+	uint16_t rows(void) const { return width; };
+	uint16_t columns(void) const { return height; };
+	void plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color);
 	void clear(void);
+	void write(const std::string &filepath);
 private:
 	uint16_t width = 0;
 	uint16_t height = 0;
 	uint8_t channels = 0;
-	T *data = nullptr;
+	uint8_t *data = nullptr;
 	size_t size = 0;
+	bool malloced = false;
 };

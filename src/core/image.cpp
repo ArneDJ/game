@@ -1,26 +1,66 @@
 #include <iostream>
 #include <cstring>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "../extern/stbimage/stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../extern/stbimage/stb_image_write.h"
+
 #include "image.h"
 
-template <class T>
-Image<T>::Image(uint16_t w, uint16_t h, uint8_t chan)
+// normal image creation
+Image::Image(uint16_t w, uint16_t h, uint8_t chan)
 {
 	width = w;
 	height = h;
 	size = w * h * chan;
-	data = new T[size];
+
+	data = new uint8_t[size];
+	malloced = false;
+
 	clear();
 }
-
-template <class T>
-Image<T>::~Image(void)
+	
+// load from file
+Image::Image(const std::string &filepath)
 {
-	delete data;
+	int w, h, chan;
+	data = stbi_load(filepath.c_str(), &w, &h, &chan, 0);
+	malloced = true;
+
+	width = w;
+	height = h;
+	channels = chan;
+	size = w * h * chan;
+}
+
+Image::~Image(void)
+{
+	if (data) {
+		if (malloced) {
+			stbi_image_free(data);
+		} else {
+			delete [] data;
+		}
+	}
 }
 	
-template <class T>
-void Image<T>::clear(void)
+void Image::clear(void)
 {
 	std::memset(data, 0, size);
+}
+	
+void Image::write(const std::string &filepath)
+{
+	stbi_write_png(filepath.c_str(), width, height, channels, data, channels*width);
+}
+	
+void Image::plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color)
+{
+	if (chan >= channels) { return; }
+
+	if (x >= width || y >= height) { return; }
+
+	const size_t index = y * width * channels + x * channels + chan;
+	data[index] = color;
 }
