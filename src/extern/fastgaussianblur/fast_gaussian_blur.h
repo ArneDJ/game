@@ -414,11 +414,11 @@ void fast_gaussian_blur(uchar *& in, uchar *& out, int w, int h, int c, float si
 
 void transpose(uchar * in, uchar * out, int w, int h, int c)
 {
-    const std::size_t b = w * h - 1;
+    const int64_t b = w * h - 1;
     #pragma omp parallel for
     for(int64_t i = 0; i < b+1; i++)
     {
-        std::size_t o = i == b ? b : h * i % b;
+        int64_t o = i == b ? b : h * i % b;
         for(int ch = 0; ch < c; ch++)
             out[o*c+ch] = in[i*c+ch];
     }
@@ -426,11 +426,11 @@ void transpose(uchar * in, uchar * out, int w, int h, int c)
 
 void transpose_memcpy(uchar * in, uchar * out, int w, int h, int c)
 {
-    const std::size_t b = w * h - 1;
+    const int64_t b = w * h - 1;
     #pragma omp parallel for
     for(int64_t i = 0; i < b+1; i++)
     {
-        std::size_t o = i == b ? b : h * i % b;
+        int64_t o = i == b ? b : h * i % b;
         std::copy(in+i*c, in+i*c+c, out+o*c);
     }
 }

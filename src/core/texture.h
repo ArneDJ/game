@@ -1,5 +1,5 @@
 
-// OpenGL texture
+// immutable OpenGL texture
 class Texture {
 public:
 	Texture(const std::string &filepath); // load image texture from file
@@ -10,6 +10,9 @@ private:
 	GLuint handle = 0;
 	GLenum target = GL_TEXTURE_2D; // usually GL_TEXTURE_2D
 };
+
+// mutable OpenGL texture
+// class DynamicTexture
 
 // to prevent duplicate textures
 class TextureManager {

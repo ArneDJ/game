@@ -94,7 +94,7 @@ void Game::run(void)
 	Mesh triangle = { vertices, texcoords };
 
 	Image image = { "media/textures/pepper.png" };
-	image.blur(50.f);
+	image.blur(10.f);
 
 	//const Texture *texture = textureman.add("media/textures/pepper.dds");
 	Texture texture = { &image };
@@ -142,13 +142,6 @@ int main(int argc, char *argv[])
 {
 	Game game;
 	game.run();
-	/*
-	Image image = { "media/textures/pepper.png" };
-	printf("%d\n", image.rows());
-	printf("%d\n", image.columns());
-	image.blur(10.f);
-	image.write("media/textures/altered.png");
-	*/
 
 	return 0;
 }

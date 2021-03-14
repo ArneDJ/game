@@ -15,6 +15,7 @@
 
 static inline GLenum texture_format(ddsktx_format format);
 static GLuint DDS_to_texture(const uint8_t *blob, const size_t size);
+static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type);
 
 Texture::Texture(const std::string &filepath)
 {
@@ -41,10 +42,9 @@ Texture::Texture(const std::string &filepath)
 	delete [] buffer;
 }
 	
-// create uncompressed texture
+// TODO handle 3D and texture arrays
 Texture::Texture(const Image *image)
 {
-	//target = (image->channels < 5) ? GL_TEXTURE_2D : GL_TEXTURE_ARRAY;
 	target = GL_TEXTURE_2D;
 
 	GLenum internalformat = 0;
@@ -68,24 +68,9 @@ Texture::Texture(const Image *image)
 		break;
 	}
 
-	GLenum type = GL_UNSIGNED_BYTE;
-
-	glGenTextures(1, &handle);
-	glBindTexture(GL_TEXTURE_2D, handle);
-	glTexStorage2D(GL_TEXTURE_2D, 1, internalformat, image->width, image->height);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, type, image->data);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
+	handle = uncompressed_2D_texture(image->data, image->width, image->height, internalformat, format, GL_UNSIGNED_BYTE);
 }
 
-//Texture(const Image *image); // load image texture from memory
-//
 Texture::~Texture(void)
 {
 	if (glIsTexture(handle) == GL_TRUE) {
@@ -181,3 +166,22 @@ static GLuint DDS_to_texture(const uint8_t *blob, const size_t size)
 	return tex;
 }
 
+static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type)
+{
+	GLuint texture = 0;
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexStorage2D(GL_TEXTURE_2D, 1, internalformat, width, height);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, texels);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return texture;
+}
