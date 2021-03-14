@@ -97,7 +97,17 @@ void Game::run(void)
 	Mesh triangle = { vertices, texcoords };
 
 	Magick::Image image("media/textures/pepper.png");
+	auto start = std::chrono::steady_clock::now();
+	auto start = std::chrono::steady_clock::now();
 	image.blur(50.f, 10.f);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+	image.write("media/textures/blurred.png");
+	image.blur(50.f, 10.f);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 	image.write("media/textures/blurred.png");
 
 	const Texture *texture = textureman.add("media/textures/pepper.dds");
