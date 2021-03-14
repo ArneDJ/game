@@ -11,6 +11,9 @@ On Windows install the 64-bit version libraries using [vcpkg](https://github.com
 * [OpenGL](https://www.opengl.org/)
 * [GLEW](https://github.com/nigels-com/glew)
 * [glm](https://github.com/g-truc/glm)
+* [ImageMagick](https://imagemagick.org/Magick++/)
 
 ### Static Libraries
 ### Header Libraries
+
+* [dds-ktx](https://github.com/septag/dds-ktx)

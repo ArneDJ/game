@@ -8,6 +8,9 @@ find_package(SDL2 REQUIRED)
 
 find_package(OpenGL REQUIRED COMPONENTS OpenGL)
 
+find_package(ImageMagick REQUIRED COMPONENTS Magick++)
+include_directories(${ImageMagick_INCLUDE_DIRS})
+
 find_package(GLEW REQUIRED)
 include_directories(GLEW::GLEW)
 
@@ -24,3 +27,4 @@ target_link_libraries(${PROJECT_NAME} GLEW::GLEW)
 if (UNIX)
 	target_link_libraries(${PROJECT_NAME} OpenGL::OpenGL)
 endif()
+target_link_libraries(${PROJECT_NAME} ${ImageMagick_LIBRARIES})

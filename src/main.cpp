@@ -11,6 +11,7 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <Magick++.h>
 
 #include "core/entity.h"
 #include "core/window.h"
@@ -46,6 +47,8 @@ void Game::init(void)
 		exit(EXIT_FAILURE);
 	}
 
+	Magick::InitializeMagick(NULL);
+
 	// set OpenGL states
 	// TODO rendermanager should do this
 	glClearColor(1.f, 0.f, 1.f, 1.f);
@@ -61,6 +64,7 @@ void Game::init(void)
 void Game::teardown(void)
 {
 	windowman.teardown();
+	Magick::TerminateMagick();
 }
 
 void Game::update(void)
@@ -91,6 +95,10 @@ void Game::run(void)
 		{ 1.,  0.f }
 	};
 	Mesh triangle = { vertices, texcoords };
+
+	Magick::Image image("media/textures/pepper.png");
+	image.blur(50.f, 10.f);
+	image.write("media/textures/blurred.png");
 
 	const Texture *texture = textureman.add("media/textures/pepper.dds");
 
