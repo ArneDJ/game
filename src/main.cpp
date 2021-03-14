@@ -11,7 +11,6 @@
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <Magick++.h>
 
 #include "core/entity.h"
 #include "core/window.h"
@@ -46,8 +45,6 @@ void Game::init(void)
 	if (!windowman.init(640, 480, 0)) {
 		exit(EXIT_FAILURE);
 	}
-
-	Magick::InitializeMagick(NULL);
 
 	// set OpenGL states
 	// TODO rendermanager should do this
@@ -94,20 +91,6 @@ void Game::run(void)
 		{ 1.,  0.f }
 	};
 	Mesh triangle = { vertices, texcoords };
-
-	Magick::Image image("media/textures/pepper.png");
-	auto start = std::chrono::steady_clock::now();
-	auto start = std::chrono::steady_clock::now();
-	image.blur(50.f, 10.f);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-	image.write("media/textures/blurred.png");
-	image.blur(50.f, 10.f);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-	image.write("media/textures/blurred.png");
 
 	const Texture *texture = textureman.add("media/textures/pepper.dds");
 
