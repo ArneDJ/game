@@ -64,7 +64,6 @@ void Game::init(void)
 void Game::teardown(void)
 {
 	windowman.teardown();
-	Magick::TerminateMagick();
 }
 
 void Game::update(void)
