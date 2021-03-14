@@ -416,7 +416,7 @@ void transpose(uchar * in, uchar * out, int w, int h, int c)
 {
     const std::size_t b = w * h - 1;
     #pragma omp parallel for
-    for(std::size_t i = 0; i < b+1; i++)
+    for(int64_t i = 0; i < b+1; i++)
     {
         std::size_t o = i == b ? b : h * i % b;
         for(int ch = 0; ch < c; ch++)
@@ -428,7 +428,7 @@ void transpose_memcpy(uchar * in, uchar * out, int w, int h, int c)
 {
     const std::size_t b = w * h - 1;
     #pragma omp parallel for
-    for(std::size_t i = 0; i < b+1; i++)
+    for(int64_t i = 0; i < b+1; i++)
     {
         std::size_t o = i == b ? b : h * i % b;
         std::copy(in+i*c, in+i*c+c, out+o*c);
