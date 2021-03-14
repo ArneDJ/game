@@ -95,9 +95,9 @@ void Game::run(void)
 
 	Image image = { "media/textures/pepper.png" };
 	image.blur(10.f);
+	Texture uncompressed = { &image };
 
-	//const Texture *texture = textureman.add("media/textures/pepper.dds");
-	Texture texture = { &image };
+	const Texture *compressed = textureman.add("media/textures/pepper.dds");
 
 	while (running) {
 		timer.begin();
@@ -106,7 +106,7 @@ void Game::run(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		shader.use();
 		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
-		texture.bind(GL_TEXTURE0);
+		uncompressed.bind(GL_TEXTURE0);
 		triangle.draw();
 
 		windowman.swap();

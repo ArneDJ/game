@@ -17,7 +17,9 @@ Image::Image(uint16_t w, uint16_t h, uint8_t chan)
 {
 	width = w;
 	height = h;
-	size = w * h * chan;
+	channels = chan;
+
+	size = width * height * channels;
 
 	data = new uint8_t[size];
 	malloced = false;
@@ -28,16 +30,14 @@ Image::Image(uint16_t w, uint16_t h, uint8_t chan)
 // load from file
 Image::Image(const std::string &filepath)
 {
-	int w, h;
-	//, chan;
-	data = stbi_load(filepath.c_str(), &w, &h, 0, STBI_rgb_alpha);
-	//chan = 4;
+	int w, h, chan;
+	data = stbi_load(filepath.c_str(), &w, &h, &chan, 0);
 	malloced = true;
 
 	width = w;
 	height = h;
-	channels = 4;
-	size = w * h * channels;
+	channels = chan;
+	size = width * height * channels;
 }
 
 Image::~Image(void)
