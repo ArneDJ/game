@@ -38,7 +38,6 @@ private:
 	void init(void);
 	void teardown(void);
 	void update(void);
-	void input_event(const SDL_Event *event);
 };
 
 void Game::init(void)
@@ -65,7 +64,7 @@ void Game::init(void)
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	camera.project();
 
-	SDL_SetRelativeMouseMode(SDL_TRUE);
+	SDL_SetRelativeMouseMode(SDL_FALSE);
 }
 
 void Game::teardown(void)
@@ -75,9 +74,10 @@ void Game::teardown(void)
 
 void Game::update(void)
 {
-	SDL_Event event;
-	while (SDL_PollEvent(&event)) { input_event(&event); }
 	inputman.update();
+	if (inputman.exit_request()) {
+		running = false;
+	}
 	
 	glm::vec2 rel_mousecoords = inputman.rel_mousecoords();
 	camera.target(rel_mousecoords);
@@ -125,25 +125,6 @@ void Game::run(void)
 
 		windowman.swap();
 		timer.end();
-	}
-}
-
-void Game::input_event(const SDL_Event *event)
-{
-	if (event->type == SDL_QUIT) { running = false; }
-
-	if (event->type == SDL_KEYDOWN) {
-		inputman.press_key(event->key.keysym.sym);
-	}
-	if (event->type == SDL_KEYUP) {
-		inputman.release_key(event->key.keysym.sym);
-	}
-
-	if (event->type == SDL_MOUSEBUTTONDOWN) {
-		inputman.press_key(event->button.button);
-	}
-	if (event->type == SDL_MOUSEBUTTONUP) {
-		inputman.release_key(event->button.button);
 	}
 }
 

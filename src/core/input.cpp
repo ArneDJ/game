@@ -4,17 +4,71 @@
 
 #include "input.h"
 	
+InputManager::InputManager(void)
+{
+	exit = false;
+	mousegrab = false;
+	mousecoords.absolute = { 0.f, 0.f };
+	mousecoords.relative = { 0.f, 0.f };
+}
+	
+bool InputManager::exit_request(void) const
+{
+	return exit;
+}
+
 void InputManager::update(void) 
 { 
-	//copy over keymap to previous keymap
+	SDL_Event event;
+	while (SDL_PollEvent(&event)) { sample_event(&event); }
+
+	if (key_pressed(SDLK_TAB)) {
+		mousegrab = !mousegrab;
+		if (mousegrab) {
+			SDL_SetRelativeMouseMode(SDL_TRUE);
+		} else {
+			SDL_SetRelativeMouseMode(SDL_FALSE);
+		}
+	}
+
+	sample_relative_mousecoords();
+
+	// copy over keymap of current tick to previous keymap
 	for (auto &iter : keymap) {
 		previouskeys[iter.first] = iter.second;
 	}
+}
 
-	int x, y;
+void InputManager::sample_event(const SDL_Event *event)
+{
+	if (event->type == SDL_QUIT) { exit = true; }
+
+	if (event->type == SDL_KEYDOWN) {
+		press_key(event->key.keysym.sym);
+	}
+	if (event->type == SDL_KEYUP) {
+		release_key(event->key.keysym.sym);
+	}
+
+	if (event->type == SDL_MOUSEBUTTONDOWN) {
+		press_key(event->button.button);
+	}
+	if (event->type == SDL_MOUSEBUTTONUP) {
+		release_key(event->button.button);
+	}
+}
+
+void InputManager::sample_relative_mousecoords(void) 
+{
+	int x = 0;
+	int y = 0;
 	SDL_GetRelativeMouseState(&x, &y);
 	mousecoords.relative.x = float(x);
 	mousecoords.relative.y = float(y);
+	if (mousegrab == false) {
+		mousecoords.relative.x = 0.f;
+		mousecoords.relative.y = 0.f;
+	}
 }
 
 void InputManager::press_key(uint32_t keyID)
