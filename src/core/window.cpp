@@ -6,7 +6,7 @@
 #include "logger.h"
 #include "window.h"
 	
-bool WindowManager::init(uint16_t w, uint16_t h, uint32_t flags)
+bool WindowManager::init(uint16_t w, uint16_t h)
 {
 	width = w;
 	height = h;
@@ -14,7 +14,7 @@ bool WindowManager::init(uint16_t w, uint16_t h, uint32_t flags)
 	SDL_Init(SDL_INIT_VIDEO);
 
 	// open the SDL window
-	window = SDL_CreateWindow("game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL | flags);
+	window = SDL_CreateWindow("game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
 	if (window == nullptr) {
 		write_log(LogType::ERROR, std::string("SDL Window could not be created!"));
 		return false;
@@ -54,3 +54,8 @@ void WindowManager::swap(void)
 { 
 	SDL_GL_SwapWindow(window); 
 };
+	
+void WindowManager::set_fullscreen(void)
+{
+	SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+}

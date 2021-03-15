@@ -6,7 +6,8 @@ public:
 	uint16_t width = 0;
 	uint16_t height = 0;
 public:
-	bool init(uint16_t w, uint16_t h, uint32_t flags);
+	bool init(uint16_t w, uint16_t h);
 	void teardown(void);
 	void swap(void);
+	void set_fullscreen(void);
 };

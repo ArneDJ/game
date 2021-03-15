@@ -12,6 +12,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "extern/inih/INIReader.h"
+
+#include "core/logger.h"
 #include "core/image.h"
 #include "core/entity.h"
 #include "core/camera.h"
@@ -34,6 +37,14 @@ private:
 	Timer timer;
 	Shader shader;
 	Camera camera;
+	struct {
+		uint16_t window_width;
+		uint16_t window_height;
+		bool fullscreen;
+		int FOV;
+		float look_sensitivity;
+	} settings;
+
 private:
 	void init(void);
 	void teardown(void);
@@ -44,8 +55,23 @@ void Game::init(void)
 {
 	running = true;
 
-	if (!windowman.init(640, 480, 0)) {
+	// load settings
+	static const std::string INI_SETTINGS_PATH = "settings.ini";
+	INIReader reader = { INI_SETTINGS_PATH.c_str() };
+	if (reader.ParseError() != 0) { 
+		write_log(LogType::ERROR, std::string("Could not load ini file: " + INI_SETTINGS_PATH));
+	}
+	settings.window_width = reader.GetInteger("", "WINDOW_WIDTH", 1920);
+	settings.window_height = reader.GetInteger("", "WINDOW_HEIGHT", 1080);
+	settings.fullscreen = reader.GetBoolean("", "FULLSCREEN", false);
+	settings.FOV = reader.GetInteger("", "FOV", 90);
+	settings.look_sensitivity = float(reader.GetInteger("", "MOUSE_SENSITIVITY", 1));
+
+	if (!windowman.init(settings.window_width, settings.window_height)) {
 		exit(EXIT_FAILURE);
+	}
+	if (settings.fullscreen) {
+		windowman.set_fullscreen();
 	}
 
 	// set OpenGL states
@@ -59,7 +85,8 @@ void Game::init(void)
 	shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
 	shader.link();
 
-	camera.configure(0.1f, 9001.f, 640.f/480.f, 90.f);
+	float aspect_ratio = float(settings.window_width) / float(settings.window_height);
+	camera.configure(0.1f, 9001.f, aspect_ratio, float(settings.FOV));
 	camera.position = { 0.f, 0.f, 1.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	camera.project();
@@ -79,7 +106,7 @@ void Game::update(void)
 		running = false;
 	}
 	
-	glm::vec2 rel_mousecoords = inputman.rel_mousecoords();
+	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
 	camera.target(rel_mousecoords);
 
 	float modifier = 2.f * timer.delta;
