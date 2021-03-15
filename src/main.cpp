@@ -14,6 +14,7 @@
 
 #include "core/image.h"
 #include "core/entity.h"
+#include "core/camera.h"
 #include "core/window.h"
 #include "core/input.h"
 #include "core/timer.h"
@@ -32,6 +33,7 @@ private:
 	TextureManager textureman;
 	Timer timer;
 	Shader shader;
+	Camera camera;
 private:
 	void init(void);
 	void teardown(void);
@@ -57,6 +59,13 @@ void Game::init(void)
 	shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
 	shader.link();
+
+	camera.configure(0.1f, 9001.f, 640.f/480.f, 90.f);
+	camera.position = { 0.f, 0.f, 1.f };
+	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
+	camera.project();
+
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 void Game::teardown(void)
@@ -69,6 +78,10 @@ void Game::update(void)
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) { input_event(&event); }
 	inputman.update();
+	
+	glm::vec2 rel_mousecoords = inputman.rel_mousecoords();
+	camera.target(rel_mousecoords);
+	camera.update();
 }
 
 void Game::run(void)
@@ -106,6 +119,7 @@ void Game::run(void)
 		glClear(GL_COLOR_BUFFER_BIT);
 		shader.use();
 		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
+		shader.uniform_mat4("VP", camera.VP);
 		uncompressed.bind(GL_TEXTURE0);
 		triangle.draw();
 
@@ -117,11 +131,6 @@ void Game::run(void)
 void Game::input_event(const SDL_Event *event)
 {
 	if (event->type == SDL_QUIT) { running = false; }
-
-	if (event->type == SDL_MOUSEMOTION) {
-		inputman.set_abs_mousecoords(float(event->motion.x), float(event->motion.y));
-		inputman.set_rel_mousecoords(float(event->motion.xrel), float(event->motion.yrel));
-	}
 
 	if (event->type == SDL_KEYDOWN) {
 		inputman.press_key(event->key.keysym.sym);

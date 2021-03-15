@@ -6,8 +6,6 @@ public:
 	void release_key(uint32_t keyID);
 	bool key_down(uint32_t keyID) const; // is key held down
 	bool key_pressed(uint32_t keyID) const; // is key pressed in current update
-	void set_abs_mousecoords(float x, float y);
-	void set_rel_mousecoords(float x, float y);
 	glm::vec2 abs_mousecoords(void) const;
 	glm::vec2 rel_mousecoords(void) const;
 private:

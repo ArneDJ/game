@@ -1,26 +1,20 @@
 #include <unordered_map>
 #include <glm/glm.hpp>
+#include <SDL2/SDL.h>
 
 #include "input.h"
 	
-void InputManager::set_abs_mousecoords(float x, float y)
-{
-	mousecoords.absolute.x = x;
-	mousecoords.absolute.y = y;
-}
-
-void InputManager::set_rel_mousecoords(float x, float y)
-{
-	mousecoords.relative.x = x;
-	mousecoords.relative.y = y;
-}
-
 void InputManager::update(void) 
 { 
 	//copy over keymap to previous keymap
 	for (auto &iter : keymap) {
 		previouskeys[iter.first] = iter.second;
 	}
+
+	int x, y;
+	SDL_GetRelativeMouseState(&x, &y);
+	mousecoords.relative.x = float(x);
+	mousecoords.relative.y = float(y);
 }
 
 void InputManager::press_key(uint32_t keyID)
