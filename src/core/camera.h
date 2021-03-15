@@ -20,6 +20,11 @@ public:
 	void target(const glm::vec2 &offset);
 	// direct the camera to look at a location
 	void lookat(const glm::vec3 &location);
+	// move the camera
+	void move_forward(float modifier);
+	void move_backward(float modifier);
+	void move_left(float modifier);
+	void move_right(float modifier);
 	// update view matrix
 	void update(void);
 private:

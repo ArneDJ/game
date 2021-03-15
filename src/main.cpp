@@ -81,6 +81,13 @@ void Game::update(void)
 	
 	glm::vec2 rel_mousecoords = inputman.rel_mousecoords();
 	camera.target(rel_mousecoords);
+
+	float modifier = 2.f * timer.delta;
+	if (inputman.key_down(SDLK_w)) { camera.move_forward(modifier); }
+	if (inputman.key_down(SDLK_s)) { camera.move_backward(modifier); }
+	if (inputman.key_down(SDLK_d)) { camera.move_right(modifier); }
+	if (inputman.key_down(SDLK_a)) { camera.move_left(modifier); }
+
 	camera.update();
 }
 

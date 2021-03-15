@@ -64,6 +64,28 @@ void Camera::target(const glm::vec2 &offset)
 	direction = glm::normalize(direction);
 }
 
+void Camera::move_forward(float modifier)
+{ 
+	position += modifier * direction;
+}
+
+void Camera::move_backward(float modifier)
+{
+	position -= modifier * direction;
+}
+
+void Camera::move_left(float modifier)
+{
+	glm::vec3 left = glm::cross(direction, UP_VECTOR);
+	position -= modifier * glm::normalize(left);
+}
+
+void Camera::move_right(float modifier)
+{
+	glm::vec3 right = glm::cross(direction, UP_VECTOR);
+	position += modifier * glm::normalize(right);
+}
+
 void Camera::update(void)
 {
 	viewing = glm::lookAt(position, position + direction, UP_VECTOR);
