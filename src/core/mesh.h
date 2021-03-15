@@ -15,10 +15,11 @@ struct primitive {
 
 class Mesh {
 public:
+	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords);
 	~Mesh(void);
 	void draw(void) const;
-private:
+public:
 	GLuint VAO = 0; // Vertex Array Object
 	GLuint VBO = 0; // Vertex Buffer Object
 	GLuint EBO = 0; // Element Buffer Object

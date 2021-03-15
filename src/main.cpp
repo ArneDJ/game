@@ -23,6 +23,7 @@
 #include "core/timer.h"
 #include "core/shader.h"
 #include "core/mesh.h"
+#include "core/sky.h"
 #include "core/texture.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -37,6 +38,7 @@ private:
 	Timer timer;
 	Shader shader;
 	Camera camera;
+	Skybox *skybox;
 	struct {
 		uint16_t window_width;
 		uint16_t window_height;
@@ -77,6 +79,9 @@ void Game::init(void)
 	// set OpenGL states
 	// TODO rendermanager should do this
 	glClearColor(1.f, 0.f, 1.f, 1.f);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -92,10 +97,14 @@ void Game::init(void)
 	camera.project();
 
 	SDL_SetRelativeMouseMode(SDL_FALSE);
+
+	skybox = new Skybox { glm::vec3(1.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f) };
 }
 
 void Game::teardown(void)
 {
+	delete skybox;
+
 	windowman.teardown();
 }
 
@@ -150,12 +159,14 @@ void Game::run(void)
 		timer.begin();
 		update();
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		shader.use();
 		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
 		shader.uniform_mat4("VP", camera.VP);
 		uncompressed.bind(GL_TEXTURE0);
 		triangle.draw();
+
+		skybox->display(camera.viewing, camera.projection);
 
 		windowman.swap();
 		timer.end();
