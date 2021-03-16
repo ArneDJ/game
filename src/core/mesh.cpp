@@ -99,7 +99,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 }
 	
-Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords)
+Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords, GLenum mode)
 {
 	const size_t position_size = sizeof(glm::vec3) * positions.size();
 	const size_t texcoord_size = sizeof(glm::vec2) * texcoords.size();
@@ -107,7 +107,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2>
 	// tell OpenGL how to render the buffer
 	struct primitive primi = {
 		0, 0, 0, GLsizei(positions.size()),
-		GL_TRIANGLES, false
+		mode, false
 	};
 
 	primitives.push_back(primi);

@@ -87,34 +87,6 @@ void Texture::bind(GLenum unit) const
 	glActiveTexture(unit);
 	glBindTexture(target, handle);
 }
-
-TextureManager::~TextureManager(void)
-{
-	for (auto it = textures.begin(); it != textures.end(); it++) {
-		Texture *texture = it->second;
-		delete texture;
-	}
-}
-	
-const Texture* TextureManager::add(const std::string &filepath)
-{
-	// lookup the texture and see if its in the map
-	uint64_t key = std::hash<std::string>()(filepath);
-	auto mit = textures.find(key);
-
-	// check if its not in the map
-	if (mit == textures.end()) {
-		// load the texture
-		Texture *texture = new Texture { filepath };
-
-		// insert it into the map
-		textures.insert(std::make_pair(key, texture));
-
-		return texture;
-	}
-
-	return mit->second;
-}
 	
 static inline GLenum texture_format(ddsktx_format format)
 {

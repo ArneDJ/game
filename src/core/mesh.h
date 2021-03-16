@@ -5,6 +5,7 @@ struct vertex {
 	glm::vec2 texcoord;
 };
 
+// pure buffer in bytes
 struct vertex_data {
 	std::vector<uint8_t> positions;
 	std::vector<uint8_t> normals;
@@ -26,7 +27,7 @@ class Mesh {
 public:
 	Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
-	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords);
+	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords, GLenum mode);
 	~Mesh(void);
 	void draw(void) const;
 public:

@@ -35,7 +35,6 @@ private:
 	bool running;
 	WindowManager windowman;
 	InputManager inputman;
-	TextureManager textureman;
 	Timer timer;
 	Shader object_shader;
 	Shader debug_shader;
@@ -86,6 +85,7 @@ void Game::init(void)
 	glCullFace(GL_BACK);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glLineWidth(5.f);
 
 	// load shaders
 	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
@@ -137,31 +137,25 @@ void Game::run(void)
 {
 	init();
 
-	const std::vector<glm::vec3> positions = {
-		{ -1.0, -1.0,  1.0 },
-		{ 1.0, -1.0,  1.0 },
-		{ 1.0,  1.0,  1.0 },
-		{ -1.0,  1.0,  1.0 },
-		{ -1.0, -1.0, -1.0 },
-		{ 1.0, -1.0, -1.0 },
-		{ 1.0,  1.0, -1.0 },
-		{ -1.0,  1.0, -1.0 }
-	};
-	// indices
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0,
-		1, 5, 6, 6, 2, 1,
-		7, 6, 5, 5, 4, 7,
-		4, 0, 3, 3, 7, 4,
-		4, 5, 1, 1, 0, 4,
-		3, 2, 6, 6, 7, 3
-	};
-	//Mesh cube = { positions, indices };
+	std::vector<glm::vec3> positions;
+	for (int i = -10; i < 11; i++) {
+		glm::vec3 a = { i, 0.f, -10.f };
+		glm::vec3 b = { i, 0.f, 10.f };
+		positions.push_back(a);
+		positions.push_back(b);
+	}
+	for (int i = -10; i < 11; i++) {
+		glm::vec3 a = { -10, 0.f, i };
+		glm::vec3 b = { 10.f, 0.f, i };
+		positions.push_back(a);
+		positions.push_back(b);
+	}
+	std::vector<glm::vec2> texcoords;
+	
+	Mesh grid = { positions, texcoords, GL_LINES };
 
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model cube = { "media/models/cube.glb", "media/textures/cube.dds" };
-
-	//const Texture *compressed = textureman.add("media/textures/cube.dds");
 
 	while (running) {
 		timer.begin();
@@ -172,8 +166,9 @@ void Game::run(void)
 		debug_shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
 		debug_shader.uniform_mat4("VP", camera.VP);
 		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
-		//cube.draw();
 		dragon.display();
+		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
+		grid.draw();
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 0.f)));

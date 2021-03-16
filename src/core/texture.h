@@ -18,12 +18,3 @@ private:
 
 // mutable OpenGL texture
 // class DynamicTexture
-
-// to prevent duplicate textures
-class TextureManager {
-public:
-	const Texture* add(const std::string &filepath);
-	~TextureManager(void);
-private:
-	std::map<uint64_t, Texture*> textures;
-};
