@@ -12,6 +12,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "btBulletDynamicsCommon.h"
+
 #include "extern/inih/INIReader.h"
 
 #include "extern/imgui/imgui.h"
@@ -31,6 +33,7 @@
 #include "core/texture.h"
 #include "core/model.h"
 #include "core/render.h"
+#include "core/physics.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 class Game {
@@ -42,6 +45,7 @@ private:
 	WindowManager windowman;
 	InputManager inputman;
 	RenderManager renderman;
+	PhysicsManager physicsman;
 	Timer timer;
 	Shader object_shader;
 	Shader debug_shader;

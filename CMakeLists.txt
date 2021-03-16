@@ -13,6 +13,9 @@ include_directories(GLEW::GLEW)
 
 find_package(OpenMP REQUIRED)
 
+# bullet physics
+include_directories("src/extern/bullet")
+
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/*.h"
@@ -29,4 +32,9 @@ if (UNIX)
 	target_link_libraries(${PROJECT_NAME} OpenGL::OpenGL)
 endif()
 target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+
+# link bullet static libraries
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libBulletDynamics.a)
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libBulletCollision.a)
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libLinearMath.a)
 
