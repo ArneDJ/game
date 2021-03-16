@@ -69,7 +69,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 	
 void Shader::link(void)
 {
-	program = glCreateProgram(); // TODO do this in constructor?
+	program = glCreateProgram();
 
 	// attach the shaders to the shader program
 	for (GLuint object : shaders) {

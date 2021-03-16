@@ -155,7 +155,7 @@ void Mesh::draw_instanced(GLsizei count)
 
 	for (const auto &prim : primitives) {
 		if (prim.indexed) {
-			glDrawElementsInstancedBaseVertex(prim.mode, prim.indexcount, GL_UNSIGNED_SHORT, (GLvoid *)((prim.firstindex)*typesize(indextype)), count, prim.firstvertex);
+			glDrawElementsInstancedBaseVertex(prim.mode, prim.indexcount, indextype, (GLvoid *)((prim.firstindex)*typesize(indextype)), count, prim.firstvertex);
 		} else {
 			glDrawArraysInstanced(prim.mode, prim.firstvertex, prim.vertexcount, count);
 		}
