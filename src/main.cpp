@@ -37,7 +37,8 @@ private:
 	InputManager inputman;
 	TextureManager textureman;
 	Timer timer;
-	Shader shader;
+	Shader object_shader;
+	Shader debug_shader;
 	Camera camera;
 	Skybox *skybox;
 	struct {
@@ -87,9 +88,13 @@ void Game::init(void)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// load shaders
-	shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
-	shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
-	shader.link();
+	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
+	debug_shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
+	debug_shader.link();
+
+	object_shader.compile("shaders/object.vert", GL_VERTEX_SHADER);
+	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
+	object_shader.link();
 
 	float aspect_ratio = float(settings.window_width) / float(settings.window_height);
 	camera.configure(0.1f, 9001.f, aspect_ratio, float(settings.FOV));
@@ -153,21 +158,27 @@ void Game::run(void)
 	};
 	//Mesh cube = { positions, indices };
 
-	GLTF::Model model = { "media/models/cube.glb" };
+	GLTF::Model dragon = { "media/models/dragon.glb" };
+	GLTF::Model cube = { "media/models/cube.glb" };
 
-	const Texture *compressed = textureman.add("media/textures/pepper.dds");
+	const Texture *compressed = textureman.add("media/textures/cube.dds");
 
 	while (running) {
 		timer.begin();
 		update();
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		shader.use();
-		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
-		shader.uniform_mat4("VP", camera.VP);
-		compressed->bind(GL_TEXTURE0);
+		debug_shader.use();
+		debug_shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
+		debug_shader.uniform_mat4("VP", camera.VP);
+		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
 		//cube.draw();
-		model.display();
+		dragon.display();
+		object_shader.use();
+		object_shader.uniform_mat4("VP", camera.VP);
+		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 0.f)));
+		compressed->bind(GL_TEXTURE0);
+		cube.display();
 
 		skybox->display(&camera);
 

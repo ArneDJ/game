@@ -1,10 +1,10 @@
 #version 430 core
 
-uniform mat4 P, V;
-
 layout(location = 0) in vec3 vposition;
 
 out vec3 texcoords;
+
+uniform mat4 P, V;
 
 void main()
 {

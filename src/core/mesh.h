@@ -5,6 +5,14 @@ struct vertex {
 	glm::vec2 texcoord;
 };
 
+struct vertex_data {
+	std::vector<uint8_t> positions;
+	std::vector<uint8_t> normals;
+	std::vector<uint8_t> texcoords;
+	std::vector<uint8_t> joints;
+	std::vector<uint8_t> weights;
+};
+
 struct primitive {
 	GLuint firstindex = 0;
 	GLsizei indexcount = 0;
@@ -16,7 +24,7 @@ struct primitive {
 
 class Mesh {
 public:
-	Mesh(const std::string &filepath); // load from GLTF file
+	Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords);
 	~Mesh(void);

@@ -1,8 +1,8 @@
 #version 430 core
 
-out vec4 fcolor;
-
 in vec3 texcoords;
+
+out vec4 fcolor;
 
 uniform vec3 COLOR_TOP;
 uniform vec3 COLOR_BOTTOM;

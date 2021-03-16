@@ -14,6 +14,53 @@
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 static size_t typesize(GLenum type);
+	
+Mesh::Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis)
+{
+	indextype = GL_UNSIGNED_SHORT;
+
+	primitives.insert(primitives.end(), primis.begin(), primis.end());
+
+	std::vector<GLubyte> buffer;
+	buffer.insert(buffer.end(), data->positions.begin(), data->positions.end());
+	buffer.insert(buffer.end(), data->normals.begin(), data->normals.end());
+	buffer.insert(buffer.end(), data->texcoords.begin(), data->texcoords.end());
+	buffer.insert(buffer.end(), data->joints.begin(), data->joints.end());
+	buffer.insert(buffer.end(), data->weights.begin(), data->weights.end());
+
+	// https://www.khronos.org/opengl/wiki/Buffer_Object
+	// In some cases, data stored in a buffer object will not be changed once it is uploaded. For example, vertex data can be static: set once and used many times.
+	// For these cases, you set flags to 0 and use data as the initial upload. From then on, you simply use the data in the buffer. This requires that you have assembled all of the static data up-front.
+	const GLbitfield flags = 0;
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, indices.size(), indices.data(), flags);
+
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferStorage(GL_ARRAY_BUFFER, buffer.size(), buffer.data(), flags);
+
+	// positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+	glEnableVertexAttribArray(0);
+	// normals
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 0, BUFFER_OFFSET(data->positions.size()));
+	glEnableVertexAttribArray(1);
+	// texcoords
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()));
+	glEnableVertexAttribArray(2);
+	// joints
+	glVertexAttribIPointer(3, 4, GL_UNSIGNED_SHORT, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()+data->texcoords.size()));
+	glEnableVertexAttribArray(3);
+	// weights
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()+data->texcoords.size()+data->joints.size()));
+	glEnableVertexAttribArray(4);
+
+}
 
 Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices)
 {

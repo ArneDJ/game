@@ -17,6 +17,7 @@
 #include "logger.h"
 #include "image.h"
 #include "texture.h"
+#include "mesh.h"
 #include "model.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
@@ -29,13 +30,10 @@ struct linkage {
 };
 
 static void print_gltf_error(cgltf_result error);
-static void append_buffer(const cgltf_accessor *accessor,  std::vector<unsigned char> &buffer);
+static void append_buffer(const cgltf_accessor *accessor,  std::vector<uint8_t> &buffer);
 static struct node load_node(const cgltf_node *gltfnode);
-static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_texture*, GLuint> &textures);
-static struct animation load_animation(const cgltf_animation *gltfanimation);
+//static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_texture*, GLuint> &textures);
 static struct skin load_skin(const cgltf_skin *gltfskin);
-//static GLuint load_texture(const cgltf_texture *gltftexture, std::string path);
-static struct material load_material(const cgltf_material *material, std::map<const cgltf_texture*, GLuint> &textures);
 static glm::mat4 local_node_transform(const struct node *n);
 static struct collision_mesh load_collision_mesh(const cgltf_mesh *mesh);
 
@@ -67,10 +65,8 @@ Model::Model(const std::string &filepath)
 
 Model::~Model(void)
 {
-	for (struct mesh &m : meshes) {
-		glDeleteBuffers(1, &m.EBO);
-		glDeleteBuffers(1, &m.VBO);
-		glDeleteVertexArrays(1, &m.VAO);
+	for (int i = 0; i < meshes.size(); i++) {
+		delete meshes[i];
 	}
 
 	/*
@@ -100,22 +96,15 @@ void Model::load_data(const std::string &filepath, const cgltf_data *data)
 	}
 	*/
 	// load mesh data
-	meshes.resize(data->meshes_count);
 	for (int i = 0; i < data->meshes_count; i++) {
 		std::string mesh_name = data->meshes[i].name ? data->meshes[i].name : std::to_string(i);
 		if (mesh_name == "collision_mesh") {
 			colmesh = load_collision_mesh(&data->meshes[i]);
 		} else {
-			meshes[i] = load_mesh(&data->meshes[i], link.textures);
+			load_mesh(&data->meshes[i]);
 		}
 	}
-	// load animation data
-	/*
-	animations.resize(data->animations_count);
-	for (int i = 0; i < data->animations_count; i++) {
-		animations[i] = load_animation(&data->animations[i]);
-	}
-	*/
+
 	// load skin data
 	skins.resize(data->skins_count);
 	for (int i = 0; i < data->skins_count; i++) {
@@ -131,14 +120,7 @@ void Model::load_data(const std::string &filepath, const cgltf_data *data)
 			nodes[i].children.push_back(link.nodes[data->nodes[i].children[j]]);
 		}
 	}
-	/*
-	for (int i = 0; i < data->animations_count; i++) {
-		for (int j = 0; j < data->animations[i].channels_count; j++) {
-			struct node *n = link.nodes[data->animations[i].channels[j].target_node];
-			animations[i].channels[j].target = n;
-		}
-	}
-	*/
+
 	for (int i = 0; i < data->skins_count; i++) {
 		skins[i].root = link.nodes[data->skins[i].skeleton];
 		for (int j = 0; j < data->skins[i].joints_count; j++) {
@@ -148,90 +130,16 @@ void Model::load_data(const std::string &filepath, const cgltf_data *data)
 	}
 }
 
-/*
-void Model::animate(int index, float time)
-{
-	if (animations.empty()) {
-		printf("model does not contain animations\n");
-		return;
-	}
-	if (index > animations.size()-1) {
-		printf("no animation with index %d\n", index);
-		return;
-	}
-
-	struct animation &anim = animations[index];
-	time = fmod(time, anim.end);
-	for (auto &channel : anim.channels) {
-		if (channel.inputs.size() > channel.outputs.size()) { continue; }
-		for (size_t i = 0; i < channel.inputs.size()-1; i++) {
-			if ((time >= channel.inputs[i]) && (time <= channel.inputs[i + 1])) {
-				float interpolation = std::max(0.f, time - channel.inputs[i]) / (channel.inputs[i+1] - channel.inputs[i]);
-				interpolation = glm::clamp(interpolation, 0.f, 1.f);
-				switch (channel.path) {
-				case TRANSLATION: {
-					glm::vec4 trans = glm::mix(channel.outputs[i], channel.outputs[i + 1], interpolation);
-					channel.target->translation = glm::vec3(trans);
-					break;
-				}
-				case SCALE: {
-					glm::vec4 trans = glm::mix(channel.outputs[i], channel.outputs[i + 1], interpolation);
-					channel.target->scale = glm::vec3(trans);
-					break;
-				}
-				case ROTATION: {
-					glm::quat q1;
-					q1.x = channel.outputs[i].x;
-					q1.y = channel.outputs[i].y;
-					q1.z = channel.outputs[i].z;
-					q1.w = channel.outputs[i].w;
-					glm::quat q2;
-					q2.x = channel.outputs[i + 1].x;
-					q2.y = channel.outputs[i + 1].y;
-					q2.z = channel.outputs[i + 1].z;
-					q2.w = channel.outputs[i + 1].w;
-					channel.target->rotation = glm::normalize(glm::slerp(q1, q2, interpolation));
-					break;
-				}
-				}
-			}
-		}
-	}
-
-	// update the joint matrices
-	std::vector<glm::mat4> matrices;
-	for (struct skin &skeleton : skins) {
-		glm::mat4 root_transform = skeleton.root ? local_node_transform(skeleton.root) : glm::mat4(1.f);
-		//glm::mat4 inverse_root_transform = glm::inverse(root_transform);
-		for (int i = 0; i < skeleton.joints.size(); i++) {
-			struct node *joint = skeleton.joints[i];
-			glm::mat4 joint_transform = global_node_transform(joint) * skeleton.inversebinds[i];
-			glm::mat4 joint_matrix = joint_transform;
-			matrices.push_back(joint_matrix);
-		}
-	}
-	//glBindBuffer(GL_TEXTURE_BUFFER, joint_matrices.buffer);
-	//glBufferData(GL_TEXTURE_BUFFER, matrices.size()*sizeof(glm::mat4), matrices.data(), GL_DYNAMIC_DRAW);
-}
-*/
-
 void Model::display(void) const
 {
-	for (const struct mesh &m : meshes) {
-		glBindVertexArray(m.VAO);
-		for (const struct primitive &prim : m.primitives) {
-			//activate_texture(GL_TEXTURE0, GL_TEXTURE_2D, prim.mat.colormap);
-			if (prim.indexed) {
-				glDrawElementsBaseVertex(prim.mode, prim.indexcount, GL_UNSIGNED_SHORT, (GLvoid *)((prim.firstindex)*sizeof(GLushort)), prim.firstvertex);
-			} else {
-				glDrawArrays(prim.mode, prim.firstvertex, prim.vertexcount);
-			}
-		}
+	for (auto mesh : meshes) {
+		mesh->draw();
 	}
 }
 
 void Model::display_instanced(GLsizei count) const
 {
+	/*
 	for (const struct mesh &m : meshes) {
 		glBindVertexArray(m.VAO);
 		for (const struct primitive &prim : m.primitives) {
@@ -243,6 +151,7 @@ void Model::display_instanced(GLsizei count) const
 			}
 		}
 	}
+	*/
 }
 
 static struct node load_node(const cgltf_node *gltfnode)
@@ -286,28 +195,22 @@ static inline GLenum primitive_mode(cgltf_primitive_type type)
 	}
 }
 
-static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_texture*, GLuint> &textures)
+void Model::load_mesh(const cgltf_mesh *gltfmesh)
 {
-	struct mesh meshie;
-	meshie.name = gltfmesh->name ? gltfmesh->name : "unnamed";
-	meshie.VAO = meshie.VBO = meshie.EBO = 0;
-
 	 // index buffer
-	std::vector<unsigned char> indices;
-	// vertex buffers
-	std::vector<unsigned char> positions;
-	std::vector<unsigned char> normals;
-	std::vector<unsigned char> texcoords;
-	std::vector<unsigned char> joints;
-	std::vector<unsigned char> weights;
+	std::vector<uint8_t> indices;
+	// vertex buffer
+	struct vertex_data vertices;
 
-	unsigned int vertexstart = 0;
-	unsigned int indexstart = 0;
+	std::vector<struct primitive> primitives;
+
+	uint32_t vertexstart = 0;
+	uint32_t indexstart = 0;
 	for (int i = 0; i < gltfmesh->primitives_count; i++) {
 		const cgltf_primitive *primitive = &gltfmesh->primitives[i];
 
 		// import index data
-		unsigned int indexcount = 0;
+		uint32_t indexcount = 0;
 		if (primitive->indices) {
 			indexcount = primitive->indices->count;
 			append_buffer(primitive->indices, indices);
@@ -315,25 +218,25 @@ static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_te
 
 		// An accessor also contains min and max properties that summarize the contents of their data. They are the component-wise minimum and maximum values of all data elements contained in the accessor. In the case of vertex positions, the min and max properties thus define the bounding box of an object.
 		// import vertex data
-		unsigned int vertexcount = 0;
+		uint32_t vertexcount = 0;
 		for (int j = 0; j < primitive->attributes_count; j++) {
 			const cgltf_attribute *attribute = &primitive->attributes[j];
 			switch (attribute->type) {
 			case cgltf_attribute_type_position:
 			vertexcount = attribute->data->count;
-			append_buffer(attribute->data, positions);
+			append_buffer(attribute->data, vertices.positions);
 			break;
 			case cgltf_attribute_type_normal:
-			append_buffer(attribute->data, normals);
+			append_buffer(attribute->data, vertices.normals);
 			break;
 			case cgltf_attribute_type_texcoord:
-			append_buffer(attribute->data, texcoords);
+			append_buffer(attribute->data, vertices.texcoords);
 			break;
 			case cgltf_attribute_type_joints:
-			append_buffer(attribute->data, joints);
+			append_buffer(attribute->data, vertices.joints);
 			break;
 			case cgltf_attribute_type_weights:
-			append_buffer(attribute->data, weights);
+			append_buffer(attribute->data, vertices.weights);
 			break;
 			}
 		}
@@ -345,115 +248,15 @@ static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_te
 		prim.vertexcount = vertexcount;
 		prim.mode = primitive_mode(primitive->type);
 		prim.indexed = indexcount > 0;
-		prim.mat = load_material(primitive->material, textures);
 
-		meshie.primitives.push_back(prim);
+		primitives.push_back(prim);
 
 		vertexstart += vertexcount;
 		indexstart += indexcount;
 	}
 
-	std::vector<GLubyte> buffer;
-	buffer.insert(buffer.end(), positions.begin(), positions.end());
-	buffer.insert(buffer.end(), normals.begin(), normals.end());
-	buffer.insert(buffer.end(), texcoords.begin(), texcoords.end());
-	buffer.insert(buffer.end(), joints.begin(), joints.end());
-	buffer.insert(buffer.end(), weights.begin(), weights.end());
-
-	// https://www.khronos.org/opengl/wiki/Buffer_Object
-	// In some cases, data stored in a buffer object will not be changed once it is uploaded. For example, vertex data can be static: set once and used many times.
-	// For these cases, you set flags to 0 and use data as the initial upload. From then on, you simply use the data in the buffer. This requires that you have assembled all of the static data up-front.
-	const GLbitfield flags = 0;
-
-	glGenVertexArrays(1, &meshie.VAO);
-	glBindVertexArray(meshie.VAO);
-
-	glGenBuffers(1, &meshie.EBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshie.EBO);
-	glBufferStorage(GL_ELEMENT_ARRAY_BUFFER, indices.size(), indices.data(), flags);
-
-	glGenBuffers(1, &meshie.VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, meshie.VBO);
-	glBufferStorage(GL_ARRAY_BUFFER, buffer.size(), buffer.data(), flags);
-
-	// positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-	glEnableVertexAttribArray(0);
-	// normals
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 0, BUFFER_OFFSET(positions.size()));
-	glEnableVertexAttribArray(1);
-	// texcoords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(positions.size()+normals.size()));
-	glEnableVertexAttribArray(2);
-	// joints
-	glVertexAttribIPointer(3, 4, GL_UNSIGNED_SHORT, 0, BUFFER_OFFSET(positions.size()+normals.size()+texcoords.size()));
-	glEnableVertexAttribArray(3);
-	// weights
-	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(positions.size()+normals.size()+texcoords.size()+joints.size()));
-	glEnableVertexAttribArray(4);
-
-	return meshie;
-}
-
-static struct animation load_animation(const cgltf_animation *gltfanimation)
-{
-	struct animation anim;
-	 
-	anim.name = gltfanimation->name ? gltfanimation->name : "unnamed";
-
-	// load channels
-	anim.channels.resize(gltfanimation->channels_count);
-	for (int i = 0; i < gltfanimation->channels_count; i++) {
-		const cgltf_animation_channel *gltfchannel = &gltfanimation->channels[i];
-		struct animationchannel channel;
-
-		switch (gltfchannel->target_path) {
-		case cgltf_animation_path_type_translation: channel.path = TRANSLATION; break;
-		case cgltf_animation_path_type_rotation: channel.path = ROTATION; break;
-		case cgltf_animation_path_type_scale: channel.path = SCALE; break;
-		default: printf("this is impossible\n");
-		}
-
-		// sampler input
-		const cgltf_animation_sampler *gltfsampler = gltfchannel->sampler;
-		{
-		size_t count = gltfsampler->input->count;
-		float *buf = new float[count];
-		cgltf_accessor_unpack_floats(gltfsampler->input, buf, count);
-		for (size_t index = 0; index < count; index++) {
-			float input = buf[index];
-			if (input < anim.start) { anim.start = input; };
-			if (input > anim.end) { anim.end = input; }
-			channel.inputs.push_back(input);
-		}
-		delete buf;
-		}
-		// sampler output
-		if (gltfsampler->output->type == cgltf_type_vec3) {
-			size_t count = gltfsampler->output->count * 3;
-			float *buf = new float[count];
-			cgltf_accessor_unpack_floats(gltfsampler->output, buf, count);
-			for (int index = 0; index < count; index += 3) {
-				glm::vec3 t = glm::make_vec3(&buf[index]);
-				channel.outputs.push_back(glm::vec4(t, 1.f));
-			}
-			delete buf;
-		} else if (gltfsampler->output->type == cgltf_type_vec4) {
-			size_t count = gltfsampler->output->count * 4;
-			float *buf = new float[count];
-			cgltf_accessor_unpack_floats(gltfsampler->output, buf, count);
-			for (int index = 0; index < count; index += 4) {
-				channel.outputs.push_back(glm::make_vec4(&buf[index]));
-			}
-			delete buf;
-		} else {
-			printf("gltf animation import warning: unknown type\n");
-		}
-
-		anim.channels[i] = channel;
-	}
-
-	return anim;
+	Mesh *mesh = new Mesh { &vertices, indices, primitives }; 
+	meshes.push_back(mesh);
 }
 
 static struct skin load_skin(const cgltf_skin *gltfskin)
@@ -480,75 +283,12 @@ static struct skin load_skin(const cgltf_skin *gltfskin)
 	return skinny;
 }
 
-	/*
-static GLuint load_texture(const cgltf_texture *gltftexture, std::string path)
-{
-	GLuint tex = 0;
-
-	if (gltftexture->image->buffer_view) { // embedded PNG image
-		const cgltf_buffer_view *view = gltftexture->image->buffer_view;
-		unsigned char *buf = (unsigned char*)view->buffer->data + view->offset;
-		int x, y;
-		int nchannels;
-		unsigned char *texels = stbi_load_from_memory(buf, view->size, &x, &y, &nchannels, 4);
-		if (texels) {
-			GLenum format = GL_RGBA;
-			GLenum internalformat = GL_RGB5_A1;
-			tex = standard_2D_texture(texels, x, y, internalformat, format, GL_UNSIGNED_BYTE);
-			free(texels);
-		}
-	} else { // external DDS image
-		std::string filepath = path + gltftexture->image->uri;
-		tex = load_DDS(filepath.c_str());
-	}
-
-	return tex;
-}
-	*/
-
-static struct material load_material(const cgltf_material *material, std::map<const cgltf_texture*, GLuint> &textures)
-{
-	struct material mat;
-	mat.colormap = 0;
-	mat.metalroughmap = 0;
-	mat.normalmap = 0;
-	mat.occlusionmap = 0;
-	mat.emissivemap = 0;
-
-	if (material) {
-		if (material->has_pbr_metallic_roughness) { // PBR maps
-			const cgltf_texture *base_color = material->pbr_metallic_roughness.base_color_texture.texture;
-			if (base_color) { mat.colormap = textures[base_color]; }
-
-			const cgltf_texture *metallic_roughness = material->pbr_metallic_roughness.metallic_roughness_texture.texture;
-			if (metallic_roughness) { mat.metalroughmap = textures[metallic_roughness]; }
-		} else if (material->has_pbr_specular_glossiness) { // blinn phong maps
-			const cgltf_texture *base_color = material->pbr_specular_glossiness.diffuse_texture.texture;
-			if (base_color) { mat.colormap = textures[base_color]; }
-
-			const cgltf_texture *metallic_roughness = material->pbr_specular_glossiness.specular_glossiness_texture.texture;
-			if (metallic_roughness) { mat.metalroughmap = textures[metallic_roughness]; }
-		}
-
-		const cgltf_texture *normal_texture = material->normal_texture.texture;
-		if (normal_texture) { mat.normalmap = textures[normal_texture]; }
-
-		const cgltf_texture *occlusion_texture = material->occlusion_texture.texture;
-		if (occlusion_texture) { mat.normalmap = textures[occlusion_texture]; }
-
-		const cgltf_texture *emissive_texture = material->emissive_texture.texture;
-		if (emissive_texture) { mat.normalmap = textures[emissive_texture]; }
-	}
-
-	return mat;
-}
-
-static void append_buffer(const cgltf_accessor *accessor,  std::vector<unsigned char> &buffer)
+static void append_buffer(const cgltf_accessor *accessor,  std::vector<uint8_t> &buffer)
 {
 	const cgltf_buffer_view *view = accessor->buffer_view;
 	size_t type_size = cgltf_component_size(accessor->component_type) * cgltf_num_components(accessor->type); // example vec3 = 4 byte * 3 float
 
-	unsigned char *data = (unsigned char*)view->buffer->data + view->offset;
+	uint8_t *data = (uint8_t*)view->buffer->data + view->offset;
 	if (view->stride > 0) { // attribute data is interleaved
 		for (size_t stride = accessor->offset; stride < view->size; stride += view->stride) {
 			buffer.insert(buffer.end(), data + stride, data + stride + type_size);
@@ -579,8 +319,8 @@ static struct collision_mesh load_collision_mesh(const cgltf_mesh *gltfmesh)
 {
 	struct collision_mesh meshie;
 
-	std::vector<unsigned char> indices;
-	std::vector<unsigned char> positions;
+	std::vector<uint8_t> indices;
+	std::vector<uint8_t> positions;
   	unsigned int vertexstart = 0;
   	unsigned int indexstart = 0;
 	for (int i = 0; i < gltfmesh->primitives_count; i++) {
@@ -647,4 +387,3 @@ static void print_gltf_error(cgltf_result error)
 		break;
 	};
 }
-	
