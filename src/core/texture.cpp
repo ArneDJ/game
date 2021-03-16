@@ -62,10 +62,10 @@ Texture::Texture(const Image *image)
 
 Texture::~Texture(void)
 {
-	clear();
+	cleanup();
 }
 	
-void Texture::clear(void)
+void Texture::cleanup(void)
 {
 	if (glIsTexture(handle) == GL_TRUE) {
 		glDeleteTextures(1, &handle);
@@ -76,7 +76,7 @@ void Texture::clear(void)
 void Texture::load(const std::string &filepath)
 {
 	// first delete texture data if it is present
-	clear();
+	cleanup();
 
 	// then create texture from DDS file
 	handle = load_DDS(filepath);

@@ -18,6 +18,8 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.h"
         "${PROJECT_SOURCE_DIR}/src/core/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/core/*.h"
+        "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.h"
 )
 
 add_executable(${PROJECT_NAME} ${all_SRCS})

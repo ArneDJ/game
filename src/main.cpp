@@ -14,6 +14,10 @@
 
 #include "extern/inih/INIReader.h"
 
+#include "extern/imgui/imgui.h"
+#include "extern/imgui/imgui_impl_sdl.h"
+#include "extern/imgui/imgui_impl_opengl3.h"
+
 #include "core/logger.h"
 #include "core/image.h"
 #include "core/entity.h"
@@ -105,10 +109,27 @@ void Game::init(void)
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
 	skybox = new Skybox { glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f) };
+
+	// TODO move this to debugger
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO(); (void)io;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+
+	// Setup Platform/Renderer bindings
+	ImGui_ImplSDL2_InitForOpenGL(windowman.window, windowman.glcontext);
+	ImGui_ImplOpenGL3_Init("#version 430");
 }
 
 void Game::teardown(void)
 {
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
 	delete skybox;
 
 	windowman.teardown();
@@ -175,6 +196,19 @@ void Game::run(void)
 		cube.display();
 
 		skybox->display(&camera);
+
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(windowman.window);
+		ImGui::NewFrame();
+		ImGui::Begin("Debug Mode");
+		ImGui::SetWindowSize(ImVec2(400, 200));
+		if (ImGui::Button("Exit")) { running = false; }
+		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+		ImGui::End();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		windowman.swap();
 		timer.end();

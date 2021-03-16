@@ -13,7 +13,7 @@ private:
 	GLuint handle = 0;
 	GLenum target = GL_TEXTURE_2D; // usually GL_TEXTURE_2D
 private:
-	void clear(void);
+	void cleanup(void);
 };
 
 // mutable OpenGL texture
