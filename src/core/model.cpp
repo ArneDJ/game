@@ -338,15 +338,15 @@ static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_te
 			}
 		}
 
-		struct primitive prim = {
-			.firstindex = indexstart,
-			.indexcount = indexcount,
-			.firstvertex = vertexstart,
-			.vertexcount = vertexcount,
-			.mode = primitive_mode(primitive->type),
-			.indexed = indexcount > 0,
-			.mat = load_material(primitive->material, textures)
-		};
+		struct primitive prim;
+		prim.firstindex = indexstart;
+		prim.indexcount = indexcount;
+		prim.firstvertex = vertexstart;
+		prim.vertexcount = vertexcount;
+		prim.mode = primitive_mode(primitive->type);
+		prim.indexed = indexcount > 0;
+		prim.mat = load_material(primitive->material, textures);
+
 		meshie.primitives.push_back(prim);
 
 		vertexstart += vertexcount;
@@ -508,13 +508,12 @@ static GLuint load_texture(const cgltf_texture *gltftexture, std::string path)
 
 static struct material load_material(const cgltf_material *material, std::map<const cgltf_texture*, GLuint> &textures)
 {
-	struct material mat = {
-		.colormap = 0,
-		.metalroughmap = 0,
-		.normalmap = 0,
-		.occlusionmap = 0,
-		.emissivemap = 0,
-	};
+	struct material mat;
+	mat.colormap = 0;
+	mat.metalroughmap = 0;
+	mat.normalmap = 0;
+	mat.occlusionmap = 0;
+	mat.emissivemap = 0;
 
 	if (material) {
 		if (material->has_pbr_metallic_roughness) { // PBR maps
