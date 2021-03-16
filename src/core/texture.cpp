@@ -20,6 +20,7 @@ static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei
 Texture::Texture(const std::string &filepath)
 {
 	target = GL_TEXTURE_2D;
+	handle = 0;
 
 	FILE *file = fopen(filepath.c_str(), "rb");
 	if (file == nullptr) {
@@ -46,6 +47,7 @@ Texture::Texture(const std::string &filepath)
 Texture::Texture(const Image *image)
 {
 	target = GL_TEXTURE_2D;
+	handle = 0;
 
 	GLenum internalformat = 0;
 	GLenum format = 0;

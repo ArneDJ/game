@@ -1,4 +1,5 @@
 
+// only used for debugging
 struct vertex {
 	glm::vec3 position;
 	glm::vec2 texcoord;
@@ -15,6 +16,7 @@ struct primitive {
 
 class Mesh {
 public:
+	Mesh(const std::string &filepath); // load from GLTF file
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords);
 	~Mesh(void);

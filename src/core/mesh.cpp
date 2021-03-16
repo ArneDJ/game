@@ -8,21 +8,13 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "logger.h"
 #include "mesh.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
-static size_t typesize(GLenum type)
-{
-	switch (type) {
-	case GL_UNSIGNED_BYTE: return sizeof(GLubyte);
-	case GL_UNSIGNED_SHORT: return sizeof(GLushort);
-	case GL_UNSIGNED_INT: return sizeof(GLuint);
-	};
+static size_t typesize(GLenum type);
 
-	return 0;
-}
-	
 Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices)
 {
 	const size_t position_size = sizeof(glm::vec3) * positions.size();
@@ -108,4 +100,15 @@ void Mesh::draw(void) const
 			glDrawArrays(prim.mode, prim.firstvertex, prim.vertexcount);
 		}
 	}
+}
+
+static size_t typesize(GLenum type)
+{
+	switch (type) {
+	case GL_UNSIGNED_BYTE: return sizeof(GLubyte);
+	case GL_UNSIGNED_SHORT: return sizeof(GLushort);
+	case GL_UNSIGNED_INT: return sizeof(GLuint);
+	};
+
+	return 0;
 }

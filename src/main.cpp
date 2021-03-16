@@ -25,6 +25,7 @@
 #include "core/mesh.h"
 #include "core/sky.h"
 #include "core/texture.h"
+#include "core/model.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 class Game {
@@ -92,13 +93,13 @@ void Game::init(void)
 
 	float aspect_ratio = float(settings.window_width) / float(settings.window_height);
 	camera.configure(0.1f, 9001.f, aspect_ratio, float(settings.FOV));
-	camera.position = { 0.f, 0.f, 1.f };
+	camera.position = { 0.f, 0.f, 5.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	camera.project();
 
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
-	skybox = new Skybox { glm::vec3(1.f, 0.f, 1.f), glm::vec3(0.f, 1.f, 0.f) };
+	skybox = new Skybox { glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f) };
 }
 
 void Game::teardown(void)
@@ -131,27 +132,28 @@ void Game::run(void)
 {
 	init();
 
-	const std::vector<glm::vec3> vertices = {
-		{ -0.5f, -0.5f, 0.0f }, 
-		{ 0.5f, -0.5f, 0.0f },
-		{ -0.5f,  0.5f, 0.0f },
-		{ 0.5f, -0.5f, 0.0f },
-		{ -0.5f,  0.5f, 0.0f },
-		{ 0.5f, 0.5f, 0.0f } 
+	const std::vector<glm::vec3> positions = {
+		{ -1.0, -1.0,  1.0 },
+		{ 1.0, -1.0,  1.0 },
+		{ 1.0,  1.0,  1.0 },
+		{ -1.0,  1.0,  1.0 },
+		{ -1.0, -1.0, -1.0 },
+		{ 1.0, -1.0, -1.0 },
+		{ 1.0,  1.0, -1.0 },
+		{ -1.0,  1.0, -1.0 }
 	};
-	const std::vector<glm::vec2> texcoords = {
-		{ 0.f, 1.f },
-		{ 1.f, 1.f },
-		{ 0.f,  0.f },
-		{ 1.f, 1.f },
-		{ 0.f, 0.f },
-		{ 1.,  0.f }
+	// indices
+	const std::vector<uint16_t> indices = {
+		0, 1, 2, 2, 3, 0,
+		1, 5, 6, 6, 2, 1,
+		7, 6, 5, 5, 4, 7,
+		4, 0, 3, 3, 7, 4,
+		4, 5, 1, 1, 0, 4,
+		3, 2, 6, 6, 7, 3
 	};
-	Mesh triangle = { vertices, texcoords };
+	//Mesh cube = { positions, indices };
 
-	Image image = { "media/textures/pepper.png" };
-	image.blur(10.f);
-	Texture uncompressed = { &image };
+	GLTF::Model model = { "media/models/cube.glb" };
 
 	const Texture *compressed = textureman.add("media/textures/pepper.dds");
 
@@ -163,10 +165,11 @@ void Game::run(void)
 		shader.use();
 		shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
 		shader.uniform_mat4("VP", camera.VP);
-		uncompressed.bind(GL_TEXTURE0);
-		triangle.draw();
+		compressed->bind(GL_TEXTURE0);
+		//cube.draw();
+		model.display();
 
-		skybox->display(camera.viewing, camera.projection);
+		skybox->display(&camera);
 
 		windowman.swap();
 		timer.end();

@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "camera.h"
 #include "shader.h"
 #include "mesh.h"
 #include "sky.h"
@@ -48,17 +49,15 @@ Skybox::~Skybox(void)
 	delete cubemap;
 }
 	
-void Skybox::display(glm::mat4 view, glm::mat4 project)
+void Skybox::display(const Camera *camera)
 {
 	shader.use();
 	shader.uniform_vec3("COLOR_TOP", colortop);
 	shader.uniform_vec3("COLOR_BOTTOM", colorbottom);
-	shader.uniform_mat4("V", view);
-	shader.uniform_mat4("P", project);
+	shader.uniform_mat4("V", camera->viewing);
+	shader.uniform_mat4("P", camera->projection);
 
 	glDepthFunc(GL_LEQUAL);
 	cubemap->draw();
-	//glBindVertexArray(cube.VAO);
-	//glDrawElements(cube.mode, cube.ecount, GL_UNSIGNED_SHORT, NULL);
 	glDepthFunc(GL_LESS);
 }
