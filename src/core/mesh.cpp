@@ -149,6 +149,19 @@ void Mesh::draw(void) const
 	}
 }
 
+void Mesh::draw_instanced(GLsizei count) 
+{
+	glBindVertexArray(VAO);
+
+	for (const auto &prim : primitives) {
+		if (prim.indexed) {
+			glDrawElementsInstancedBaseVertex(prim.mode, prim.indexcount, GL_UNSIGNED_SHORT, (GLvoid *)((prim.firstindex)*typesize(indextype)), count, prim.firstvertex);
+		} else {
+			glDrawArraysInstanced(prim.mode, prim.firstvertex, prim.vertexcount, count);
+		}
+	}
+}
+
 static size_t typesize(GLenum type)
 {
 	switch (type) {

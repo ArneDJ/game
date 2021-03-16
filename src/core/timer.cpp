@@ -14,4 +14,9 @@ void Timer::end(void)
 
 	delta = duration.count();
 	elapsed += delta;
+
+	tick_count++;
+	if (tick_count % 10 == 0) {
+		ms_per_frame = uint32_t(1000 * delta);
+	}
 }

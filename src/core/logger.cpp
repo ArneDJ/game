@@ -5,8 +5,8 @@
 
 extern void write_log(LogType type, const std::string &message)
 {
-	std::ofstream error("error.txt", std::ios::app);
-	std::ofstream runtime("runtime.txt", std::ios::app);
+	std::ofstream error("error.log", std::ios::app);
+	std::ofstream runtime("runtime.log", std::ios::app);
 
 	switch (type) {
 	case LogType::ERROR:

@@ -30,6 +30,7 @@ public:
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords, GLenum mode);
 	~Mesh(void);
 	void draw(void) const;
+	void draw_instanced(GLsizei count);
 public:
 	GLuint VAO = 0; // Vertex Array Object
 	GLuint VBO = 0; // Vertex Buffer Object

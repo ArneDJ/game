@@ -175,8 +175,34 @@ void Game::run(void)
 	
 	Mesh grid = { positions, texcoords, GL_LINES };
 
+	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model cube = { "media/models/cube.glb", "media/textures/cube.dds" };
+
+	std::vector<glm::mat4> transforms;
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+			for (int k = 0; k < 20; k++) {
+				transforms.push_back(glm::translate(glm::mat4(1.f), glm::vec3(i+i - 10.f, k+k, j+j + 10.f)));
+
+			}
+		}
+	}
+	GLuint texture;
+	GLuint buffer;
+	GLenum usage = GL_STATIC_DRAW;
+	// prepare the transform TBO
+	GLsizei size = transforms.size() * sizeof(glm::mat4);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_BUFFER, texture);
+
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_TEXTURE_BUFFER, buffer);
+	glBufferData(GL_TEXTURE_BUFFER, size, NULL, usage);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, buffer);
+
+	glBindBuffer(GL_TEXTURE_BUFFER, buffer);
+	glBufferData(GL_TEXTURE_BUFFER, size, transforms.data(), usage);
 
 	while (running) {
 		timer.begin();
@@ -192,8 +218,14 @@ void Game::run(void)
 		grid.draw();
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
+		object_shader.uniform_bool("INSTANCED", false);
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 0.f)));
 		cube.display();
+
+		object_shader.uniform_bool("INSTANCED", true);
+		glActiveTexture(GL_TEXTURE10);
+		glBindTexture(GL_TEXTURE_BUFFER, texture);
+		duck.display_instanced(transforms.size());
 
 		skybox->display(&camera);
 
@@ -204,6 +236,7 @@ void Game::run(void)
 		ImGui::Begin("Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		if (ImGui::Button("Exit")) { running = false; }
+		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
 		ImGui::End();
 

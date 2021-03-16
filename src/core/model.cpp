@@ -128,19 +128,10 @@ void Model::display(void) const
 void Model::display_instanced(GLsizei count) const
 {
 	diffuse.bind(GL_TEXTURE0);
-	/*
-	for (const struct mesh &m : meshes) {
-		glBindVertexArray(m.VAO);
-		for (const struct primitive &prim : m.primitives) {
-			//activate_texture(GL_TEXTURE0, GL_TEXTURE_2D, prim.mat.colormap);
-			if (prim.indexed) {
-				glDrawElementsInstancedBaseVertex(prim.mode, prim.indexcount, GL_UNSIGNED_SHORT, (GLvoid *)((prim.firstindex)*sizeof(GLushort)), count, prim.firstvertex);
-			} else {
-				glDrawArraysInstanced(prim.mode, prim.firstvertex, prim.vertexcount, count);
-			}
-		}
+
+	for (auto mesh : meshes) {
+		mesh->draw_instanced(count);
 	}
-	*/
 }
 
 static struct node load_node(const cgltf_node *gltfnode)
