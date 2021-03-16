@@ -158,10 +158,10 @@ void Game::run(void)
 	};
 	//Mesh cube = { positions, indices };
 
-	GLTF::Model dragon = { "media/models/dragon.glb" };
-	GLTF::Model cube = { "media/models/cube.glb" };
+	GLTF::Model dragon = { "media/models/dragon.glb", "" };
+	GLTF::Model cube = { "media/models/cube.glb", "media/textures/cube.dds" };
 
-	const Texture *compressed = textureman.add("media/textures/cube.dds");
+	//const Texture *compressed = textureman.add("media/textures/cube.dds");
 
 	while (running) {
 		timer.begin();
@@ -177,7 +177,6 @@ void Game::run(void)
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 0.f)));
-		compressed->bind(GL_TEXTURE0);
 		cube.display();
 
 		skybox->display(&camera);

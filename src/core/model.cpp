@@ -32,12 +32,11 @@ struct linkage {
 static void print_gltf_error(cgltf_result error);
 static void append_buffer(const cgltf_accessor *accessor,  std::vector<uint8_t> &buffer);
 static struct node load_node(const cgltf_node *gltfnode);
-//static struct mesh load_mesh(const cgltf_mesh *gltfmesh, std::map<const cgltf_texture*, GLuint> &textures);
 static struct skin load_skin(const cgltf_skin *gltfskin);
 static glm::mat4 local_node_transform(const struct node *n);
 static struct collision_mesh load_collision_mesh(const cgltf_mesh *mesh);
 
-Model::Model(const std::string &filepath)
+Model::Model(const std::string &filepath, const std::string &diffusepath)
 {
 	cgltf_options options;
 	memset(&options, 0, sizeof(cgltf_options));
@@ -61,6 +60,8 @@ Model::Model(const std::string &filepath)
 	}
 		
 	cgltf_free(data);
+
+	if (diffusepath.size() > 0) { diffuse.load(diffusepath); }
 }
 
 Model::~Model(void)
@@ -68,15 +69,9 @@ Model::~Model(void)
 	for (int i = 0; i < meshes.size(); i++) {
 		delete meshes[i];
 	}
-
-	/*
-	for (GLuint texture : textures) {
-		delete_texture(texture);
-	}
-	*/
 }
 
-void Model::load_data(const std::string &filepath, const cgltf_data *data)
+void Model::load_data(const std::string &fpath, const cgltf_data *data)
 {
 	struct linkage link;
 
@@ -86,15 +81,7 @@ void Model::load_data(const std::string &filepath, const cgltf_data *data)
 		nodes[i] = load_node(&data->nodes[i]);
 		link.nodes[&data->nodes[i]] = &nodes[i];
 	}
-	// load textures
-	/*
-	std::string path = filepath.substr(0, filepath.find_last_of('/')+1);
-	textures.resize(data->textures_count);
-	for (int i = 0; i < data->textures_count; i++) {
-		textures[i] = load_texture(&data->textures[i], path);
-		link.textures[&data->textures[i]] = textures[i];
-	}
-	*/
+
 	// load mesh data
 	for (int i = 0; i < data->meshes_count; i++) {
 		std::string mesh_name = data->meshes[i].name ? data->meshes[i].name : std::to_string(i);
@@ -132,6 +119,7 @@ void Model::load_data(const std::string &filepath, const cgltf_data *data)
 
 void Model::display(void) const
 {
+	diffuse.bind(GL_TEXTURE0);
 	for (auto mesh : meshes) {
 		mesh->draw();
 	}
@@ -139,6 +127,7 @@ void Model::display(void) const
 
 void Model::display_instanced(GLsizei count) const
 {
+	diffuse.bind(GL_TEXTURE0);
 	/*
 	for (const struct mesh &m : meshes) {
 		glBindVertexArray(m.VAO);

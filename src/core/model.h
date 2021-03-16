@@ -39,16 +39,18 @@ struct collision_mesh {
 
 class Model {
 public:
-	struct collision_mesh colmesh;
-	std::vector<struct skin> skins;
+	struct collision_mesh colmesh; // TODO multiple collision meshes
+	std::vector<struct skin> skins; 
 public:
-	Model(const std::string &filepath);
+	Model(const std::string &filepath, const std::string &diffusepath);
+//	Model(const std::string &filepath);
 	~Model(void);
 	void display(void) const;
 	void display_instanced(GLsizei count) const;
 private:
 	std::vector<struct node> nodes;
 	std::vector<Mesh*> meshes;
+	Texture diffuse;
 	//std::vector<GLuint> textures;
 	void load_data(const std::string &fpath, const cgltf_data *data);
 	void load_mesh(const cgltf_mesh *gltfmesh);

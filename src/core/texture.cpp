@@ -14,33 +14,20 @@
 #include "texture.h"
 
 static inline GLenum texture_format(ddsktx_format format);
+static GLuint load_DDS(const std::string &filepath);
 static GLuint DDS_to_texture(const uint8_t *blob, const size_t size);
 static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type);
+	
+Texture::Texture(void)
+{
+	target = GL_TEXTURE_2D;
+	handle = 0;
+}
 
 Texture::Texture(const std::string &filepath)
 {
 	target = GL_TEXTURE_2D;
-	handle = 0;
-
-	FILE *file = fopen(filepath.c_str(), "rb");
-	if (file == nullptr) {
-		std::string err = "Texture load error: failed to open file " + filepath;
-		write_log(LogType::ERROR, err);
-		return;
-	}
-
-	fseek(file, 0L, SEEK_END);
-	size_t size = ftell(file);
-	rewind(file);
-
-	uint8_t *buffer = new uint8_t[size];
-	fread(buffer, sizeof *buffer, size, file);
-
-	fclose(file);
-
-	handle = DDS_to_texture(buffer, size);
-
-	delete [] buffer;
+	handle = load_DDS(filepath);
 }
 	
 // TODO handle 3D and texture arrays
@@ -75,9 +62,24 @@ Texture::Texture(const Image *image)
 
 Texture::~Texture(void)
 {
+	clear();
+}
+	
+void Texture::clear(void)
+{
 	if (glIsTexture(handle) == GL_TRUE) {
 		glDeleteTextures(1, &handle);
+		handle = 0;
 	}
+}
+	
+void Texture::load(const std::string &filepath)
+{
+	// first delete texture data if it is present
+	clear();
+
+	// then create texture from DDS file
+	handle = load_DDS(filepath);
 }
 	
 void Texture::bind(GLenum unit) const
@@ -124,6 +126,33 @@ static inline GLenum texture_format(ddsktx_format format)
 	// case DDSKTX_FORMAT_ETC2: return GL_COMPRESSED_RGB8_ETC2;      // ETC2 RGB8 not recognized on Windows
 	default : return 0;
 	}
+}
+
+static GLuint load_DDS(const std::string &filepath)
+{
+	GLuint texture = 0;
+
+	FILE *file = fopen(filepath.c_str(), "rb");
+	if (!file) {
+		std::string err = "Texture load error: failed to open file " + filepath;
+		write_log(LogType::ERROR, err);
+		return texture;
+	}
+
+	fseek(file, 0L, SEEK_END);
+	size_t size = ftell(file);
+	rewind(file);
+
+	uint8_t *buffer = new uint8_t[size];
+	fread(buffer, sizeof *buffer, size, file);
+
+	fclose(file);
+
+	texture = DDS_to_texture(buffer, size);
+
+	delete [] buffer;
+
+	return texture;
 }
 
 static GLuint DDS_to_texture(const uint8_t *blob, const size_t size)
