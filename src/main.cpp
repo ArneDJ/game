@@ -3,6 +3,7 @@
 #include <chrono>
 #include <map>
 #include <vector>
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -12,7 +13,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "btBulletDynamicsCommon.h"
+#include <bullet/btBulletDynamicsCommon.h>
 
 #include "extern/inih/INIReader.h"
 
@@ -239,6 +240,6 @@ int main(int argc, char *argv[])
 {
 	Game game;
 	game.run();
-
+	
 	return 0;
 }
