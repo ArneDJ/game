@@ -35,24 +35,8 @@
 #include "core/model.h"
 #include "core/render.h"
 #include "core/physics.h"
+#include "object.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
-
-class DynamicObject : public Entity {
-public:
-	DynamicObject(const btRigidBody *rigidbody)
-	{
-		body = rigidbody;
-		position = body_position(rigidbody);
-		rotation = body_rotation(rigidbody);
-	}
-	void update(void)
-	{
-		position = body_position(body);
-		rotation = body_rotation(body);
-	}
-private:
-	const btRigidBody *body;
-};
 
 class Game {
 public:
@@ -216,19 +200,19 @@ void Game::run(void)
 
 	physicsman.add_ground_plane(glm::vec3(0.f, 0.f, 0.f));
 	DynamicObject cube_ent = {
-		physicsman.add_dynamic_body(new btBoxShape(btVector3(1,1,1)), glm::vec3(-5.f, 10.f, 5.f))
+		physicsman.add_dynamic_body(physicsman.add_box(glm::vec3(1.f, 1.f, 1.f)), glm::vec3(-10.f, 10.f, 10.f))
 	};
 	DynamicObject sphere_ent = {
-		physicsman.add_dynamic_body(new btSphereShape(1), glm::vec3(-5.f, 12.f, 5.f))
+		physicsman.add_dynamic_body(physicsman.add_sphere(1.f), glm::vec3(-10.f, 12.f, 10.f))
 	};
 	DynamicObject cone_ent = {
-		physicsman.add_dynamic_body(new btConeShape(1, 2), glm::vec3(-5.f, 14.f, 5.f))
+		physicsman.add_dynamic_body(physicsman.add_cone(1.f, 2.f), glm::vec3(-10.f, 14.f, 10.f))
 	};
 	DynamicObject capsule_ent = {
-		physicsman.add_dynamic_body(new btCapsuleShape(0.5, 1), glm::vec3(-5.f, 16.f, 5.f))
+		physicsman.add_dynamic_body(physicsman.add_capsule(0.5f, 1.f), glm::vec3(-10.f, 16.f, 10.f))
 	};
 	DynamicObject cylinder_ent = {
-		physicsman.add_dynamic_body(new btCylinderShape(btVector3(1,1,1)), glm::vec3(-5.f, 18.f, 5.f))
+		physicsman.add_dynamic_body(physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f)), glm::vec3(-10.f, 18.f, 10.f))
 	};
 	dynamics.push_back(std::make_pair(cube_ent, &cube));
 	dynamics.push_back(std::make_pair(sphere_ent, &sphere));
@@ -295,6 +279,6 @@ int main(int argc, char *argv[])
 {
 	Game game;
 	game.run();
-	
+
 	return 0;
 }
