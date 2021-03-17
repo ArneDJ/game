@@ -37,6 +37,23 @@
 #include "core/physics.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
+class DynamicObject : public Entity {
+public:
+	DynamicObject(const btRigidBody *rigidbody)
+	{
+		body = rigidbody;
+		position = body_position(rigidbody);
+		rotation = body_rotation(rigidbody);
+	}
+	void update(void)
+	{
+		position = body_position(body);
+		rotation = body_rotation(body);
+	}
+private:
+	const btRigidBody *body;
+};
+
 class Game {
 public:
 	void run(void);
@@ -59,7 +76,7 @@ private:
 		int FOV;
 		float look_sensitivity;
 	} settings;
-
+	std::vector<std::pair<DynamicObject, const GLTF::Model*>> dynamics;
 private:
 	void init(void);
 	void teardown(void);
@@ -192,15 +209,41 @@ void Game::run(void)
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model cube = { "media/models/cube.glb", "media/textures/cube.dds" };
+	GLTF::Model sphere = { "media/models/sphere.glb", "" };
+	GLTF::Model cone = { "media/models/cone.glb", "" };
+	GLTF::Model capsule = { "media/models/capsule.glb", "" };
+	GLTF::Model cylinder = { "media/models/cylinder.glb", "" };
 
-	const btRigidBody *body = physicsman.add_dynamic_body();
+	physicsman.add_ground_plane(glm::vec3(0.f, 0.f, 0.f));
+	DynamicObject cube_ent = {
+		physicsman.add_dynamic_body(new btBoxShape(btVector3(1,1,1)), glm::vec3(-5.f, 10.f, 5.f))
+	};
+	DynamicObject sphere_ent = {
+		physicsman.add_dynamic_body(new btSphereShape(1), glm::vec3(-5.f, 12.f, 5.f))
+	};
+	DynamicObject cone_ent = {
+		physicsman.add_dynamic_body(new btConeShape(1, 2), glm::vec3(-5.f, 14.f, 5.f))
+	};
+	DynamicObject capsule_ent = {
+		physicsman.add_dynamic_body(new btCapsuleShape(0.5, 1), glm::vec3(-5.f, 16.f, 5.f))
+	};
+	DynamicObject cylinder_ent = {
+		physicsman.add_dynamic_body(new btCylinderShape(btVector3(1,1,1)), glm::vec3(-5.f, 18.f, 5.f))
+	};
+	dynamics.push_back(std::make_pair(cube_ent, &cube));
+	dynamics.push_back(std::make_pair(sphere_ent, &sphere));
+	dynamics.push_back(std::make_pair(cone_ent, &cone));
+	dynamics.push_back(std::make_pair(capsule_ent, &capsule));
+	dynamics.push_back(std::make_pair(cylinder_ent, &cylinder));
 
 	while (running) {
 		timer.begin();
 		update();
-		
-		glm::vec3 location = body_position(body);
 
+		for (auto &dynamic : dynamics) {
+			dynamic.first.update();
+		}
+		
 		renderman.prepare_to_render();
 
 		debug_shader.use();
@@ -208,15 +251,19 @@ void Game::run(void)
 		debug_shader.uniform_mat4("VP", camera.VP);
 		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
 		dragon.display();
+
+		for (const auto &dynamic : dynamics) {
+			glm::mat4 T = glm::translate(glm::mat4(1.f), dynamic.first.position);
+			glm::mat4 R = glm::mat4(dynamic.first.rotation);
+			debug_shader.uniform_mat4("MODEL", T * R);
+			dynamic.second->display();
+		}
+
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
-		glm::mat4 T = glm::translate(glm::mat4(1.f), location);
-		glm::mat4 R = glm::mat4(body_rotation(body));
-		object_shader.uniform_mat4("MODEL", T * R);
-		cube.display();
 
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 10.f)));
 		duck.display();
@@ -233,7 +280,6 @@ void Game::run(void)
 			if (ImGui::Button("Exit")) { running = false; }
 			ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 			ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
-			ImGui::Text("body position: %f, %f, %f", location.x, location.y, location.z);
 			ImGui::End();
 
 			ImGui::Render();

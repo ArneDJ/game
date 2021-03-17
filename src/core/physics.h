@@ -4,7 +4,8 @@ public:
 	PhysicsManager(void);
 	~PhysicsManager(void);
 	void update(float timestep);
-	const btRigidBody* add_dynamic_body(void);
+	void add_ground_plane(const glm::vec3 &position);
+	const btRigidBody* add_dynamic_body(btCollisionShape *shape, const glm::vec3 &position);
 private:
 	btCollisionConfiguration *config;
 	btCollisionDispatcher *dispatcher;

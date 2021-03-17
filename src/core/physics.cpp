@@ -22,32 +22,6 @@ PhysicsManager::PhysicsManager(void)
 
 	world = new btDiscreteDynamicsWorld(dispatcher, broadphase, solver, config);
 	world->setGravity(btVector3(GRAVITY.x , GRAVITY.y, GRAVITY.z));
-
-	// add the ground plane at the bottom
-	btCollisionShape *shape = new btStaticPlaneShape(btVector3(0.f, 1.f, 0.f), 0.f);
-	shapes.push_back(shape);
-
-	btTransform groundTransform;
-	groundTransform.setIdentity();
-	groundTransform.setOrigin(btVector3(0, 0, 0));
-
-	btScalar mass(0.);
-
-	//rigidbody is dynamic if and only if mass is non zero, otherwise static
-	bool isDynamic = (mass != 0.f);
-
-	btVector3 localInertia(0, 0, 0);
-	if (isDynamic) {
-		shape->calculateLocalInertia(mass, localInertia);
-	}
-
-	//using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
-	btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, shape, localInertia);
-	btRigidBody *body = new btRigidBody(rbInfo);
-
-	//add the body to the dynamics world
-	world->addRigidBody(body);
 }
 
 PhysicsManager::~PhysicsManager(void)
@@ -81,11 +55,39 @@ void PhysicsManager::update(float timestep)
 	world->stepSimulation(timestep, MAX_SUB_STEPS);
 }
 	
-const btRigidBody* PhysicsManager::add_dynamic_body(void)
+void PhysicsManager::add_ground_plane(const glm::vec3 &position)
 {
-	btCollisionShape* colShape = new btBoxShape(btVector3(1,1,1));
-	//btCollisionShape* colShape = new btSphereShape(btScalar(1.));
-	shapes.push_back(colShape);
+	btCollisionShape *shape = new btStaticPlaneShape(btVector3(0.f, 1.f, 0.f), 0.f);
+	shapes.push_back(shape);
+
+	btTransform groundTransform;
+	groundTransform.setIdentity();
+	groundTransform.setOrigin(btVector3(position.x, position.y, position.z));
+
+	btScalar mass(0.);
+
+	//rigidbody is dynamic if and only if mass is non zero, otherwise static
+	bool dynamic = (mass != 0.f);
+
+	btVector3 localInertia(0, 0, 0);
+	if (dynamic) {
+		shape->calculateLocalInertia(mass, localInertia);
+	}
+
+	//using motionstate is optional, it provides interpolation capabilities, and only synchronizes 'active' objects
+	btDefaultMotionState* myMotionState = new btDefaultMotionState(groundTransform);
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, shape, localInertia);
+	btRigidBody *body = new btRigidBody(rbInfo);
+
+	//add the body to the dynamics world
+	world->addRigidBody(body);
+}
+	
+const btRigidBody* PhysicsManager::add_dynamic_body(btCollisionShape *shape, const glm::vec3 &position)
+{
+	//btCollisionShape *shape = new btBoxShape(btVector3(1,1,1));
+	//btCollisionShape* shape = new btSphereShape(btScalar(1.));
+	shapes.push_back(shape);
 
 	/// Create Dynamic Objects
 	btTransform startTransform;
@@ -94,18 +96,19 @@ const btRigidBody* PhysicsManager::add_dynamic_body(void)
 	btScalar mass(1.f);
 
 	//rigidbody is dynamic if and only if mass is non zero, otherwise static
-	bool isDynamic = (mass != 0.f);
+	bool dynamic = (mass != 0.f);
 
 	btVector3 localInertia(0, 0, 0);
-	if (isDynamic)
-	colShape->calculateLocalInertia(mass, localInertia);
+	if (dynamic) {
+		shape->calculateLocalInertia(mass, localInertia);
+	}
 
-	startTransform.setOrigin(btVector3(-5, 10, 5));
+	startTransform.setOrigin(btVector3(position.x, position.y, position.z));
 
 	//using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-	btDefaultMotionState* myMotionState = new btDefaultMotionState(startTransform);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, colShape, localInertia);
-	btRigidBody* body = new btRigidBody(rbInfo);
+	btDefaultMotionState *motionstate = new btDefaultMotionState(startTransform);
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionstate, shape, localInertia);
+	btRigidBody *body = new btRigidBody(rbInfo);
 
 	world->addRigidBody(body);
 
