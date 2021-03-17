@@ -164,6 +164,8 @@ void Game::update(void)
 	if (inputman.key_down(SDLK_a)) { camera.move_left(modifier); }
 
 	camera.update();
+
+	physicsman.update(timer.delta);
 }
 
 void Game::run(void)
@@ -191,9 +193,13 @@ void Game::run(void)
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model cube = { "media/models/cube.glb", "media/textures/cube.dds" };
 
+	const btRigidBody *body = physicsman.add_dynamic_body();
+
 	while (running) {
 		timer.begin();
 		update();
+		
+		glm::vec3 location = body_position(body);
 
 		renderman.prepare_to_render();
 
@@ -207,7 +213,9 @@ void Game::run(void)
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 0.f)));
+		glm::mat4 T = glm::translate(glm::mat4(1.f), location);
+		glm::mat4 R = glm::mat4(body_rotation(body));
+		object_shader.uniform_mat4("MODEL", T * R);
 		cube.display();
 
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 10.f)));
@@ -225,6 +233,7 @@ void Game::run(void)
 			if (ImGui::Button("Exit")) { running = false; }
 			ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 			ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+			ImGui::Text("body position: %f, %f, %f", location.x, location.y, location.z);
 			ImGui::End();
 
 			ImGui::Render();
