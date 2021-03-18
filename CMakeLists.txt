@@ -13,11 +13,11 @@ include_directories(GLEW::GLEW)
 
 find_package(OpenMP REQUIRED)
 
-# bullet physics headers
+# external headers bullet
 include_directories("src/extern/bullet")
 
-# ozz animation headers
-include_directories("src/extern/ozz")
+# external headers
+include_directories("src/extern")
 
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.cpp"

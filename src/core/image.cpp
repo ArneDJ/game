@@ -3,12 +3,12 @@
 #include <cstring>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include "../extern/stbimage/stb_image.h"
+#include "stbimage/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../extern/stbimage/stb_image_write.h"
+#include "stbimage/stb_image_write.h"
 
-#include "../extern/fastgaussianblur/fast_gaussian_blur.h"
-#include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
+#include "fastgaussianblur/fast_gaussian_blur.h"
+#include "fastgaussianblur/fast_gaussian_blur_template.h"
 
 #include "image.h"
 

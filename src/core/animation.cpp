@@ -6,17 +6,14 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "../extern/ozz/animation/runtime/animation.h"
-#include "../extern/ozz/animation/runtime/local_to_model_job.h"
-#include "../extern/ozz/animation/runtime/sampling_job.h"
-#include "../extern/ozz/animation/runtime/skeleton.h"
-#include "../extern/ozz/base/log.h"
-#include "../extern/ozz/base/maths/simd_math.h"
-#include "../extern/ozz/base/maths/soa_transform.h"
-#include "../extern/ozz/base/maths/vec_float.h"
-#include "../extern/ozz/base/io/archive.h"
-#include "../extern/ozz/base/io/stream.h"
-#include "../extern/ozz/options/options.h"
+#include "ozz/animation/runtime/animation.h"
+#include "ozz/animation/runtime/local_to_model_job.h"
+#include "ozz/animation/runtime/sampling_job.h"
+#include "ozz/animation/runtime/skeleton.h"
+#include "ozz/base/log.h"
+#include "ozz/base/maths/soa_transform.h"
+#include "ozz/base/io/archive.h"
+#include "ozz/base/io/stream.h"
 
 #include "animation.h"
 	

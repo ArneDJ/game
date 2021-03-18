@@ -7,7 +7,7 @@
 #include <GL/gl.h> 
 
 #define DDSKTX_IMPLEMENT
-#include "../extern/ddsktx/dds-ktx.h"
+#include "ddsktx/dds-ktx.h"
 
 #include "logger.h"
 #include "image.h"
