@@ -10,6 +10,7 @@ public:
 	btCollisionShape* add_cone(float radius, float height);
 	btCollisionShape* add_cylinder(const glm::vec3 &halfextents);
 	btCollisionShape* add_capsule(float radius, float height);
+	btCollisionShape* add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	void insert_body(btRigidBody *body);
 	void remove_body(btRigidBody *body);
 	void clear(void);
@@ -21,6 +22,7 @@ private:
 	btDynamicsWorld *world;
 private:
 	btAlignedObjectArray<btCollisionShape*> shapes;
+	std::vector<btTriangleMesh*> meshes;
 };
 
 glm::vec3 body_position(const btRigidBody *body);

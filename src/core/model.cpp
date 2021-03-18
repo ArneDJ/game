@@ -85,8 +85,8 @@ void Model::load_data(const std::string &fpath, const cgltf_data *data)
 	// load mesh data
 	for (int i = 0; i < data->meshes_count; i++) {
 		std::string mesh_name = data->meshes[i].name ? data->meshes[i].name : std::to_string(i);
-		if (mesh_name == "collision_mesh") {
-			colmesh = load_collision_mesh(&data->meshes[i]);
+		if (mesh_name.find("collision_trimesh") != std::string::npos) {
+			collision_trimeshes.push_back(load_collision_mesh(&data->meshes[i]));
 		} else {
 			load_mesh(&data->meshes[i]);
 		}

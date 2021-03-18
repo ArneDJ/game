@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -7,6 +8,7 @@
 
 #include <bullet/btBulletDynamicsCommon.h>
 
+#include "logger.h"
 #include "physics.h"
 
 static const int MAX_SUB_STEPS = 10;
@@ -53,6 +55,14 @@ void PhysicsManager::clear(void)
 		delete shape;
 	}
 
+	// delete collision meshes
+	for (int i = 0; i < meshes.size(); i++) {
+		btTriangleMesh *mesh = meshes[i];
+		meshes[i] = 0;
+		delete mesh;
+	}
+
+	meshes.clear();
 	shapes.clear();
 }
 
@@ -102,6 +112,34 @@ btCollisionShape* PhysicsManager::add_capsule(float radius, float height)
 	btCollisionShape *shape = new btCapsuleShape(radius, height);
 
 	shapes.push_back(shape);
+
+	return shape;
+}
+	
+btCollisionShape* PhysicsManager::add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices)
+{
+	if (indices.size() < 3 || positions.size() < 3) {
+		write_log(LogType::ERROR, "Collision shape error: no triangle data found");
+		return add_box(glm::vec3(1.f, 1.f, 1.f));
+	}
+
+	//struct building_shape building;
+	btTriangleMesh *mesh = new btTriangleMesh;
+
+	for (int i = 0; i < indices.size(); i += 3) {
+		uint16_t index = indices[i];
+		btVector3 v0 = vec3_to_bt(positions[index]);
+		index = indices[i+1];
+		btVector3 v1 = vec3_to_bt(positions[index]);
+		index = indices[i+2];
+		btVector3 v2 = vec3_to_bt(positions[index]);
+		mesh->addTriangle(v0, v1, v2, false);
+	}
+
+	btCollisionShape *shape = new btBvhTriangleMeshShape(mesh, false);
+
+	shapes.push_back(shape);
+	meshes.push_back(mesh);
 
 	return shape;
 }

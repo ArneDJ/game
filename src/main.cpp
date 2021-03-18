@@ -147,19 +147,19 @@ void Game::load_scene(void)
 
 	physicsman.add_ground_plane(glm::vec3(0.f, 0.f, 0.f));
 	DynamicObject *cube_ent = new DynamicObject {
-		glm::vec3(-10.f, 10.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_box(glm::vec3(1.f, 1.f, 1.f))
+		glm::vec3(-10.f, 20.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_box(glm::vec3(1.f, 1.f, 1.f))
 	};
 	DynamicObject *sphere_ent = new DynamicObject {
-		glm::vec3(-10.f, 12.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_sphere(1.f)
+		glm::vec3(-10.f, 22.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_sphere(1.f)
 	};
 	DynamicObject *cone_ent = new DynamicObject {
-		glm::vec3(-10.f, 14.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_cone(1.f, 2.f)
+		glm::vec3(-10.f, 24.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_cone(1.f, 2.f)
 	};
 	DynamicObject *capsule_ent = new DynamicObject {
-		glm::vec3(-10.f, 16.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_capsule(0.5f, 1.f)
+		glm::vec3(-10.f, 26.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_capsule(0.5f, 1.f)
 	};
 	DynamicObject *cylinder_ent = new DynamicObject {
-		glm::vec3(-10.f, 18.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f))
+		glm::vec3(-10.f, 30.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f))
 	};
 
 	physicsman.insert_body(cube_ent->body);
@@ -253,6 +253,16 @@ void Game::run(void)
 
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
+	GLTF::Model building = { "media/models/building.glb", "" };
+
+	btCollisionShape *shape = nullptr;
+	for (const auto &mesh : building.collision_trimeshes) {
+		shape = physicsman.add_mesh(mesh.positions, mesh.indices);
+	}
+
+	StationaryObject stationary = { glm::vec3(-10.f, 5.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), shape };
+
+	physicsman.insert_body(stationary.body);
 
 	load_scene();
 
@@ -275,6 +285,9 @@ void Game::run(void)
 			debug_shader.uniform_mat4("MODEL", T * R);
 			dynamic.second->display();
 		}
+		
+		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), stationary.position));
+		building.display();
 
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
@@ -307,6 +320,7 @@ void Game::run(void)
 		timer.end();
 	}
 
+	physicsman.remove_body(stationary.body);
 	clear_scene();
 }
 

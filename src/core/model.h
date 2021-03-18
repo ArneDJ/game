@@ -29,7 +29,7 @@ struct collision_mesh {
 
 class Model {
 public:
-	struct collision_mesh colmesh; // TODO multiple collision meshes
+	std::vector<struct collision_mesh> collision_trimeshes;
 	std::vector<struct skin> skins; 
 public:
 	Model(const std::string &filepath, const std::string &diffusepath);
