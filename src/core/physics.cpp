@@ -119,11 +119,10 @@ btCollisionShape* PhysicsManager::add_capsule(float radius, float height)
 btCollisionShape* PhysicsManager::add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices)
 {
 	if (indices.size() < 3 || positions.size() < 3) {
-		write_log(LogType::ERROR, "Collision shape error: no triangle data found");
+		write_log(LogType::ERROR, "Collision mesh shape error: no triangle data found");
 		return add_box(glm::vec3(1.f, 1.f, 1.f));
 	}
 
-	//struct building_shape building;
 	btTriangleMesh *mesh = new btTriangleMesh;
 
 	for (int i = 0; i < indices.size(); i += 3) {
@@ -140,6 +139,23 @@ btCollisionShape* PhysicsManager::add_mesh(const std::vector<glm::vec3> &positio
 
 	shapes.push_back(shape);
 	meshes.push_back(mesh);
+
+	return shape;
+}
+	
+btCollisionShape* PhysicsManager::add_hull(const std::vector<glm::vec3> &points)
+{
+	if (points.size() < 4) {
+		write_log(LogType::ERROR, "Collision hull shape error: no point data found");
+		return add_box(glm::vec3(1.f, 1.f, 1.f));
+	}
+
+	btConvexHullShape *shape = new btConvexHullShape();
+
+	for (const auto &p : points) {
+		shape->addPoint(vec3_to_bt(p));
+	}
+	shape->optimizeConvexHull();
 
 	return shape;
 }

@@ -11,6 +11,7 @@ public:
 	btCollisionShape* add_cylinder(const glm::vec3 &halfextents);
 	btCollisionShape* add_capsule(float radius, float height);
 	btCollisionShape* add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
+	btCollisionShape* add_hull(const std::vector<glm::vec3> &points);
 	void insert_body(btRigidBody *body);
 	void remove_body(btRigidBody *body);
 	void clear(void);

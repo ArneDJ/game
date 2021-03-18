@@ -22,14 +22,23 @@ struct node {
 	struct skin *skeleton = nullptr;
 };
 
-struct collision_mesh {
+// triangle mesh data
+struct collision_trimesh {
+	std::string name;
 	std::vector<glm::vec3> positions;
 	std::vector<uint16_t> indices;
 };
 
+// convex hull data
+struct collision_hull {
+	std::string name;
+	std::vector<glm::vec3> points;
+};
+
 class Model {
 public:
-	std::vector<struct collision_mesh> collision_trimeshes;
+	std::vector<struct collision_trimesh> collision_trimeshes;
+	std::vector<struct collision_hull> collision_hulls;
 	std::vector<struct skin> skins; 
 public:
 	Model(const std::string &filepath, const std::string &diffusepath);

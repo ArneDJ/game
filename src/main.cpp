@@ -254,6 +254,7 @@ void Game::run(void)
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model building = { "media/models/building.glb", "" };
+	GLTF::Model monkey = { "media/models/monkey.glb", "" };
 
 	btCollisionShape *shape = nullptr;
 	for (const auto &mesh : building.collision_trimeshes) {
@@ -264,12 +265,20 @@ void Game::run(void)
 
 	physicsman.insert_body(stationary.body);
 
+	btCollisionShape *hull = nullptr;
+	for (const auto &hullmesh : monkey.collision_hulls) {
+		hull = physicsman.add_hull(hullmesh.points);
+	}
+	DynamicObject monkey_ent = { glm::vec3(-10.f, 30.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), hull };
+	physicsman.insert_body(monkey_ent.body);
+
 	load_scene();
 
 	while (running) {
 		timer.begin();
 
 		update();
+		monkey_ent.update();
 
 		renderman.prepare_to_render();
 
@@ -288,6 +297,8 @@ void Game::run(void)
 		
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), stationary.position));
 		building.display();
+		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
+		monkey.display();
 
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
@@ -321,6 +332,7 @@ void Game::run(void)
 	}
 
 	physicsman.remove_body(stationary.body);
+	physicsman.remove_body(monkey_ent.body);
 	clear_scene();
 }
 

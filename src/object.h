@@ -24,11 +24,10 @@ public:
 		transform.setRotation(quat_to_bt(rot));
 
 		// using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-		//btDefaultMotionState *motionstate = new btDefaultMotionState(transform);
 		motionstate = new btDefaultMotionState(transform);
 		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionstate, shape, inertia);
 		body = new btRigidBody(rbInfo);
-		body->setRollingFriction(0.5f);
+		body->setRollingFriction(0.1f);
 		body->setFriction(0.5f);
 
 		// link body to this entity

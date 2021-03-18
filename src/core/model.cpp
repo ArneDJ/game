@@ -20,8 +20,6 @@
 #include "mesh.h"
 #include "model.h"
 
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
-
 using namespace GLTF;
 
 struct linkage {
@@ -34,7 +32,8 @@ static void append_buffer(const cgltf_accessor *accessor,  std::vector<uint8_t> 
 static struct node load_node(const cgltf_node *gltfnode);
 static struct skin load_skin(const cgltf_skin *gltfskin);
 static glm::mat4 local_node_transform(const struct node *n);
-static struct collision_mesh load_collision_mesh(const cgltf_mesh *mesh);
+static struct collision_trimesh load_collision_trimesh(const cgltf_mesh *mesh);
+static struct collision_hull load_collision_hull(const cgltf_mesh *mesh);
 
 Model::Model(const std::string &filepath, const std::string &diffusepath)
 {
@@ -84,11 +83,14 @@ void Model::load_data(const std::string &fpath, const cgltf_data *data)
 
 	// load mesh data
 	for (int i = 0; i < data->meshes_count; i++) {
-		std::string mesh_name = data->meshes[i].name ? data->meshes[i].name : std::to_string(i);
+		const cgltf_mesh *mesh = &data->meshes[i];
+		std::string mesh_name = mesh->name ? mesh->name : std::to_string(i);
 		if (mesh_name.find("collision_trimesh") != std::string::npos) {
-			collision_trimeshes.push_back(load_collision_mesh(&data->meshes[i]));
+			collision_trimeshes.push_back(load_collision_trimesh(mesh));
+		} else if (mesh_name.find("collision_hull") != std::string::npos) {
+			collision_hulls.push_back(load_collision_hull(mesh));
 		} else {
-			load_mesh(&data->meshes[i]);
+			load_mesh(mesh);
 		}
 	}
 
@@ -295,9 +297,11 @@ glm::mat4 global_node_transform(const struct node *n)
 	return m;
 }
 
-static struct collision_mesh load_collision_mesh(const cgltf_mesh *gltfmesh)
+static struct collision_trimesh load_collision_trimesh(const cgltf_mesh *gltfmesh)
 {
-	struct collision_mesh meshie;
+	struct collision_trimesh meshie;
+
+	meshie.name = gltfmesh->name;
 
 	std::vector<uint8_t> indices;
 	std::vector<uint8_t> positions;
@@ -333,6 +337,36 @@ static struct collision_mesh load_collision_mesh(const cgltf_mesh *gltfmesh)
 	}
 
 	return meshie;
+}
+
+static struct collision_hull load_collision_hull(const cgltf_mesh *gltfmesh)
+{
+	struct collision_hull hull;
+	
+	hull.name = gltfmesh->name;
+
+	std::vector<uint8_t> points;
+  	uint32_t vertexstart = 0;
+	for (int i = 0; i < gltfmesh->primitives_count; i++) {
+		const cgltf_primitive *primitive = &gltfmesh->primitives[i];
+		for (int j = 0; j < primitive->attributes_count; j++) {
+  			const cgltf_attribute *attribute = &primitive->attributes[j];
+			if (attribute->type == cgltf_attribute_type_position) {
+				append_buffer(attribute->data, points);
+				size_t stride = cgltf_num_components(attribute->data->type);
+				const void *data = &(points[vertexstart]);
+				const float *buf = static_cast<const float*>(data);
+				for (size_t v = 0; v < attribute->data->count; v++) {
+					glm::vec3 position = glm::make_vec3(&buf[v * stride]);
+					hull.points.push_back(position);
+				}
+			
+				vertexstart = points.size();
+			}
+		}
+	}
+
+	return hull;
 }
 
 static void print_gltf_error(cgltf_result error)
