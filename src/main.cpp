@@ -256,7 +256,7 @@ void Game::run(void)
 	GLTF::Model building = { "media/models/building.glb", "" };
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
 
-	btCollisionShape *shape = nullptr;
+	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &mesh : building.collision_trimeshes) {
 		shape = physicsman.add_mesh(mesh.positions, mesh.indices);
 	}
@@ -265,7 +265,7 @@ void Game::run(void)
 
 	physicsman.insert_body(stationary.body);
 
-	btCollisionShape *hull = nullptr;
+	btCollisionShape *hull = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &hullmesh : monkey.collision_hulls) {
 		hull = physicsman.add_hull(hullmesh.points);
 	}
