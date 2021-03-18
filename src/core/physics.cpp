@@ -25,6 +25,17 @@ PhysicsManager::PhysicsManager(void)
 
 PhysicsManager::~PhysicsManager(void)
 {
+	clear();
+
+	delete world;
+	delete solver;
+	delete broadphase;
+	delete dispatcher;
+	delete config;
+}
+
+void PhysicsManager::clear(void)
+{
 	// remove the rigidbodies from the dynamics world and delete them
 	for (int i = 0; i < world->getNumCollisionObjects(); i++) {
 		btCollisionObject *obj = world->getCollisionObjectArray()[i];
@@ -42,11 +53,7 @@ PhysicsManager::~PhysicsManager(void)
 		delete shape;
 	}
 
-	delete world;
-	delete solver;
-	delete broadphase;
-	delete dispatcher;
-	delete config;
+	shapes.clear();
 }
 
 void PhysicsManager::update(float timestep)
@@ -115,31 +122,14 @@ void PhysicsManager::add_ground_plane(const glm::vec3 &position)
 	world->addRigidBody(body);
 }
 	
-const btRigidBody* PhysicsManager::add_dynamic_body(btCollisionShape *shape, const glm::vec3 &position)
+void PhysicsManager::insert_body(btRigidBody *body)
 {
-	btTransform transform;
-	transform.setIdentity();
-
-	btScalar mass(1.f);
-
-	//rigidbody is dynamic if and only if mass is non zero, otherwise static
-	bool dynamic = (mass != 0.f);
-
-	btVector3 inertia(0, 0, 0);
-	if (dynamic) {
-		shape->calculateLocalInertia(mass, inertia);
-	}
-
-	transform.setOrigin(vec3_to_bt(position));
-
-	// using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-	btDefaultMotionState *motionstate = new btDefaultMotionState(transform);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionstate, shape, inertia);
-	btRigidBody *body = new btRigidBody(rbInfo);
-
 	world->addRigidBody(body);
-
-	return body;
+}
+	
+void PhysicsManager::remove_body(btRigidBody *body)
+{
+	world->removeCollisionObject(body);
 }
 	
 glm::vec3 body_position(const btRigidBody *body)

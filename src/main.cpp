@@ -37,7 +37,7 @@
 #include "core/physics.h"
 #include "object.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
-
+//
 class Game {
 public:
 	void run(void);
@@ -60,12 +60,14 @@ private:
 		int FOV;
 		float look_sensitivity;
 	} settings;
-	std::vector<std::pair<DynamicObject, const GLTF::Model*>> dynamics;
+	std::vector<std::pair<DynamicObject*, const GLTF::Model*>> dynamics;
 private:
 	void init(void);
-	void teardown(void);
-	void update(void);
 	void init_settings(void);
+	void load_scene(void);
+	void clear_scene(void);
+	void update(void);
+	void teardown(void);
 };
 	
 void Game::init_settings(void)
@@ -135,6 +137,61 @@ void Game::init(void)
 	}
 }
 
+void Game::load_scene(void)
+{
+	GLTF::Model *sphere = new GLTF::Model { "media/models/sphere.glb", "" };
+	GLTF::Model *cone = new GLTF::Model { "media/models/cone.glb", "" };
+	GLTF::Model *capsule = new GLTF::Model { "media/models/capsule.glb", "" };
+	GLTF::Model *cylinder = new GLTF::Model { "media/models/cylinder.glb", "" };
+	GLTF::Model *cube = new GLTF::Model { "media/models/cube.glb", "media/textures/cube.dds" };
+
+	physicsman.add_ground_plane(glm::vec3(0.f, 0.f, 0.f));
+	DynamicObject *cube_ent = new DynamicObject {
+		glm::vec3(-10.f, 10.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_box(glm::vec3(1.f, 1.f, 1.f))
+	};
+	DynamicObject *sphere_ent = new DynamicObject {
+		glm::vec3(-10.f, 12.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_sphere(1.f)
+	};
+	DynamicObject *cone_ent = new DynamicObject {
+		glm::vec3(-10.f, 14.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_cone(1.f, 2.f)
+	};
+	DynamicObject *capsule_ent = new DynamicObject {
+		glm::vec3(-10.f, 16.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_capsule(0.5f, 1.f)
+	};
+	DynamicObject *cylinder_ent = new DynamicObject {
+		glm::vec3(-10.f, 18.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f))
+	};
+
+	physicsman.insert_body(cube_ent->body);
+	physicsman.insert_body(sphere_ent->body);
+	physicsman.insert_body(cone_ent->body);
+	physicsman.insert_body(capsule_ent->body);
+	physicsman.insert_body(cylinder_ent->body);
+
+	dynamics.push_back(std::make_pair(cube_ent, cube));
+	dynamics.push_back(std::make_pair(sphere_ent, sphere));
+	dynamics.push_back(std::make_pair(cone_ent, cone));
+	dynamics.push_back(std::make_pair(capsule_ent, capsule));
+	dynamics.push_back(std::make_pair(cylinder_ent, cylinder));
+}
+
+void Game::clear_scene(void)
+{
+	// first remove rigid bodies
+	for (const auto &dynamic : dynamics) {
+		physicsman.remove_body(dynamic.first->body);
+		// delete the rigid body
+		delete dynamic.first;
+		// delete the display model
+		delete dynamic.second;
+	}
+
+	dynamics.clear();
+
+	// then clear the physics manager
+	physicsman.clear();
+}
+
 void Game::teardown(void)
 {
 	if (debugmode) {
@@ -167,6 +224,10 @@ void Game::update(void)
 	camera.update();
 
 	physicsman.update(timer.delta);
+
+	for (auto &dynamic : dynamics) {
+		dynamic.first->update();
+	}
 }
 
 void Game::run(void)
@@ -192,42 +253,14 @@ void Game::run(void)
 
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
-	GLTF::Model cube = { "media/models/cube.glb", "media/textures/cube.dds" };
-	GLTF::Model sphere = { "media/models/sphere.glb", "" };
-	GLTF::Model cone = { "media/models/cone.glb", "" };
-	GLTF::Model capsule = { "media/models/capsule.glb", "" };
-	GLTF::Model cylinder = { "media/models/cylinder.glb", "" };
 
-	physicsman.add_ground_plane(glm::vec3(0.f, 0.f, 0.f));
-	DynamicObject cube_ent = {
-		physicsman.add_dynamic_body(physicsman.add_box(glm::vec3(1.f, 1.f, 1.f)), glm::vec3(-10.f, 10.f, 10.f))
-	};
-	DynamicObject sphere_ent = {
-		physicsman.add_dynamic_body(physicsman.add_sphere(1.f), glm::vec3(-10.f, 12.f, 10.f))
-	};
-	DynamicObject cone_ent = {
-		physicsman.add_dynamic_body(physicsman.add_cone(1.f, 2.f), glm::vec3(-10.f, 14.f, 10.f))
-	};
-	DynamicObject capsule_ent = {
-		physicsman.add_dynamic_body(physicsman.add_capsule(0.5f, 1.f), glm::vec3(-10.f, 16.f, 10.f))
-	};
-	DynamicObject cylinder_ent = {
-		physicsman.add_dynamic_body(physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f)), glm::vec3(-10.f, 18.f, 10.f))
-	};
-	dynamics.push_back(std::make_pair(cube_ent, &cube));
-	dynamics.push_back(std::make_pair(sphere_ent, &sphere));
-	dynamics.push_back(std::make_pair(cone_ent, &cone));
-	dynamics.push_back(std::make_pair(capsule_ent, &capsule));
-	dynamics.push_back(std::make_pair(cylinder_ent, &cylinder));
+	load_scene();
 
 	while (running) {
 		timer.begin();
+
 		update();
 
-		for (auto &dynamic : dynamics) {
-			dynamic.first.update();
-		}
-		
 		renderman.prepare_to_render();
 
 		debug_shader.use();
@@ -237,8 +270,8 @@ void Game::run(void)
 		dragon.display();
 
 		for (const auto &dynamic : dynamics) {
-			glm::mat4 T = glm::translate(glm::mat4(1.f), dynamic.first.position);
-			glm::mat4 R = glm::mat4(dynamic.first.rotation);
+			glm::mat4 T = glm::translate(glm::mat4(1.f), dynamic.first->position);
+			glm::mat4 R = glm::mat4(dynamic.first->rotation);
 			debug_shader.uniform_mat4("MODEL", T * R);
 			dynamic.second->display();
 		}
@@ -273,6 +306,8 @@ void Game::run(void)
 		windowman.swap();
 		timer.end();
 	}
+
+	clear_scene();
 }
 
 int main(int argc, char *argv[])

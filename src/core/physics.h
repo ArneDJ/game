@@ -10,7 +10,9 @@ public:
 	btCollisionShape* add_cone(float radius, float height);
 	btCollisionShape* add_cylinder(const glm::vec3 &halfextents);
 	btCollisionShape* add_capsule(float radius, float height);
-	const btRigidBody* add_dynamic_body(btCollisionShape *shape, const glm::vec3 &position);
+	void insert_body(btRigidBody *body);
+	void remove_body(btRigidBody *body);
+	void clear(void);
 private:
 	btCollisionConfiguration *config;
 	btCollisionDispatcher *dispatcher;
