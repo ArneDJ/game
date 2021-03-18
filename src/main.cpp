@@ -15,6 +15,18 @@
 
 #include <bullet/btBulletDynamicsCommon.h>
 
+#include "extern/ozz/animation/runtime/animation.h"
+#include "extern/ozz/animation/runtime/local_to_model_job.h"
+#include "extern/ozz/animation/runtime/sampling_job.h"
+#include "extern/ozz/animation/runtime/skeleton.h"
+#include "extern/ozz/base/log.h"
+#include "extern/ozz/base/maths/simd_math.h"
+#include "extern/ozz/base/maths/soa_transform.h"
+#include "extern/ozz/base/maths/vec_float.h"
+#include "extern/ozz/base/io/archive.h"
+#include "extern/ozz/base/io/stream.h"
+#include "extern/ozz/options/options.h"
+
 #include "extern/inih/INIReader.h"
 
 #include "extern/imgui/imgui.h"
@@ -35,6 +47,7 @@
 #include "core/model.h"
 #include "core/render.h"
 #include "core/physics.h"
+#include "core/animation.h"
 #include "object.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 //
@@ -274,11 +287,16 @@ void Game::run(void)
 
 	load_scene();
 
+	Animator animator = { "media/skeletons/skeleton.ozz", "media/animations/animation.ozz" };
+
 	while (running) {
 		timer.begin();
 
 		update();
 		monkey_ent.update();
+
+		animator.update(timer.delta);
+		animator.print_transforms();
 
 		renderman.prepare_to_render();
 

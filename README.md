@@ -13,6 +13,8 @@ On Windows install the 64-bit version libraries using [vcpkg](https://github.com
 * [glm](https://github.com/g-truc/glm)
 
 ### Static Libraries
+* [Bullet3](https://github.com/bulletphysics/bullet3)
+* [Ozz Animation](https://github.com/guillaumeblanc/ozz-animation)
 
 ### Header Libraries
 These are included with the source code of this project.
