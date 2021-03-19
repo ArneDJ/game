@@ -19,6 +19,7 @@
 #include "extern/ozz/animation/runtime/skeleton.h"
 #include "extern/ozz/base/maths/soa_transform.h"
 
+// define this to make bullet and ozz animation compile on Windows
 #define BT_NO_SIMD_OPERATOR_OVERLOADS
 #include <bullet/btBulletDynamicsCommon.h>
 
@@ -353,6 +354,8 @@ int main(int argc, char *argv[])
 {
 	Game game;
 	game.run();
+
+	write_log(LogType::RUN, "succesfully exited game");
 
 	return 0;
 }

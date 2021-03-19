@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 14)
 
 project(game)
 
+set(EXECUTABLE_OUTPUT_PATH "prototype")
+
 find_package(SDL2 REQUIRED)
 
 find_package(OpenGL REQUIRED COMPONENTS OpenGL)
