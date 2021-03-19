@@ -15,6 +15,7 @@
 #include "../extern/ozz/base/io/archive.h"
 #include "../extern/ozz/base/io/stream.h"
 
+#include "logger.h"
 #include "animation.h"
 	
 Animator::Animator(const std::string &skeletonpath, const std::string &animationpath)
@@ -23,7 +24,7 @@ Animator::Animator(const std::string &skeletonpath, const std::string &animation
 	load_animation(animationpath);
 
 	if (skeleton.num_joints() != animation.num_tracks()) {
-		printf("animator error: skeleton joints and animation tracks do not match\n");
+		write_log(LogType::ERROR, "Animation error: skeleton joints and animation tracks do not match\n");
 	}
 
 	// Allocates runtime buffers.
@@ -82,20 +83,19 @@ void Animator::print_transforms(void)
 
 bool Animator::load_skeleton(const std::string &filepath)
 {
-	//const char *filename = "modules/media/animations/skeleton.ozz";
 	ozz::io::File file(filepath.c_str(), "rb");
 
 	// Checks file status, which can be closed if filepath.c_str() is invalid.
 	if (!file.opened()) {
-		ozz::log::Err() << "Cannot open file " << filepath.c_str() << "." << std::endl;
+		std::string err = "Animation error: cannot open skeleton file " + filepath;
+		write_log(LogType::ERROR, err);
 		return false;
 	}
 
 	ozz::io::IArchive archive(&file);
 
 	if (!archive.TestTag<ozz::animation::Skeleton>()) {
-		ozz::log::Err() << "Archive doesn't contain the expected object type." <<
-		std::endl;
+		write_log(LogType::ERROR, "Animation error: archive doesn't contain the expected object type");
 		return false;
 	}
 
@@ -111,14 +111,13 @@ bool Animator::load_animation(const std::string &filepath)
 	  << std::endl;
 	ozz::io::File file(filepath.c_str(), "rb");
 	if (!file.opened()) {
-		ozz::log::Err() << "Failed to open animation file " << filepath.c_str() << "."
-		    << std::endl;
+		std::string err = "Animation error: cannot open animation file " + filepath;
+		write_log(LogType::ERROR, err);
 		return false;
 	}
 	ozz::io::IArchive archive(&file);
 	if (!archive.TestTag<ozz::animation::Animation>()) {
-		ozz::log::Err() << "Failed to load animation instance from file "
-		    << filepath.c_str() << "." << std::endl;
+		write_log(LogType::ERROR, "Animation error: failed to load animation instance from file");
 		return false;
 	}
 
@@ -129,12 +128,12 @@ bool Animator::load_animation(const std::string &filepath)
 }
 
 PlaybackController::PlaybackController(void)
-    : time_ratio_(0.f),
-      previous_time_ratio_(0.f),
-      playback_speed_(1.f),
-      play_(true),
-      loop_(true) 
 {
+	time_ratio_ = 0.f;
+	previous_time_ratio_ = 0.f;
+	playback_speed_ = 1.f;
+	play_ = true;
+	loop_ = true;
 }
 
 void PlaybackController::update(const ozz::animation::Animation& _animation, float _dt) 
