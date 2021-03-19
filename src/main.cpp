@@ -3,7 +3,7 @@
 #include <chrono>
 #include <map>
 #include <vector>
-#define SDL_MAIN_HANDLED
+
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -13,11 +13,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/ozz/animation/runtime/animation.h"
-#include "core/ozz/animation/runtime/local_to_model_job.h"
-#include "core/ozz/animation/runtime/sampling_job.h"
-#include "core/ozz/animation/runtime/skeleton.h"
-#include "core/ozz/base/maths/soa_transform.h"
+#include "extern/ozz/animation/runtime/animation.h"
+#include "extern/ozz/animation/runtime/local_to_model_job.h"
+#include "extern/ozz/animation/runtime/sampling_job.h"
+#include "extern/ozz/animation/runtime/skeleton.h"
+#include "extern/ozz/base/maths/soa_transform.h"
 
 #define BT_NO_SIMD_OPERATOR_OVERLOADS
 #include <bullet/btBulletDynamicsCommon.h>
@@ -45,7 +45,7 @@
 #include "core/animation.h"
 #include "object.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
-//
+
 class Game {
 public:
 	void run(void);
@@ -291,7 +291,7 @@ void Game::run(void)
 		monkey_ent.update();
 
 		animator.update(timer.delta);
-		animator.print_transforms();
+		//animator.print_transforms();
 
 		renderman.prepare_to_render();
 
