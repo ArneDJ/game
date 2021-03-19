@@ -18,6 +18,19 @@
 #include "logger.h"
 #include "animation.h"
 	
+// TODO find a more efficient conversion
+//std::vector<ozz::math::Float4x4> models;
+glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
+{
+	glm::mat4 out;
+	ozz::math::StorePtrU(matrix.cols[0], glm::value_ptr(out));
+	ozz::math::StorePtrU(matrix.cols[1], glm::value_ptr(out) + 4);
+	ozz::math::StorePtrU(matrix.cols[2], glm::value_ptr(out) + 8);
+	ozz::math::StorePtrU(matrix.cols[3], glm::value_ptr(out) + 12);
+
+	return out;
+}
+
 Animator::Animator(const std::string &skeletonpath, const std::string &animationpath)
 {
 	load_skeleton(skeletonpath);
@@ -68,6 +81,12 @@ void Animator::print_transforms(void)
 	//std::vector<ozz::math::Float4x4> models;
 	for (const auto &model : models) {
   		//SimdFloat4 cols[4];
+		//float buffer[16];
+		//glm::mat4 matrix;
+		//ozz::math::StorePtrU(model.cols[0], glm::value_ptr(matrix));
+		//ozz::math::StorePtrU(model.cols[1], glm::value_ptr(matrix)+ 4);
+		//ozz::math::StorePtrU(model.cols[2], glm::value_ptr(matrix)+ 8);
+		//ozz::math::StorePtrU(model.cols[3], glm::value_ptr(matrix)+ 12);
 		for (int i = 0; i < 4; i++) {
 			//printf("%f, %f, %f, %f\n", model.cols[i].x, models.cols[i].y, models.cols[i].z, models.cols[i].w);
 			ozz::math::SimdFloat4 column = model.cols[i];

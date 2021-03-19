@@ -283,6 +283,7 @@ void Game::run(void)
 
 	load_scene();
 
+	glm::mat4 creature_T = glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f));
 	Animator animator = { "media/skeletons/skeleton.ozz", "media/animations/animation.ozz" };
 
 	while (running) {
@@ -313,6 +314,14 @@ void Game::run(void)
 		building.display();
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
 		monkey.display();
+	
+		// display the bones and joints
+		//printf("%d\n", animator.models.size());
+		for (const auto &model : animator.models) {
+			glm::mat4 M = ozz_to_mat4(model);
+			debug_shader.uniform_mat4("MODEL", creature_T * M);
+			monkey.display();
+		}
 
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();

@@ -1,4 +1,6 @@
 
+glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix);
+
 class PlaybackController {
 public:
 	PlaybackController(void);
