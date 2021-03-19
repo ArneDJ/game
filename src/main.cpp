@@ -13,19 +13,20 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "core/ozz/animation/runtime/animation.h"
+#include "core/ozz/animation/runtime/local_to_model_job.h"
+#include "core/ozz/animation/runtime/sampling_job.h"
+#include "core/ozz/animation/runtime/skeleton.h"
+#include "core/ozz/base/maths/soa_transform.h"
+
+#define BT_NO_SIMD_OPERATOR_OVERLOADS
 #include <bullet/btBulletDynamicsCommon.h>
 
-#include "ozz/animation/runtime/animation.h"
-#include "ozz/animation/runtime/local_to_model_job.h"
-#include "ozz/animation/runtime/sampling_job.h"
-#include "ozz/animation/runtime/skeleton.h"
-#include "ozz/base/maths/soa_transform.h"
+#include "extern/inih/INIReader.h"
 
-#include "inih/INIReader.h"
-
-#include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl.h"
-#include "imgui/imgui_impl_opengl3.h"
+#include "extern/imgui/imgui.h"
+#include "extern/imgui/imgui_impl_sdl.h"
+#include "extern/imgui/imgui_impl_opengl3.h"
 
 #include "core/logger.h"
 #include "core/image.h"

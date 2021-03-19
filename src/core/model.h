@@ -1,5 +1,5 @@
 #pragma once
-#include "cgltf/cgltf.h"
+#include "../extern/cgltf/cgltf.h"
 
 namespace GLTF {
 
