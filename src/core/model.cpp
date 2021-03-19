@@ -237,6 +237,16 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 		indexstart += indexcount;
 	}
 
+	// TODO joint data could be stored as 8 bit or 16 bit
+	if (vertices.joints.size() > 0) {
+		const void *data = &(vertices.joints[0]);
+		//const uint16_t *buf = static_cast<const uint16_t*>(data);
+		for (size_t index = 0; index < vertices.joints.size(); index++) {
+			//printf("%d\n", vertices.joints[index]);
+			//meshie.indices.push_back(buf[index]);
+		}
+	}
+
 	Mesh *mesh = new Mesh { &vertices, indices, primitives }; 
 	meshes.push_back(mesh);
 }

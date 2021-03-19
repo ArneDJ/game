@@ -62,6 +62,7 @@ private:
 	Shader object_shader;
 	Shader debug_shader;
 	Shader skeleton_shader;
+	Shader creature_shader;
 	Camera camera;
 	Skybox *skybox;
 	struct {
@@ -127,6 +128,10 @@ void Game::init(void)
 	skeleton_shader.compile("shaders/skeleton.vert", GL_VERTEX_SHADER);
 	skeleton_shader.compile("shaders/skeleton.frag", GL_FRAGMENT_SHADER);
 	skeleton_shader.link();
+
+	creature_shader.compile("shaders/creature.vert", GL_VERTEX_SHADER);
+	creature_shader.compile("shaders/creature.frag", GL_FRAGMENT_SHADER);
+	creature_shader.link();
 
 	float aspect_ratio = float(settings.window_width) / float(settings.window_height);
 	camera.configure(0.1f, 9001.f, aspect_ratio, float(settings.FOV));
@@ -245,6 +250,12 @@ void Game::update(void)
 	}
 }
 
+
+struct TBO {
+	GLuint texture;
+	GLuint buffer;
+};
+
 void Game::run(void)
 {
 	init();
@@ -324,6 +335,7 @@ void Game::run(void)
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model building = { "media/models/building.glb", "" };
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
+	GLTF::Model human = { "media/models/monke.glb", "" };
 
 	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &mesh : building.collision_trimeshes) {
@@ -344,7 +356,31 @@ void Game::run(void)
 	load_scene();
 
 	glm::mat4 creature_T = glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f));
-	Animator animator = { "media/skeletons/skeleton.ozz", "media/animations/animation.ozz" };
+	//Animator animator = { "media/skeletons/skeleton.ozz", "media/animations/animation.ozz" };
+	Animator animator = { "media/skeletons/monke.ozz", "media/animations/monke.ozz" };
+	std::vector<glm::mat4> transform_buffer;
+	transform_buffer.resize(animator.models.size());
+
+	struct TBO instancebuf;
+	GLenum usage = GL_DYNAMIC_DRAW;
+	// prepare the transform TBO
+	GLsizei size = animator.models.size() * sizeof(glm::mat4);
+	glGenTextures(1, &instancebuf.texture);
+	glBindTexture(GL_TEXTURE_BUFFER, instancebuf.texture);
+
+	glGenBuffers(1, &instancebuf.buffer);
+	glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
+	glBufferData(GL_TEXTURE_BUFFER, size, NULL, usage);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, instancebuf.buffer);
+
+	animator.update(1.f/60.f);
+	for (int i = 0; i < animator.models.size(); i++) {
+		//transform_buffer[i] = ozz_to_mat4(animator.models[i]);
+		transform_buffer[i] = glm::mat4(1.f);
+	}
+
+	glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
+	glBufferData(GL_TEXTURE_BUFFER, size, transform_buffer.data(), usage);
 
 	while (running) {
 		timer.begin();
@@ -354,6 +390,19 @@ void Game::run(void)
 
 		animator.update(timer.delta);
 		//animator.print_transforms();
+		for (const auto &skin : human.skins) {
+			//printf("%d\n", skin.inversebinds.size());
+			for (int i = 0; i < animator.models.size(); i++) {
+				transform_buffer[i] = ozz_to_mat4(animator.models[i]) * skin.inversebinds[i];
+			}
+		}
+		/*
+		for (int i = 0; i < animator.models.size(); i++) {
+			transform_buffer[i] = ozz_to_mat4(animator.models[i]);
+		}
+		*/
+		glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
+		glBufferData(GL_TEXTURE_BUFFER, size, transform_buffer.data(), usage);
 
 		renderman.prepare_to_render();
 
@@ -374,6 +423,9 @@ void Game::run(void)
 		building.display();
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
 		monkey.display();
+
+		//debug_shader.uniform_mat4("MODEL", creature_T);
+		//human.display();
 	
 		skeleton_shader.use();
 		skeleton_shader.uniform_mat4("VP", camera.VP);
@@ -429,6 +481,13 @@ void Game::run(void)
 
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 10.f)));
 		duck.display();
+
+		creature_shader.use();
+		creature_shader.uniform_mat4("VP", camera.VP);
+		creature_shader.uniform_mat4("MODEL", creature_T);
+		glActiveTexture(GL_TEXTURE10);
+		glBindTexture(GL_TEXTURE_BUFFER, instancebuf.texture);
+		human.display();
 
 		skybox->display(&camera);
 

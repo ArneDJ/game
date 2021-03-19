@@ -61,12 +61,12 @@ Mesh::Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, 
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()));
 	glEnableVertexAttribArray(2);
 	// joints
-	glVertexAttribIPointer(3, 4, GL_UNSIGNED_SHORT, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()+data->texcoords.size()));
+	// TODO joint data could be stored as 8 bit or 16 bit
+	glVertexAttribIPointer(3, 4, GL_UNSIGNED_BYTE, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()+data->texcoords.size()));
 	glEnableVertexAttribArray(3);
 	// weights
 	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(data->positions.size()+data->normals.size()+data->texcoords.size()+data->joints.size()));
 	glEnableVertexAttribArray(4);
-
 }
 
 Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices)

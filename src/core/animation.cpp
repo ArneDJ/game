@@ -22,13 +22,22 @@
 //std::vector<ozz::math::Float4x4> models;
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 {
-	glm::mat4 out;
-	ozz::math::StorePtrU(matrix.cols[0], glm::value_ptr(out));
-	ozz::math::StorePtrU(matrix.cols[1], glm::value_ptr(out) + 4);
-	ozz::math::StorePtrU(matrix.cols[2], glm::value_ptr(out) + 8);
-	ozz::math::StorePtrU(matrix.cols[3], glm::value_ptr(out) + 12);
+	//glm::mat4 out;
+	//ozz::math::StorePtrU(matrix.cols[0], glm::value_ptr(out));
+	//ozz::math::StorePtrU(matrix.cols[1], glm::value_ptr(out) + 4);
+	//ozz::math::StorePtrU(matrix.cols[2], glm::value_ptr(out) + 8);
+	//ozz::math::StorePtrU(matrix.cols[3], glm::value_ptr(out) + 12);
+	glm::mat4 t = glm::mat4(1.f);
+	for (int i = 0; i < 4; i++) {
+	ozz::math::SimdFloat4 column = matrix.cols[i];
+	t[i][0] = ozz::math::GetX(column);
+	t[i][1] = ozz::math::GetY(column);
+	t[i][2] = ozz::math::GetZ(column);
+	t[i][3] = ozz::math::GetW(column);
+	}
+	//transforms[iind++] = t;
 
-	return out;
+	return t;
 }
 
 Animator::Animator(const std::string &skeletonpath, const std::string &animationpath)

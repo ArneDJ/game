@@ -46,8 +46,10 @@ private:
 // skeleton animation
 class Animator {
 public:
-	// buffer of model space matrices.
+	// marices for skinning
 	// send this to vertex shader for skinning
+	std::vector<ozz::math::Float4x4> skinning_matrices;
+	// buffer of model space matrices.
 	std::vector<ozz::math::Float4x4> models;
 	//
 	ozz::animation::Skeleton skeleton;
