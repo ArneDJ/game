@@ -49,12 +49,13 @@ public:
 	// buffer of model space matrices.
 	// send this to vertex shader for skinning
 	std::vector<ozz::math::Float4x4> models;
+	//
+	ozz::animation::Skeleton skeleton;
 public:
 	Animator(const std::string &skeletonpath, const std::string &animationpath); // TODO seperate animation and skeleton
 	void update(float delta);
 	void print_transforms(void);
 private:
-	ozz::animation::Skeleton skeleton;
 	ozz::animation::Animation animation;
 	// buffer of local transforms as sampled from animation.
 	std::vector<ozz::math::SoaTransform> locals;

@@ -3,6 +3,7 @@
 #include <chrono>
 #include <map>
 #include <vector>
+#include <span>
 
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
@@ -60,6 +61,7 @@ private:
 	Timer timer;
 	Shader object_shader;
 	Shader debug_shader;
+	Shader skeleton_shader;
 	Camera camera;
 	Skybox *skybox;
 	struct {
@@ -121,6 +123,10 @@ void Game::init(void)
 	object_shader.compile("shaders/object.vert", GL_VERTEX_SHADER);
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
+
+	skeleton_shader.compile("shaders/skeleton.vert", GL_VERTEX_SHADER);
+	skeleton_shader.compile("shaders/skeleton.frag", GL_FRAGMENT_SHADER);
+	skeleton_shader.link();
 
 	float aspect_ratio = float(settings.window_width) / float(settings.window_height);
 	camera.configure(0.1f, 9001.f, aspect_ratio, float(settings.FOV));
@@ -243,6 +249,60 @@ void Game::run(void)
 {
 	init();
 
+	glm::vec3 joint_points[1] = {
+		{ 1.f, 1.f, 1.f }
+	};
+
+	Mesh joints;
+	{
+		struct primitive primi = {
+			0, 0, 0, GLsizei(1),
+			GL_POINTS, false
+		};
+
+		joints.primitives.push_back(primi);
+
+		// create the OpenGL buffers
+		glGenVertexArrays(1, &joints.VAO);
+		glBindVertexArray(joints.VAO);
+
+		glGenBuffers(1, &joints.VBO);
+		glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), joint_points);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	}
+
+	glm::vec3 vector_bone_points[2] = {
+		{ 0.f, 0.f, 0.f },
+		{ 1.f, 1.f, 1.f }
+	};
+
+	Mesh bones;
+	{
+		struct primitive primi = {
+			0, 0, 0, GLsizei(2),
+			GL_LINES, false
+		};
+
+		bones.primitives.push_back(primi);
+
+		// create the OpenGL buffers
+		glGenVertexArrays(1, &bones.VAO);
+		glBindVertexArray(bones.VAO);
+
+		glGenBuffers(1, &bones.VBO);
+		glBindBuffer(GL_ARRAY_BUFFER, bones.VBO);
+		glBufferData(GL_ARRAY_BUFFER, 2 * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(glm::vec3), vector_bone_points);
+		//glBufferSubData(GL_ARRAY_BUFFER, position_size, texcoord_size, texcoords.data());
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	}
+
 	std::vector<glm::vec3> positions;
 	for (int i = -10; i < 11; i++) {
 		glm::vec3 a = { i, 0.f, -10.f };
@@ -315,15 +375,53 @@ void Game::run(void)
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
 		monkey.display();
 	
-		// display the bones and joints
-		//printf("%d\n", animator.models.size());
-		for (const auto &model : animator.models) {
+		skeleton_shader.use();
+		skeleton_shader.uniform_mat4("VP", camera.VP);
+		// display the bones
+		const ozz::span<const int16_t>& parents = animator.skeleton.joint_parents();
+		int instances = 0;
+		glPointSize(10.f);
+		for (int i = 0; i < animator.models.size(); i++) {
+			const int16_t parent_id = parents[i];
+			if (parent_id == ozz::animation::Skeleton::kNoParent) {
+				continue;
+			}
+			const ozz::math::Float4x4& parent = animator.models[parent_id];
+			const ozz::math::Float4x4& current = animator.models[i];
+
+			float buffer[4];
+			ozz::math::StorePtrU(current.cols[3], buffer);
+			vector_bone_points[0] = glm::vec3(buffer[0], buffer[1], buffer[2]);
+			ozz::math::StorePtrU(parent.cols[3], buffer);
+			vector_bone_points[1] = glm::vec3(buffer[0], buffer[1], buffer[2]);
+			glBindVertexArray(bones.VAO);
+
+			glBindBuffer(GL_ARRAY_BUFFER, bones.VBO);
+	
+			glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(glm::vec3), vector_bone_points);
+			
+			/*
+			const auto &model = animator.models[i];
 			glm::mat4 M = ozz_to_mat4(model);
-			debug_shader.uniform_mat4("MODEL", creature_T * M);
-			monkey.display();
+			glm::mat4 PARENT = ozz_to_mat4(model);
+			skeleton_shader.uniform_mat4("MODEL", creature_T * M);
+			*/
+			skeleton_shader.uniform_mat4("MODEL", creature_T);
+			skeleton_shader.uniform_vec3("COLOR", glm::vec3(0.f, 0.f, 1.f));
+			bones.draw();
+
+			joint_points[0] = vector_bone_points[0];
+			glBindVertexArray(joints.VAO);
+			glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
+	
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), joint_points);
+			//skeleton_shader.uniform_mat4("MODEL", creature_T * glm::translate(glm::mat4(1.f), vector_bone_points[0]));
+			skeleton_shader.uniform_vec3("COLOR", glm::vec3(1.f, 1.f, 0.f));
+			joints.draw();
 		}
 
-		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
+		skeleton_shader.uniform_mat4("MODEL", glm::mat4(1.f));
+		skeleton_shader.uniform_vec3("COLOR", glm::vec3(0.5f, 0.75f, 0.75f));
 		grid.draw();
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
