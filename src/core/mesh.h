@@ -2,8 +2,7 @@
 // only used for debugging
 struct vertex {
 	glm::vec3 position;
-	glm::vec3 normal;
-	glm::vec2 texcoords;
+	glm::vec3 color;
 };
 
 // pure buffer in bytes
@@ -28,9 +27,8 @@ class Mesh {
 public:
 	Mesh(void);
 	Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis);
-	Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices);
+	Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
-	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &textcoords, GLenum mode);
 	~Mesh(void);
 	void draw(void) const;
 	void draw_instanced(GLsizei count);

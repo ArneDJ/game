@@ -36,7 +36,6 @@ void main(void)
 	skin += weights.w * fetch_joint_matrix(int(joints.w));
 
 	normal = vnormal;
-	//normal = vec3(weights.x, weights.y, weights.z); // visualize the weights
 	texcoords = vtexcoords;
 	gl_Position = VP * MODEL * skin * vec4(vposition, 1.0);
 }

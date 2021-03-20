@@ -1,10 +1,15 @@
 #include <string>
 #include <iostream>
-#include <map>
-#include <functional>
+#include <vector>
 #include <fstream>
 #include <GL/glew.h>
 #include <GL/gl.h> 
+
+#include <glm/glm.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/mat4x4.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define DDSKTX_IMPLEMENT
 #include "../extern/ddsktx/dds-ktx.h"
@@ -88,6 +93,44 @@ void Texture::bind(GLenum unit) const
 	glBindTexture(target, handle);
 }
 	
+void TransformBuffer::alloc(GLenum use)
+{
+	usage = use;
+	size = matrices.size() * sizeof(glm::mat4);
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_BUFFER, texture);
+
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_TEXTURE_BUFFER, buffer);
+	glBufferData(GL_TEXTURE_BUFFER, size, NULL, usage);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, buffer);
+}
+
+void TransformBuffer::update(void)
+{
+	glBindBuffer(GL_TEXTURE_BUFFER, buffer);
+	glBufferData(GL_TEXTURE_BUFFER, size, matrices.data(), usage);
+}
+
+void TransformBuffer::bind(GLenum unit)
+{
+	glActiveTexture(unit);
+	glBindTexture(GL_TEXTURE_BUFFER, texture);
+}
+
+TransformBuffer::~TransformBuffer(void)
+{
+	if (glIsTexture(texture) == GL_TRUE) {
+		glDeleteTextures(1, &texture);
+		texture = 0;
+	}
+	if (glIsBuffer(buffer) == GL_TRUE) {
+		glDeleteBuffers(1, &buffer);
+		buffer = 0;
+	}
+}
+
 static inline GLenum texture_format(ddsktx_format format)
 {
 	switch (format) {

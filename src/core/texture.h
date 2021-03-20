@@ -18,3 +18,20 @@ private:
 
 // mutable OpenGL texture
 // class DynamicTexture
+
+// https://www.khronos.org/opengl/wiki/Buffer_Texture
+class TransformBuffer {
+public:
+	std::vector<glm::mat4> matrices;
+public:
+	void alloc(GLenum use);
+	void update(void);
+	void bind(GLenum unit);
+	~TransformBuffer(void);
+private:
+	GLsizei size = 0;
+	GLuint texture = 0;
+	GLuint buffer = 0;
+	GLenum usage = GL_STATIC_DRAW;
+};
+

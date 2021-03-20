@@ -69,7 +69,7 @@ Mesh::Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, 
 	glEnableVertexAttribArray(4);
 }
 
-Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices)
+Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage)
 {
 	const size_t vertices_size = sizeof(struct vertex) * vertices.size();
 	const size_t indices_size = sizeof(uint16_t) * indices.size();
@@ -80,7 +80,7 @@ Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_
 	primi.indexcount = GLsizei(indices.size());
 	primi.firstvertex = 0;
 	primi.vertexcount = GLsizei(vertices.size());
-	primi.mode = GL_TRIANGLES;
+	primi.mode = mode;
 	primi.indexed = indices.size() > 0;
 
 	primitives.push_back(primi);
@@ -93,24 +93,21 @@ Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_
 	if (primi.indexed) {
 		glGenBuffers(1, &EBO);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices.data(), usage);
 		indextype = GL_UNSIGNED_SHORT;
 	}
 
 	// add position buffer
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, vertices_size, vertices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices_size, vertices.data(), usage);
 
 	// positions
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(offsetof(struct vertex, position)));
 	glEnableVertexAttribArray(0);
-	// normals
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(offsetof(struct vertex, normal)));
+	// colors
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(offsetof(struct vertex, color)));
 	glEnableVertexAttribArray(1);
-	// texcoords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(offsetof(struct vertex, texcoords)));
-	glEnableVertexAttribArray(2);
 }
 
 Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices)
@@ -150,36 +147,6 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 }
 	
-Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords, GLenum mode)
-{
-	const size_t position_size = sizeof(glm::vec3) * positions.size();
-	const size_t texcoord_size = sizeof(glm::vec2) * texcoords.size();
-
-	// tell OpenGL how to render the buffer
-	struct primitive primi = {
-		0, 0, 0, GLsizei(positions.size()),
-		mode, false
-	};
-
-	primitives.push_back(primi);
-
-	// create the OpenGL buffers
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, position_size + texcoord_size, NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, position_size, positions.data());
-	glBufferSubData(GL_ARRAY_BUFFER, position_size, texcoord_size, texcoords.data());
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(position_size));
-}
-
 Mesh::~Mesh(void)
 {
 	glDeleteBuffers(1, &EBO);

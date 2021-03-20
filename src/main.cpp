@@ -61,7 +61,6 @@ private:
 	Timer timer;
 	Shader object_shader;
 	Shader debug_shader;
-	Shader skeleton_shader;
 	Shader creature_shader;
 	Camera camera;
 	Skybox *skybox;
@@ -124,10 +123,6 @@ void Game::init(void)
 	object_shader.compile("shaders/object.vert", GL_VERTEX_SHADER);
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
-
-	skeleton_shader.compile("shaders/skeleton.vert", GL_VERTEX_SHADER);
-	skeleton_shader.compile("shaders/skeleton.frag", GL_FRAGMENT_SHADER);
-	skeleton_shader.link();
 
 	creature_shader.compile("shaders/creature.vert", GL_VERTEX_SHADER);
 	creature_shader.compile("shaders/creature.frag", GL_FRAGMENT_SHADER);
@@ -250,86 +245,46 @@ void Game::update(void)
 	}
 }
 
-
-struct TBO {
-	GLuint texture;
-	GLuint buffer;
-};
-
 void Game::run(void)
 {
 	init();
+	
+	Animator animator = { "media/skeletons/brainstem.ozz", "media/animations/brainstem.ozz" };
 
-	glm::vec3 joint_points[1] = {
-		{ 1.f, 1.f, 1.f }
-	};
+	std::vector<uint16_t> indices;
 
-	Mesh joints;
-	{
-		struct primitive primi = {
-			0, 0, 0, GLsizei(1),
-			GL_POINTS, false
+	std::vector<struct vertex> joint_vertices;
+	glm::vec3 joint_color = { 1.f, 1.f, 0.f };
+	for (const auto &model : animator.models) {
+		struct vertex vert = {
+			{ 0.f, 0.f, 0.f },
+			joint_color
 		};
-
-		joints.primitives.push_back(primi);
-
-		// create the OpenGL buffers
-		glGenVertexArrays(1, &joints.VAO);
-		glBindVertexArray(joints.VAO);
-
-		glGenBuffers(1, &joints.VBO);
-		glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), joint_points);
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		joint_vertices.push_back(vert);
 	}
+	Mesh joints = { joint_vertices, indices, GL_POINTS, GL_DYNAMIC_DRAW };
 
-	glm::vec3 vector_bone_points[2] = {
-		{ 0.f, 0.f, 0.f },
-		{ 1.f, 1.f, 1.f }
-	};
+	std::vector<struct vertex> bone_vertices;
+	glm::vec3 bone_color = { 0.f, 0.f, 1.f };
+	bone_vertices.push_back((struct vertex){ glm::vec3(0.f, 0.f, 0.f), bone_color });
+	bone_vertices.push_back((struct vertex){ glm::vec3(1.f, 1.f, 1.f), bone_color });
+	Mesh bones = { bone_vertices, indices, GL_LINES, GL_DYNAMIC_DRAW };
 
-	Mesh bones;
-	{
-		struct primitive primi = {
-			0, 0, 0, GLsizei(2),
-			GL_LINES, false
-		};
-
-		bones.primitives.push_back(primi);
-
-		// create the OpenGL buffers
-		glGenVertexArrays(1, &bones.VAO);
-		glBindVertexArray(bones.VAO);
-
-		glGenBuffers(1, &bones.VBO);
-		glBindBuffer(GL_ARRAY_BUFFER, bones.VBO);
-		glBufferData(GL_ARRAY_BUFFER, 2 * sizeof(glm::vec3), NULL, GL_DYNAMIC_DRAW);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(glm::vec3), vector_bone_points);
-		//glBufferSubData(GL_ARRAY_BUFFER, position_size, texcoord_size, texcoords.data());
-
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	}
-
-	std::vector<glm::vec3> positions;
+	std::vector<struct vertex> vertices;
+	glm::vec3 raster_color = { 0.4f, 0.6f, 0.6f };
 	for (int i = -10; i < 11; i++) {
 		glm::vec3 a = { i, 0.f, -10.f };
 		glm::vec3 b = { i, 0.f, 10.f };
-		positions.push_back(a);
-		positions.push_back(b);
+		vertices.push_back((struct vertex){a, raster_color});
+		vertices.push_back((struct vertex){b, raster_color});
 	}
 	for (int i = -10; i < 11; i++) {
 		glm::vec3 a = { -10, 0.f, i };
 		glm::vec3 b = { 10.f, 0.f, i };
-		positions.push_back(a);
-		positions.push_back(b);
+		vertices.push_back((struct vertex){a, raster_color});
+		vertices.push_back((struct vertex){b, raster_color});
 	}
-	std::vector<glm::vec2> texcoords;
-	
-	Mesh grid = { positions, texcoords, GL_LINES };
+	Mesh grid = { vertices, indices, GL_LINES, GL_STATIC_DRAW };
 
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
@@ -356,25 +311,10 @@ void Game::run(void)
 	load_scene();
 
 	glm::mat4 creature_T = glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f));
-	//Animator animator = { "media/skeletons/skeleton.ozz", "media/animations/animation.ozz" };
-	Animator animator = { "media/skeletons/brainstem.ozz", "media/animations/brainstem.ozz" };
-	std::vector<glm::mat4> transform_buffer;
-	transform_buffer.resize(animator.models.size());
 
-	struct TBO instancebuf;
-	GLenum usage = GL_DYNAMIC_DRAW;
-	// prepare the transform TBO
-	GLsizei size = animator.models.size() * sizeof(glm::mat4);
-	glGenTextures(1, &instancebuf.texture);
-	glBindTexture(GL_TEXTURE_BUFFER, instancebuf.texture);
-
-	glGenBuffers(1, &instancebuf.buffer);
-	glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
-	glBufferData(GL_TEXTURE_BUFFER, size, NULL, usage);
-	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, instancebuf.buffer);
-
-	glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
-	glBufferData(GL_TEXTURE_BUFFER, size, transform_buffer.data(), usage);
+	TransformBuffer instancebuf;
+	instancebuf.matrices.resize(animator.models.size());
+	instancebuf.alloc(GL_DYNAMIC_DRAW);
 
 	while (running) {
 		timer.begin();
@@ -385,11 +325,10 @@ void Game::run(void)
 		animator.update(timer.delta);
 		for (const auto &skin : human.skins) {
 			for (int i = 0; i < animator.models.size(); i++) {
-				transform_buffer[i] = ozz_to_mat4(animator.models[i]) * skin.inversebinds[i];
+				instancebuf.matrices[i] = ozz_to_mat4(animator.models[i]) * skin.inversebinds[i];
 			}
 		}
-		glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
-		glBufferData(GL_TEXTURE_BUFFER, size, transform_buffer.data(), usage);
+		instancebuf.update();
 
 		renderman.prepare_to_render();
 
@@ -411,11 +350,9 @@ void Game::run(void)
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
 		monkey.display();
 
-		//debug_shader.uniform_mat4("MODEL", creature_T);
-		//human.display();
+		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
+		grid.draw();
 	
-		skeleton_shader.use();
-		skeleton_shader.uniform_mat4("VP", camera.VP);
 		// display the bones
 		const ozz::span<const int16_t>& parents = animator.skeleton.joint_parents();
 		int instances = 0;
@@ -430,31 +367,26 @@ void Game::run(void)
 
 			float buffer[4];
 			ozz::math::StorePtrU(current.cols[3], buffer);
-			vector_bone_points[0] = glm::vec3(buffer[0], buffer[1], buffer[2]);
+			bone_vertices[0].position = glm::vec3(buffer[0], buffer[1], buffer[2]);
 			ozz::math::StorePtrU(parent.cols[3], buffer);
-			vector_bone_points[1] = glm::vec3(buffer[0], buffer[1], buffer[2]);
+			bone_vertices[1].position = glm::vec3(buffer[0], buffer[1], buffer[2]);
 			glBindVertexArray(bones.VAO);
 
 			glBindBuffer(GL_ARRAY_BUFFER, bones.VBO);
 	
-			glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(glm::vec3), vector_bone_points);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(struct vertex), bone_vertices.data());
 			
-			skeleton_shader.uniform_mat4("MODEL", creature_T);
-			skeleton_shader.uniform_vec3("COLOR", glm::vec3(0.f, 0.f, 1.f));
+			debug_shader.uniform_mat4("MODEL", creature_T);
 			bones.draw();
 
-			joint_points[0] = vector_bone_points[0];
-			glBindVertexArray(joints.VAO);
-			glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
-	
-			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), joint_points);
-			skeleton_shader.uniform_vec3("COLOR", glm::vec3(1.f, 1.f, 0.f));
-			joints.draw();
+			joint_vertices[i].position = bone_vertices[0].position;
 		}
+		glBindVertexArray(joints.VAO);
+		glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
 
-		skeleton_shader.uniform_mat4("MODEL", glm::mat4(1.f));
-		skeleton_shader.uniform_vec3("COLOR", glm::vec3(0.5f, 0.75f, 0.75f));
-		grid.draw();
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct vertex)*joint_vertices.size(), joint_vertices.data());
+		joints.draw();
+
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
@@ -465,8 +397,7 @@ void Game::run(void)
 		creature_shader.use();
 		creature_shader.uniform_mat4("VP", camera.VP);
 		creature_shader.uniform_mat4("MODEL", creature_T);
-		glActiveTexture(GL_TEXTURE10);
-		glBindTexture(GL_TEXTURE_BUFFER, instancebuf.texture);
+		instancebuf.bind(GL_TEXTURE10);
 		human.display();
 
 		skybox->display(&camera);
