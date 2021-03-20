@@ -22,22 +22,13 @@
 //std::vector<ozz::math::Float4x4> models;
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 {
-	//glm::mat4 out;
-	//ozz::math::StorePtrU(matrix.cols[0], glm::value_ptr(out));
-	//ozz::math::StorePtrU(matrix.cols[1], glm::value_ptr(out) + 4);
-	//ozz::math::StorePtrU(matrix.cols[2], glm::value_ptr(out) + 8);
-	//ozz::math::StorePtrU(matrix.cols[3], glm::value_ptr(out) + 12);
-	glm::mat4 t = glm::mat4(1.f);
-	for (int i = 0; i < 4; i++) {
-	ozz::math::SimdFloat4 column = matrix.cols[i];
-	t[i][0] = ozz::math::GetX(column);
-	t[i][1] = ozz::math::GetY(column);
-	t[i][2] = ozz::math::GetZ(column);
-	t[i][3] = ozz::math::GetW(column);
-	}
-	//transforms[iind++] = t;
+	glm::mat4 out;
+	ozz::math::StorePtrU(matrix.cols[0], glm::value_ptr(out));
+	ozz::math::StorePtrU(matrix.cols[1], glm::value_ptr(out) + 4);
+	ozz::math::StorePtrU(matrix.cols[2], glm::value_ptr(out) + 8);
+	ozz::math::StorePtrU(matrix.cols[3], glm::value_ptr(out) + 12);
 
-	return t;
+	return out;
 }
 
 Animator::Animator(const std::string &skeletonpath, const std::string &animationpath)
@@ -68,7 +59,7 @@ void Animator::update(float delta)
 	ozz::animation::SamplingJob sampling_job;
 	sampling_job.animation = &animation;
 	sampling_job.cache = &cache;
-	sampling_job.ratio = controller.time_ratio();
+	sampling_job.ratio = controller.time_ratio;
 	sampling_job.output = ozz::make_span(locals);
 	if (!sampling_job.Run()) {
 		return;
@@ -82,31 +73,6 @@ void Animator::update(float delta)
 	if (!ltm_job.Run()) {
 		return;
 	}
-}
-
-void Animator::print_transforms(void)
-{
-	printf("------------ NEW FRAME TRANSFORMS ---------\n");
-	//std::vector<ozz::math::Float4x4> models;
-	for (const auto &model : models) {
-  		//SimdFloat4 cols[4];
-		//float buffer[16];
-		//glm::mat4 matrix;
-		//ozz::math::StorePtrU(model.cols[0], glm::value_ptr(matrix));
-		//ozz::math::StorePtrU(model.cols[1], glm::value_ptr(matrix)+ 4);
-		//ozz::math::StorePtrU(model.cols[2], glm::value_ptr(matrix)+ 8);
-		//ozz::math::StorePtrU(model.cols[3], glm::value_ptr(matrix)+ 12);
-		for (int i = 0; i < 4; i++) {
-			//printf("%f, %f, %f, %f\n", model.cols[i].x, models.cols[i].y, models.cols[i].z, models.cols[i].w);
-			ozz::math::SimdFloat4 column = model.cols[i];
-			printf("%f, ", ozz::math::GetX(column));
-			printf("%f, ", ozz::math::GetY(column));
-			printf("%f, ", ozz::math::GetZ(column));
-			printf("%f\n, ", ozz::math::GetW(column));
-		}
-		printf("\n");
-	}
-	printf("------------ END FRAME TRANSFORMS ---------\n");
 }
 
 bool Animator::load_skeleton(const std::string &filepath)
@@ -134,9 +100,6 @@ bool Animator::load_skeleton(const std::string &filepath)
 
 bool Animator::load_animation(const std::string &filepath)
 {
-	//assert(filename && animation);
-	ozz::log::Out() << "Loading animation archive: " << filepath.c_str() << "."
-	  << std::endl;
 	ozz::io::File file(filepath.c_str(), "rb");
 	if (!file.opened()) {
 		std::string err = "Animation error: cannot open animation file " + filepath;
@@ -157,19 +120,19 @@ bool Animator::load_animation(const std::string &filepath)
 
 PlaybackController::PlaybackController(void)
 {
-	time_ratio_ = 0.f;
-	previous_time_ratio_ = 0.f;
-	playback_speed_ = 1.f;
-	play_ = true;
-	loop_ = true;
+	time_ratio = 0.f;
+	previous_time_ratio = 0.f;
+	playback_speed = 1.f;
+	playing = true;
+	looping = true;
 }
 
 void PlaybackController::update(const ozz::animation::Animation& _animation, float _dt) 
 {
-	float new_time = time_ratio_;
+	float new_time = time_ratio;
 
-	if (play_) {
-		new_time = time_ratio_ + _dt * playback_speed_ / _animation.duration();
+	if (playing) {
+		new_time = time_ratio + _dt * playback_speed / _animation.duration();
 	}
 
 	// Must be called even if time doesn't change, in order to update previous
@@ -179,36 +142,23 @@ void PlaybackController::update(const ozz::animation::Animation& _animation, flo
 	set_time_ratio(new_time);
 }
 
-void PlaybackController::set_time_ratio(float _ratio) 
+void PlaybackController::set_time_ratio(float ratio) 
 {
-	previous_time_ratio_ = time_ratio_;
-	if (loop_) {
+	previous_time_ratio = time_ratio;
+	if (looping) {
 		// Wraps in the unit interval [0:1], even for negative values (the reason
 		// for using floorf).
-		time_ratio_ = _ratio - floorf(_ratio);
+		time_ratio = ratio - floorf(ratio);
 	} else {
 		// Clamps in the unit interval [0:1].
-		//time_ratio_ = ozz::math::Clamp(0.f, _ratio, 1.f);
-		time_ratio_ = glm::clamp(_ratio, 0.f, 1.f);
+		time_ratio = glm::clamp(ratio, 0.f, 1.f);
 	}
-}
-
-// Gets animation current time.
-float PlaybackController::time_ratio(void) const 
-{ 
-	return time_ratio_; 
-}
-
-// Gets animation time of last update.
-float PlaybackController::previous_time_ratio(void) const 
-{
-	return previous_time_ratio_;
 }
 
 void PlaybackController::reset(void) 
 {
-	previous_time_ratio_ = time_ratio_ = 0.f;
-	playback_speed_ = 1.f;
-	play_ = true;
+	previous_time_ratio = time_ratio = 0.f;
+	playback_speed = 1.f;
+	playing = true;
 }
 

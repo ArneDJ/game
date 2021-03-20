@@ -335,7 +335,7 @@ void Game::run(void)
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model building = { "media/models/building.glb", "" };
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
-	GLTF::Model human = { "media/models/monke.glb", "" };
+	GLTF::Model human = { "media/models/brainstem.glb", "" };
 
 	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &mesh : building.collision_trimeshes) {
@@ -357,7 +357,7 @@ void Game::run(void)
 
 	glm::mat4 creature_T = glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f));
 	//Animator animator = { "media/skeletons/skeleton.ozz", "media/animations/animation.ozz" };
-	Animator animator = { "media/skeletons/monke.ozz", "media/animations/monke.ozz" };
+	Animator animator = { "media/skeletons/brainstem.ozz", "media/animations/brainstem.ozz" };
 	std::vector<glm::mat4> transform_buffer;
 	transform_buffer.resize(animator.models.size());
 
@@ -373,12 +373,6 @@ void Game::run(void)
 	glBufferData(GL_TEXTURE_BUFFER, size, NULL, usage);
 	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, instancebuf.buffer);
 
-	animator.update(1.f/60.f);
-	for (int i = 0; i < animator.models.size(); i++) {
-		//transform_buffer[i] = ozz_to_mat4(animator.models[i]);
-		transform_buffer[i] = glm::mat4(1.f);
-	}
-
 	glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
 	glBufferData(GL_TEXTURE_BUFFER, size, transform_buffer.data(), usage);
 
@@ -389,18 +383,11 @@ void Game::run(void)
 		monkey_ent.update();
 
 		animator.update(timer.delta);
-		//animator.print_transforms();
 		for (const auto &skin : human.skins) {
-			//printf("%d\n", skin.inversebinds.size());
 			for (int i = 0; i < animator.models.size(); i++) {
 				transform_buffer[i] = ozz_to_mat4(animator.models[i]) * skin.inversebinds[i];
 			}
 		}
-		/*
-		for (int i = 0; i < animator.models.size(); i++) {
-			transform_buffer[i] = ozz_to_mat4(animator.models[i]);
-		}
-		*/
 		glBindBuffer(GL_TEXTURE_BUFFER, instancebuf.buffer);
 		glBufferData(GL_TEXTURE_BUFFER, size, transform_buffer.data(), usage);
 
@@ -452,12 +439,6 @@ void Game::run(void)
 	
 			glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(glm::vec3), vector_bone_points);
 			
-			/*
-			const auto &model = animator.models[i];
-			glm::mat4 M = ozz_to_mat4(model);
-			glm::mat4 PARENT = ozz_to_mat4(model);
-			skeleton_shader.uniform_mat4("MODEL", creature_T * M);
-			*/
 			skeleton_shader.uniform_mat4("MODEL", creature_T);
 			skeleton_shader.uniform_vec3("COLOR", glm::vec3(0.f, 0.f, 1.f));
 			bones.draw();
@@ -467,7 +448,6 @@ void Game::run(void)
 			glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
 	
 			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), joint_points);
-			//skeleton_shader.uniform_mat4("MODEL", creature_T * glm::translate(glm::mat4(1.f), vector_bone_points[0]));
 			skeleton_shader.uniform_vec3("COLOR", glm::vec3(1.f, 1.f, 0.f));
 			joints.draw();
 		}
