@@ -35,30 +35,58 @@ private:
 	bool looping;
 };
 
-// skeleton animation
-class Animator {
-public:
-	// marices for skinning
-	// send this to vertex shader for skinning
-	std::vector<ozz::math::Float4x4> skinning_matrices;
-	// buffer of model space matrices.
-	std::vector<ozz::math::Float4x4> models;
-	//
-	ozz::animation::Skeleton skeleton;
-public:
-	Animator(const std::string &skeletonpath, const std::string &animationpath); // TODO seperate animation and skeleton
-	void update(float delta);
-	void print_transforms(void);
-private:
-	ozz::animation::Animation animation;
-	// buffer of local transforms as sampled from animation.
-	std::vector<ozz::math::SoaTransform> locals;
-	// Sampling cache.
-	ozz::animation::SamplingCache cache;
+// Sampler structure contains all the data required to sample a single
+// animation.
+struct Sampler {
 	// Playback animation controller. This is a utility class that helps with
 	// controlling animation playback time.
 	PlaybackController controller;
+	// Blending weight for the layer.
+	float weight = 1.f;
+	// Runtime animation.
+	ozz::animation::Animation animation;
+	// Sampling cache.
+	ozz::animation::SamplingCache cache;
+	// Buffer of local transforms as sampled from animation_.
+	std::vector<ozz::math::SoaTransform> locals;
+};
+
+// skeleton animation
+class Animator {
+public:
+	std::vector<Sampler*> samplers;
+	// marices for skinning
+	// buffer of model space matrices.
+	// multiply these with model's inverse binds and send to vertex shader for skinning
+	std::vector<ozz::math::Float4x4> models;
+	// Buffer of local transforms which stores the blending result.
+	std::vector<ozz::math::SoaTransform> blended_locals;
+	//
+	ozz::animation::Skeleton skeleton;
+public:
+	//Animator(const std::string &skeletonpath, const std::string &animationpath);
+	Animator(const std::string &skeletonpath, const std::vector<std::string> &animationpaths);
+	~Animator(void)
+	{
+		for (int i = 0; i < samplers.size(); i++) {
+			delete samplers[i];
+		}
+	}
+	void update(float delta);
+	void print_transforms(void);
+private:
+	// Blending job bind pose threshold.
+	float threshold = 0.1f;
+	//ozz::animation::Animation animation;
+	// buffer of local transforms as sampled from animation.
+	//std::vector<ozz::math::SoaTransform> locals;
+	// Sampling cache.
+	//ozz::animation::SamplingCache cache;
+	// Playback animation controller. This is a utility class that helps with
+	// controlling animation playback time.
+	//PlaybackController controller;
 private:
 	bool load_skeleton(const std::string &filepath);
-	bool load_animation(const std::string &filepath);
+	//bool load_animation(const std::string &filepath);
+	bool load_animation(const std::string &filepath, ozz::animation::Animation *animation);
 };

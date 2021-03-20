@@ -7,6 +7,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "../extern/ozz/animation/runtime/animation.h"
+#include "../extern/ozz/animation/runtime/blending_job.h"
 #include "../extern/ozz/animation/runtime/local_to_model_job.h"
 #include "../extern/ozz/animation/runtime/sampling_job.h"
 #include "../extern/ozz/animation/runtime/skeleton.h"
@@ -30,46 +31,100 @@ glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 
 	return out;
 }
-
-Animator::Animator(const std::string &skeletonpath, const std::string &animationpath)
+	
+Animator::Animator(const std::string &skeletonpath, const std::vector<std::string> &animationpaths)
 {
 	load_skeleton(skeletonpath);
-	load_animation(animationpath);
+	const int num_soa_joints = skeleton.num_soa_joints();
+	const int num_joints = skeleton.num_joints();
 
-	if (skeleton.num_joints() != animation.num_tracks()) {
-		write_log(LogType::ERROR, "Animation error: skeleton joints and animation tracks do not match\n");
+	for (int i = 0; i < animationpaths.size(); i++) {
+		Sampler *sampler = new Sampler;
+		load_animation(animationpaths[i], &sampler->animation);
+		if (skeleton.num_joints() != sampler->animation.num_tracks()) {
+			write_log(LogType::ERROR, "Animation error: skeleton joints and animation tracks do not match\n");
+		}
+		// Allocates sampler runtime buffers.
+		sampler->locals.resize(num_soa_joints);
+
+		// Allocates a cache that matches animation requirements.
+		sampler->cache.Resize(num_joints);
+
+		samplers.push_back(sampler);
 	}
 
-	// Allocates runtime buffers.
-	const int num_soa_joints = skeleton.num_soa_joints();
-	locals.resize(num_soa_joints);
-	const int num_joints = skeleton.num_joints();
-	models.resize(num_joints);
+	// Allocates local space runtime buffers of blended data.
+	blended_locals.resize(num_soa_joints);
 
-	// Allocates a cache that matches animation requirements.
-	cache.Resize(num_joints);
+	// Allocates model space runtime buffers of blended data.
+	models.resize(num_joints);
 }
 	
 void Animator::update(float delta)
 {
-	// Updates current animation time.
-	controller.update(animation, delta);
+	// Updates and samples all animations to their respective local space
+	// transform buffers.
+	for (int i = 0; i < samplers.size(); i++) {
+		Sampler *sampler = samplers[i];
 
-	// Samples optimized animation at t = animation_time_.
-	ozz::animation::SamplingJob sampling_job;
-	sampling_job.animation = &animation;
-	sampling_job.cache = &cache;
-	sampling_job.ratio = controller.time_ratio;
-	sampling_job.output = ozz::make_span(locals);
-	if (!sampling_job.Run()) {
+		// Updates animations time.
+		sampler->controller.update(sampler->animation, delta);
+
+		// Early out if this sampler weight makes it irrelevant during blending.
+		if (samplers[i]->weight <= 0.f) {
+			continue;
+		}
+
+		// Setup sampling job.
+		ozz::animation::SamplingJob sampling_job;
+		sampling_job.animation = &sampler->animation;
+		sampling_job.cache = &sampler->cache;
+		sampling_job.ratio = sampler->controller.time_ratio;
+		sampling_job.output = ozz::make_span(sampler->locals);
+
+		// Samples animation.
+		if (!sampling_job.Run()) {
+			return;
+		}
+	}
+
+	// Blends animations.
+	// Blends the local spaces transforms computed by sampling all animations
+	// (1st stage just above), and outputs the result to the local space
+	// transform buffer blended_locals_
+
+	// Prepares blending layers.
+	//ozz::animation::BlendingJob::Layer layers[kNumLayers];
+	// TODO make this member data
+	std::vector<ozz::animation::BlendingJob::Layer> layers;
+	layers.resize(samplers.size());
+	for (int i = 0; i < samplers.size(); i++) {
+		layers[i].transform = ozz::make_span(samplers[i]->locals);
+		layers[i].weight = samplers[i]->weight;
+	}
+
+	// Setups blending job.
+	ozz::animation::BlendingJob blend_job;
+	blend_job.threshold = threshold;
+	blend_job.layers = ozz::make_span(layers);
+	blend_job.bind_pose = skeleton.joint_bind_poses();
+	blend_job.output = ozz::make_span(blended_locals);
+
+	// Blends.
+	if (!blend_job.Run()) {
 		return;
 	}
 
 	// Converts from local space to model space matrices.
+	// Gets the output of the blending stage, and converts it to model space.
+
+	// Setup local-to-model conversion job.
 	ozz::animation::LocalToModelJob ltm_job;
 	ltm_job.skeleton = &skeleton;
-	ltm_job.input = ozz::make_span(locals);
+	ltm_job.input = ozz::make_span(blended_locals);
 	ltm_job.output = ozz::make_span(models);
+
+	// Runs ltm job.
 	if (!ltm_job.Run()) {
 		return;
 	}
@@ -98,7 +153,7 @@ bool Animator::load_skeleton(const std::string &filepath)
 	return true;
 }
 
-bool Animator::load_animation(const std::string &filepath)
+bool Animator::load_animation(const std::string &filepath, ozz::animation::Animation *animation)
 {
 	ozz::io::File file(filepath.c_str(), "rb");
 	if (!file.opened()) {
@@ -113,7 +168,7 @@ bool Animator::load_animation(const std::string &filepath)
 	}
 
 	// Once the tag is validated, reading cannot fail.
-	archive >> animation;
+	archive >> *animation;
 
 	return true;
 }

@@ -249,53 +249,18 @@ void Game::run(void)
 {
 	init();
 	
-	Animator animator = { "media/skeletons/brainstem.ozz", "media/animations/brainstem.ozz" };
-
-	std::vector<uint16_t> indices;
-
-	std::vector<struct vertex> joint_vertices;
-	glm::vec3 joint_color = { 1.f, 1.f, 0.f };
-	for (const auto &model : animator.models) {
-		struct vertex vert = {
-			{ 0.f, 0.f, 0.f },
-			joint_color
-		};
-		joint_vertices.push_back(vert);
-	}
-	Mesh joints = { joint_vertices, indices, GL_POINTS, GL_DYNAMIC_DRAW };
-
-	struct vertex verty;
-	std::vector<struct vertex> bone_vertices;
-	//glm::vec3 bone_color = { 0.f, 0.f, 1.f };
-	verty.color = glm::vec3(0.f, 0.f, 1.f);
-	verty.position = glm::vec3(0.f, 0.f, 0.f);
-	bone_vertices.push_back(verty);
-	bone_vertices.push_back(verty);
-	Mesh bones = { bone_vertices, indices, GL_LINES, GL_DYNAMIC_DRAW };
-
 	std::vector<struct vertex> vertices;
+	std::vector<uint16_t> indices;
 	glm::vec3 raster_color = { 0.4f, 0.6f, 0.6f };
 	for (int i = -10; i < 11; i++) {
-		struct vertex a = {
-			{ i, 0.f, -10.f },
-			raster_color
-		};
-		struct vertex b = {
-			{ i, 0.f, 10.f },
-			raster_color
-		};
+		struct vertex a = { { i, 0.f, -10.f }, raster_color };
+		struct vertex b = { { i, 0.f, 10.f }, raster_color };
 		vertices.push_back(a);
 		vertices.push_back(b);
 	}
 	for (int i = -10; i < 11; i++) {
-		struct vertex a = {
-			{ -10.f, 0.f, i },
-			raster_color
-		};
-		struct vertex b = {
-			{ 10.f, 0.f, i },
-			raster_color
-		};
+		struct vertex a = { { -10.f, 0.f, i }, raster_color };
+		struct vertex b = { { 10.f, 0.f, i }, raster_color };
 		vertices.push_back(a);
 		vertices.push_back(b);
 	}
@@ -305,7 +270,7 @@ void Game::run(void)
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model building = { "media/models/building.glb", "" };
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
-	GLTF::Model human = { "media/models/brainstem.glb", "" };
+	GLTF::Model human = { "media/models/fox.glb", "" };
 
 	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &mesh : building.collision_trimeshes) {
@@ -324,7 +289,13 @@ void Game::run(void)
 	physicsman.insert_body(monkey_ent.body);
 
 	load_scene();
-
+	
+	const std::vector<std::string> animationpaths = {
+		"media/animations/fox/idle.ozz",
+		//"media/animations/fox/walk.ozz",
+		"media/animations/fox/run.ozz"
+	};
+	Animator animator = { "media/skeletons/fox.ozz", animationpaths };
 	glm::mat4 creature_T = glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f));
 
 	TransformBuffer instancebuf;
@@ -368,40 +339,6 @@ void Game::run(void)
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
 	
-		// display the bones
-		const ozz::span<const int16_t>& parents = animator.skeleton.joint_parents();
-		int instances = 0;
-		glPointSize(10.f);
-		for (int i = 0; i < animator.models.size(); i++) {
-			const int16_t parent_id = parents[i];
-			if (parent_id == ozz::animation::Skeleton::kNoParent) {
-				continue;
-			}
-			const ozz::math::Float4x4& parent = animator.models[parent_id];
-			const ozz::math::Float4x4& current = animator.models[i];
-
-			float buffer[4];
-			ozz::math::StorePtrU(current.cols[3], buffer);
-			bone_vertices[0].position = glm::vec3(buffer[0], buffer[1], buffer[2]);
-			ozz::math::StorePtrU(parent.cols[3], buffer);
-			bone_vertices[1].position = glm::vec3(buffer[0], buffer[1], buffer[2]);
-			glBindVertexArray(bones.VAO);
-
-			glBindBuffer(GL_ARRAY_BUFFER, bones.VBO);
-	
-			glBufferSubData(GL_ARRAY_BUFFER, 0, 2 * sizeof(struct vertex), bone_vertices.data());
-			
-			debug_shader.uniform_mat4("MODEL", creature_T);
-			bones.draw();
-
-			joint_vertices[i].position = bone_vertices[0].position;
-		}
-		glBindVertexArray(joints.VAO);
-		glBindBuffer(GL_ARRAY_BUFFER, joints.VBO);
-
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(struct vertex)*joint_vertices.size(), joint_vertices.data());
-		joints.draw();
-
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
@@ -447,7 +384,7 @@ int main(int argc, char *argv[])
 	Game game;
 	game.run();
 
-	write_log(LogType::RUN, "succesfully exited game");
+	write_log(LogType::RUN, "successfully exited game");
 
 	return 0;
 }
