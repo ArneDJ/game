@@ -264,25 +264,40 @@ void Game::run(void)
 	}
 	Mesh joints = { joint_vertices, indices, GL_POINTS, GL_DYNAMIC_DRAW };
 
+	struct vertex verty;
 	std::vector<struct vertex> bone_vertices;
-	glm::vec3 bone_color = { 0.f, 0.f, 1.f };
-	bone_vertices.push_back((struct vertex){ glm::vec3(0.f, 0.f, 0.f), bone_color });
-	bone_vertices.push_back((struct vertex){ glm::vec3(1.f, 1.f, 1.f), bone_color });
+	//glm::vec3 bone_color = { 0.f, 0.f, 1.f };
+	verty.color = glm::vec3(0.f, 0.f, 1.f);
+	verty.position = glm::vec3(0.f, 0.f, 0.f);
+	bone_vertices.push_back(verty);
+	bone_vertices.push_back(verty);
 	Mesh bones = { bone_vertices, indices, GL_LINES, GL_DYNAMIC_DRAW };
 
 	std::vector<struct vertex> vertices;
 	glm::vec3 raster_color = { 0.4f, 0.6f, 0.6f };
 	for (int i = -10; i < 11; i++) {
-		glm::vec3 a = { i, 0.f, -10.f };
-		glm::vec3 b = { i, 0.f, 10.f };
-		vertices.push_back((struct vertex){a, raster_color});
-		vertices.push_back((struct vertex){b, raster_color});
+		struct vertex a = {
+			{ i, 0.f, -10.f },
+			raster_color
+		};
+		struct vertex b = {
+			{ i, 0.f, 10.f },
+			raster_color
+		};
+		vertices.push_back(a);
+		vertices.push_back(b);
 	}
 	for (int i = -10; i < 11; i++) {
-		glm::vec3 a = { -10, 0.f, i };
-		glm::vec3 b = { 10.f, 0.f, i };
-		vertices.push_back((struct vertex){a, raster_color});
-		vertices.push_back((struct vertex){b, raster_color});
+		struct vertex a = {
+			{ -10.f, 0.f, i },
+			raster_color
+		};
+		struct vertex b = {
+			{ 10.f, 0.f, i },
+			raster_color
+		};
+		vertices.push_back(a);
+		vertices.push_back(b);
 	}
 	Mesh grid = { vertices, indices, GL_LINES, GL_STATIC_DRAW };
 
