@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -22,11 +24,13 @@ Camera::Camera(void)
 	pitch = 0.f;
 }
 	
-void Camera::configure(float near, float far, float aspect, float fovangle)
+void Camera::configure(float near, float far, uint16_t w, uint16_t h, float fovangle)
 {
 	nearclip = near;
 	farclip = far;
-	aspectratio = aspect;
+	aspectratio = float(w) / float(h);
+	width = w;
+	height = h;
 	FOV = fovangle;
 }
 	
@@ -92,3 +96,13 @@ void Camera::update(void)
 	VP = projection * viewing;
 }
 
+glm::vec3 Camera::ndc_to_ray(const glm::vec2 &ndc) const
+{
+	glm::vec4 clip = glm::vec4((2.f * ndc.x) / float(width) - 1.f, 1.f - (2.f * ndc.y) / float(height), -1.f, 1.f);
+
+	glm::vec4 worldspace = glm::inverse(projection) * clip;
+	glm::vec4 eye = glm::vec4(worldspace.x, worldspace.y, -1.f, 0.f);
+	glm::vec3 ray = glm::vec3(glm::inverse(viewing) * eye);
+
+	return glm::normalize(ray);
+}

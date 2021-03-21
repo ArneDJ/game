@@ -1,4 +1,9 @@
 
+struct ray_result {
+	bool hit = false;
+	glm::vec3 point; // the point the ray intersection happened
+};
+
 class PhysicsManager {
 public:
 	PhysicsManager(void);
@@ -15,6 +20,8 @@ public:
 	void insert_body(btRigidBody *body);
 	void remove_body(btRigidBody *body);
 	void clear(void);
+	//
+	struct ray_result cast_ray(const glm::vec3 &origin, const glm::vec3 &end);
 private:
 	btCollisionConfiguration *config;
 	btCollisionDispatcher *dispatcher;

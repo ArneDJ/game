@@ -186,6 +186,24 @@ void PhysicsManager::remove_body(btRigidBody *body)
 	world->removeCollisionObject(body);
 }
 	
+struct ray_result PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::vec3 &end)
+{
+	struct ray_result result = { false, end };
+
+	btVector3 from = vec3_to_bt(origin);
+	btVector3 to = vec3_to_bt(end);
+
+	btCollisionWorld::ClosestRayResultCallback callback(from, to);
+	//callback.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	world->rayTest(from, to, callback);
+	if (callback.hasHit()) {
+		result.hit = true;
+		result.point = bt_to_vec3(callback.m_hitPointWorld);
+	}
+
+	return result;
+}
+
 glm::vec3 body_position(const btRigidBody *body)
 {
 	btTransform t;

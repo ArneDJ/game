@@ -31,8 +31,12 @@ void InputManager::update(void)
 		}
 	}
 
+	sample_absolute_mousecoords();
 	sample_relative_mousecoords();
+}
 
+void InputManager::update_keymap(void) 
+{
 	// copy over keymap of current tick to previous keymap
 	for (auto &iter : keymap) {
 		previouskeys[iter.first] = iter.second;
@@ -69,6 +73,15 @@ void InputManager::sample_relative_mousecoords(void)
 		mousecoords.relative.x = 0.f;
 		mousecoords.relative.y = 0.f;
 	}
+}
+
+void InputManager::sample_absolute_mousecoords(void) 
+{
+	int x = 0;
+	int y = 0;
+	SDL_GetMouseState(&x, &y);
+	mousecoords.absolute.x = float(x);
+	mousecoords.absolute.y = float(y);
 }
 
 void InputManager::press_key(uint32_t keyID)

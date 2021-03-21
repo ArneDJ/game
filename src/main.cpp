@@ -79,6 +79,8 @@ private:
 		float look_sensitivity;
 	} settings;
 	std::vector<std::pair<DynamicObject*, const GLTF::Model*>> dynamics;
+	bool change_endpoint = false;
+	glm::vec3 endpoint = {};
 private:
 	void init(void);
 	void init_settings(void);
@@ -135,8 +137,8 @@ void Game::init(void)
 	creature_shader.compile("shaders/creature.frag", GL_FRAGMENT_SHADER);
 	creature_shader.link();
 
-	float aspect_ratio = float(settings.window_width) / float(settings.window_height);
-	camera.configure(0.1f, 9001.f, aspect_ratio, float(settings.FOV));
+	//float aspect_ratio = float(settings.window_width) / float(settings.window_height);
+	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	camera.position = { 10.f, 5.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	camera.project();
@@ -249,6 +251,19 @@ void Game::update(void)
 	for (auto &dynamic : dynamics) {
 		dynamic.first->update();
 	}
+
+	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
+		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
+		//glm::vec3 ray = camera.direction;
+		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
+		if (result.hit) {
+			//puts("ray hit!");
+			change_endpoint = true;
+			endpoint = result.point;
+		}
+	}
+
+	inputman.update_keymap();
 }
 
 void Game::run(void)
@@ -277,6 +292,7 @@ void Game::run(void)
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
 	GLTF::Model toroid = { "media/models/toroid.glb", "" };
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
+	GLTF::Model cone = { "media/models/cone.glb", "" };
 	GLTF::Model human = { "media/models/fox.glb", "" };
 
 	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
@@ -285,8 +301,15 @@ void Game::run(void)
 	}
 
 	StationaryObject stationary = { glm::vec3(-10.f, 5.f, 10.f), glm::quat(1.f, 0.f, 0.f, 0.f), shape };
+	for (const auto &mesh : building.collision_trimeshes) {
+		shape = physicsman.add_mesh(mesh.positions, mesh.indices);
+	}
+
+	glm::vec3 buildingpos = { -20.f, 3.f, -20.f };
+	StationaryObject building_ent = { buildingpos, glm::quat(1.f, 0.f, 0.f, 0.f), shape };
 
 	physicsman.insert_body(stationary.body);
+	physicsman.insert_body(building_ent.body);
 
 	btCollisionShape *hull = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &hullmesh : monkey.collision_hulls) {
@@ -313,7 +336,7 @@ void Game::run(void)
 	// create the navigation mesh
 	std::vector<float> vertex_soup;
 	std::vector<int> index_soup;
-	glm::mat4 building_T = glm::translate(glm::mat4(1.f), glm::vec3(-10.f, 0.f, -10.f));
+	glm::mat4 building_T = glm::translate(glm::mat4(1.f), buildingpos);
 	//glm::mat4 R = glm::mat4(construct->rotation);
 	//glm::mat4 M = T * R;
 	glm::mat4 M = building_T;
@@ -417,6 +440,9 @@ void Game::run(void)
 		debug_shader.uniform_mat4("MODEL", building_T);
 		building.display();
 
+		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), endpoint));
+		cone.display();
+
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
 
@@ -458,6 +484,7 @@ void Game::run(void)
 	}
 
 	physicsman.remove_body(stationary.body);
+	physicsman.remove_body(building_ent.body);
 	physicsman.remove_body(monkey_ent.body);
 	clear_scene();
 }
