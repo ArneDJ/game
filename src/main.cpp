@@ -18,6 +18,7 @@
 #include "extern/recast/DetourNavMesh.h"
 #include "extern/recast/DetourNavMeshQuery.h"
 #include "extern/recast/ChunkyTriMesh.h"
+#include "extern/recast/DetourCrowd.h"
 
 #include "extern/ozz/animation/runtime/animation.h"
 #include "extern/ozz/animation/runtime/local_to_model_job.h"
@@ -51,6 +52,7 @@
 #include "core/physics.h"
 #include "core/animation.h"
 #include "core/navigation.h"
+#include "crowd.h"
 #include "object.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -71,6 +73,7 @@ private:
 	Camera camera;
 	Skybox *skybox;
 	Navigation navigation;
+	Crowd *crowd;
 	struct {
 		uint16_t window_width;
 		uint16_t window_height;
@@ -217,6 +220,8 @@ void Game::clear_scene(void)
 
 void Game::teardown(void)
 {
+	delete crowd;
+
 	if (debugmode) {
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplSDL2_Shutdown();
@@ -264,6 +269,15 @@ void Game::update(void)
 	}
 
 	inputman.update_keymap();
+		
+	if (change_endpoint) {
+		struct polyresult result = navigation.point_on_navmesh(endpoint);
+		if (result.found) {
+			crowd->retarget_agent(0, result.position, result.poly);
+		}
+	}
+
+	crowd->update(timer.delta);
 }
 
 void Game::run(void)
@@ -294,6 +308,7 @@ void Game::run(void)
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
 	GLTF::Model cone = { "media/models/cone.glb", "" };
 	GLTF::Model human = { "media/models/fox.glb", "" };
+	GLTF::Model capsule = { "media/models/capsule.glb", "" };
 
 	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	for (const auto &mesh : toroid.collision_trimeshes) {
@@ -356,6 +371,9 @@ void Game::run(void)
 	if (navigation.build(vertex_soup, index_soup)) {
 		puts("succesfully built navigation mesh");
 	}
+
+	crowd = new Crowd { navigation.navmesh };
+	crowd->add_agent(glm::vec3(-14.f, 1.35f, -4.34f), glm::vec3(-7.4f, 3.3f, -37.f), navigation.navquery);
 
 	// visualize the navigation mesh
 	std::vector<struct vertex> navmesh_vertices;
@@ -436,6 +454,10 @@ void Game::run(void)
 		toroid.display();
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
 		monkey.display();
+
+		glm::vec3 agent_pos = crowd->agent_position(0);
+		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), agent_pos));
+		capsule.display();
 
 		debug_shader.uniform_mat4("MODEL", building_T);
 		building.display();
