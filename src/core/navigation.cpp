@@ -162,6 +162,7 @@ Navigation::~Navigation()
 
 bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
 {
+	puts("building navmesh");
 	// populate verts and tris:
 	verts = new float[vertices.size()];
 	for (int n = 0; n < vertices.size(); ++n) {

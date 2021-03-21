@@ -272,14 +272,15 @@ void Game::run(void)
 	}
 	Mesh grid = { vertices, indices, GL_LINES, GL_STATIC_DRAW };
 
+	GLTF::Model building = { "media/models/building.glb", "" };
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
-	GLTF::Model building = { "media/models/building.glb", "" };
+	GLTF::Model toroid = { "media/models/toroid.glb", "" };
 	GLTF::Model monkey = { "media/models/monkey.glb", "" };
 	GLTF::Model human = { "media/models/fox.glb", "" };
 
 	btCollisionShape *shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
-	for (const auto &mesh : building.collision_trimeshes) {
+	for (const auto &mesh : toroid.collision_trimeshes) {
 		shape = physicsman.add_mesh(mesh.positions, mesh.indices);
 	}
 
@@ -308,6 +309,30 @@ void Game::run(void)
 	instancebuf.matrices.resize(human.skins[0].inversebinds.size());
 	instancebuf.alloc(GL_DYNAMIC_DRAW);
 	instancebuf.update();
+
+	// create the navigation mesh
+	std::vector<float> vertex_soup;
+	std::vector<int> index_soup;
+	glm::mat4 building_T = glm::translate(glm::mat4(1.f), glm::vec3(-10.f, 0.f, -10.f));
+	//glm::mat4 R = glm::mat4(construct->rotation);
+	//glm::mat4 M = T * R;
+	glm::mat4 M = building_T;
+	int index_offset = vertex_soup.size()/3;
+	for (const auto &mesh : building.collision_trimeshes) {
+		for (const auto &pos : mesh.positions) {
+			glm::vec4 vertex = {pos.x, pos.y, pos.z, 1.f};
+			vertex = M * vertex;
+			vertex_soup.push_back(vertex.x);
+			vertex_soup.push_back(vertex.y);
+			vertex_soup.push_back(vertex.z);
+		}
+		for (const auto &index : mesh.indices) {
+			index_soup.push_back(index_offset + index);
+		}
+	}
+	if (navigation.build(vertex_soup, index_soup)) {
+		puts("succesfully built navigation mesh");
+	}
 
 	while (running) {
 		timer.begin();
@@ -341,9 +366,12 @@ void Game::run(void)
 		}
 		
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), stationary.position));
-		building.display();
+		toroid.display();
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), monkey_ent.position) * glm::mat4(monkey_ent.rotation));
 		monkey.display();
+
+		debug_shader.uniform_mat4("MODEL", building_T);
+		building.display();
 
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
