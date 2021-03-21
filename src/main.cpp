@@ -334,6 +334,50 @@ void Game::run(void)
 		puts("succesfully built navigation mesh");
 	}
 
+	// visualize the navigation mesh
+	std::vector<struct vertex> navmesh_vertices;
+	glm::vec3 navmesh_debug_color = { 0.2f, 0.5f, 1.f };
+	const dtNavMesh *mesh = navigation.navmesh;
+	for (int i = 0; i < mesh->getMaxTiles(); i++) {
+		const dtMeshTile *tile = mesh->getTile(i);
+		if (!tile) { continue; }
+		if (!tile->header) { continue; }
+		dtPolyRef base = mesh->getPolyRefBase(tile);
+		for (int i = 0; i < tile->header->polyCount; i++) {
+			const dtPoly *p = &tile->polys[i];
+			if (p->getType() == DT_POLYTYPE_OFFMESH_CONNECTION) { // Skip off-mesh links.
+				continue;
+			}
+			const dtPolyDetail *pd = &tile->detailMeshes[i];
+			for (int j = 0; j < pd->triCount; j++) {
+				const unsigned char *t = &tile->detailTris[(pd->triBase+j)*4];
+				for (int k = 0; k < 3; k++) {
+					if (t[k] < p->vertCount) {
+						float x = tile->verts[p->verts[t[k]]*3];
+						float y = tile->verts[p->verts[t[k]]*3 + 1] + 0.05f;
+						float z = tile->verts[p->verts[t[k]]*3 + 2];
+						struct vertex v = {
+							{ x, y, z},
+							navmesh_debug_color
+						};
+						navmesh_vertices.push_back(v);
+					} else {
+						float x = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3];
+						float y = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 1];
+						float z = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 2];
+						struct vertex v = {
+							{ x, y, z},
+							navmesh_debug_color
+						};
+						navmesh_vertices.push_back(v);
+					}
+				}
+			}
+		}
+	}
+
+	Mesh navmesh_debug = { navmesh_vertices, indices, GL_TRIANGLES, GL_STATIC_DRAW };
+
 	while (running) {
 		timer.begin();
 
@@ -375,6 +419,8 @@ void Game::run(void)
 
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
+
+		navmesh_debug.draw();
 	
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
