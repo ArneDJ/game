@@ -215,7 +215,6 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 			append_buffer(attribute->data, vertices.texcoords);
 			break;
 			case cgltf_attribute_type_joints:
-			// TODO joint data could be stored as 8 bit or 16 bit
 			append_buffer(attribute->data, vertices.joints);
 			break;
 			case cgltf_attribute_type_weights:

@@ -136,7 +136,6 @@ void Game::init(void)
 
 	skybox = new Skybox { glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f) };
 
-	// TODO move this to debugger
 	if (debugmode) {
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -299,8 +298,9 @@ void Game::run(void)
 	glm::mat4 creature_T = glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f));
 
 	TransformBuffer instancebuf;
-	instancebuf.matrices.resize(animator.models.size());
+	instancebuf.matrices.resize(human.skins[0].inversebinds.size());
 	instancebuf.alloc(GL_DYNAMIC_DRAW);
+	instancebuf.update();
 
 	while (running) {
 		timer.begin();
@@ -308,13 +308,15 @@ void Game::run(void)
 		update();
 		monkey_ent.update();
 
-		animator.update(timer.delta);
-		for (const auto &skin : human.skins) {
-			for (int i = 0; i < animator.models.size(); i++) {
-				instancebuf.matrices[i] = ozz_to_mat4(animator.models[i]) * skin.inversebinds[i];
+		if (animator.is_valid()) {
+			animator.update(timer.delta);
+			for (const auto &skin : human.skins) {
+				for (int i = 0; i < animator.models.size(); i++) {
+					instancebuf.matrices[i] = ozz_to_mat4(animator.models[i]) * skin.inversebinds[i];
+				}
 			}
+			instancebuf.update();
 		}
-		instancebuf.update();
 
 		renderman.prepare_to_render();
 
@@ -381,10 +383,12 @@ void Game::run(void)
 
 int main(int argc, char *argv[])
 {
+	write_start_log();
+
 	Game game;
 	game.run();
 
-	write_log(LogType::RUN, "successfully exited game");
+	write_exit_log();
 
 	return 0;
 }

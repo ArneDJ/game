@@ -98,6 +98,10 @@ void TransformBuffer::alloc(GLenum use)
 	usage = use;
 	size = matrices.size() * sizeof(glm::mat4);
 
+	for (auto &matrix : matrices) {
+		matrix = glm::mat4(1.f);
+	}
+
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_BUFFER, texture);
 

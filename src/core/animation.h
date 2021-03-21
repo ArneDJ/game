@@ -37,7 +37,8 @@ private:
 
 // Sampler structure contains all the data required to sample a single
 // animation.
-struct Sampler {
+class AnimationSampler {
+public:
 	// Playback animation controller. This is a utility class that helps with
 	// controlling animation playback time.
 	PlaybackController controller;
@@ -49,12 +50,14 @@ struct Sampler {
 	ozz::animation::SamplingCache cache;
 	// Buffer of local transforms as sampled from animation_.
 	std::vector<ozz::math::SoaTransform> locals;
+public: 
+	bool load(const std::string &filepath);
 };
 
 // skeleton animation
 class Animator {
 public:
-	std::vector<Sampler*> samplers;
+	std::vector<AnimationSampler*> samplers;
 	// marices for skinning
 	// buffer of model space matrices.
 	// multiply these with model's inverse binds and send to vertex shader for skinning
@@ -64,29 +67,15 @@ public:
 	//
 	ozz::animation::Skeleton skeleton;
 public:
-	//Animator(const std::string &skeletonpath, const std::string &animationpath);
 	Animator(const std::string &skeletonpath, const std::vector<std::string> &animationpaths);
-	~Animator(void)
-	{
-		for (int i = 0; i < samplers.size(); i++) {
-			delete samplers[i];
-		}
-	}
+	~Animator(void);
 	void update(float delta);
 	void print_transforms(void);
+	bool is_valid(void) const { return valid; }
 private:
 	// Blending job bind pose threshold.
 	float threshold = 0.1f;
-	//ozz::animation::Animation animation;
-	// buffer of local transforms as sampled from animation.
-	//std::vector<ozz::math::SoaTransform> locals;
-	// Sampling cache.
-	//ozz::animation::SamplingCache cache;
-	// Playback animation controller. This is a utility class that helps with
-	// controlling animation playback time.
-	//PlaybackController controller;
+	bool valid = true;
 private:
 	bool load_skeleton(const std::string &filepath);
-	//bool load_animation(const std::string &filepath);
-	bool load_animation(const std::string &filepath, ozz::animation::Animation *animation);
 };

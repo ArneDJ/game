@@ -19,8 +19,6 @@
 #include "logger.h"
 #include "animation.h"
 	
-// TODO find a more efficient conversion
-//std::vector<ozz::math::Float4x4> models;
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 {
 	glm::mat4 out;
@@ -32,17 +30,37 @@ glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 	return out;
 }
 	
+bool AnimationSampler::load(const std::string &filepath)
+{
+	ozz::io::File file(filepath.c_str(), "rb");
+	if (!file.opened()) {
+		std::string err = "Animation error: cannot open animation file " + filepath;
+		write_log(LogType::ERROR, err);
+		return false;
+	}
+	ozz::io::IArchive archive(&file);
+	if (!archive.TestTag<ozz::animation::Animation>()) {
+		write_log(LogType::ERROR, "Animation error: failed to load animation instance from file");
+		return false;
+	}
+
+	// Once the tag is validated, reading cannot fail.
+	archive >> animation;
+
+	return true;
+}
+	
 Animator::Animator(const std::string &skeletonpath, const std::vector<std::string> &animationpaths)
 {
-	load_skeleton(skeletonpath);
+	valid = load_skeleton(skeletonpath);
 	const int num_soa_joints = skeleton.num_soa_joints();
 	const int num_joints = skeleton.num_joints();
 
 	for (int i = 0; i < animationpaths.size(); i++) {
-		Sampler *sampler = new Sampler;
-		load_animation(animationpaths[i], &sampler->animation);
-		if (skeleton.num_joints() != sampler->animation.num_tracks()) {
-			write_log(LogType::ERROR, "Animation error: skeleton joints and animation tracks do not match\n");
+		AnimationSampler *sampler = new AnimationSampler;
+		sampler->load(animationpaths[i]);
+		if (num_joints != sampler->animation.num_tracks()) {
+			write_log(LogType::ERROR, "Animation error: skeleton joints of " + skeletonpath + " and animation tracks of " + animationpaths[i] + " mismatch\n");
 		}
 		// Allocates sampler runtime buffers.
 		sampler->locals.resize(num_soa_joints);
@@ -60,12 +78,19 @@ Animator::Animator(const std::string &skeletonpath, const std::vector<std::strin
 	models.resize(num_joints);
 }
 	
+Animator::~Animator(void)
+{
+	for (int i = 0; i < samplers.size(); i++) {
+		delete samplers[i];
+	}
+}
+	
 void Animator::update(float delta)
 {
 	// Updates and samples all animations to their respective local space
 	// transform buffers.
 	for (int i = 0; i < samplers.size(); i++) {
-		Sampler *sampler = samplers[i];
+		AnimationSampler *sampler = samplers[i];
 
 		// Updates animations time.
 		sampler->controller.update(sampler->animation, delta);
@@ -94,8 +119,6 @@ void Animator::update(float delta)
 	// transform buffer blended_locals_
 
 	// Prepares blending layers.
-	//ozz::animation::BlendingJob::Layer layers[kNumLayers];
-	// TODO make this member data
 	std::vector<ozz::animation::BlendingJob::Layer> layers;
 	layers.resize(samplers.size());
 	for (int i = 0; i < samplers.size(); i++) {
@@ -149,26 +172,6 @@ bool Animator::load_skeleton(const std::string &filepath)
 	}
 
 	archive >> skeleton;
-
-	return true;
-}
-
-bool Animator::load_animation(const std::string &filepath, ozz::animation::Animation *animation)
-{
-	ozz::io::File file(filepath.c_str(), "rb");
-	if (!file.opened()) {
-		std::string err = "Animation error: cannot open animation file " + filepath;
-		write_log(LogType::ERROR, err);
-		return false;
-	}
-	ozz::io::IArchive archive(&file);
-	if (!archive.TestTag<ozz::animation::Animation>()) {
-		write_log(LogType::ERROR, "Animation error: failed to load animation instance from file");
-		return false;
-	}
-
-	// Once the tag is validated, reading cannot fail.
-	archive >> *animation;
 
 	return true;
 }

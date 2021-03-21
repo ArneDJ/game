@@ -24,3 +24,12 @@ extern void write_log(LogType type, const std::string &message)
 	}
 }
 
+void write_start_log(void)
+{
+	write_log(LogType::ERROR, "********** Starting new game (this is not an error) **********\n");
+}
+
+void write_exit_log(void)
+{
+	write_log(LogType::ERROR, "********** Exiting game (this is not an error) **********\n\n");
+}
