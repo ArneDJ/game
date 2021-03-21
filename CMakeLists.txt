@@ -28,6 +28,8 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/core/*.h"
         "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.h"
+        "${PROJECT_SOURCE_DIR}/src/extern/recast/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/extern/recast/*.h"
 )
 
 add_executable(${PROJECT_NAME} ${all_SRCS})
@@ -45,3 +47,8 @@ target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libLinearMath.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libozz_animation.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libozz_base.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libozz_geometry.a)
+
+# link recast navigatio static libraries
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libRecast.a)
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libDetour.a)
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libDetourCrowd.a)

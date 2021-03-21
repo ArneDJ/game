@@ -14,6 +14,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "extern/recast/Recast.h"
+#include "extern/recast/DetourNavMesh.h"
+#include "extern/recast/DetourNavMeshQuery.h"
+#include "extern/recast/ChunkyTriMesh.h"
+
 #include "extern/ozz/animation/runtime/animation.h"
 #include "extern/ozz/animation/runtime/local_to_model_job.h"
 #include "extern/ozz/animation/runtime/sampling_job.h"
@@ -45,6 +50,7 @@
 #include "core/render.h"
 #include "core/physics.h"
 #include "core/animation.h"
+#include "core/navigation.h"
 #include "object.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -64,6 +70,7 @@ private:
 	Shader creature_shader;
 	Camera camera;
 	Skybox *skybox;
+	Navigation navigation;
 	struct {
 		uint16_t window_width;
 		uint16_t window_height;

@@ -28,8 +28,8 @@
 #ifndef OZZ_OZZ_ANIMATION_RUNTIME_BLENDING_JOB_H_
 #define OZZ_OZZ_ANIMATION_RUNTIME_BLENDING_JOB_H_
 
-#include "base/maths/simd_math.h"
-#include "base/span.h"
+#include "../../base/maths/simd_math.h"
+#include "../../base/span.h"
 
 namespace ozz {
 
