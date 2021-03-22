@@ -87,7 +87,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 			}
 			const dtPolyDetail *pd = &tile->detailMeshes[i];
 			for (int j = 0; j < pd->triCount; j++) {
-				const unsigned char *t = &tile->detailTris[(pd->triBase+j)*4];
+				const uint8_t *t = &tile->detailTris[(pd->triBase+j)*4];
 				for (int k = 0; k < 3; k++) {
 					if (t[k] < p->vertCount) {
 						float x = tile->verts[p->verts[t[k]]*3];

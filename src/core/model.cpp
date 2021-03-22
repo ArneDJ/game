@@ -305,8 +305,8 @@ static struct collision_trimesh load_collision_trimesh(const cgltf_mesh *gltfmes
 
 	std::vector<uint8_t> indices;
 	std::vector<uint8_t> positions;
-  	unsigned int vertexstart = 0;
-  	unsigned int indexstart = 0;
+  	uint32_t vertexstart = 0;
+  	uint32_t indexstart = 0;
 	for (int i = 0; i < gltfmesh->primitives_count; i++) {
 		const cgltf_primitive *primitive = &gltfmesh->primitives[i];
 		if (primitive->indices) { 

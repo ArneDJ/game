@@ -40,9 +40,9 @@ public:
 		rcFreePolyMeshDetail(dmesh);
 		delete context;
 	}
-	unsigned char *alloc_navdata(const int tx, const int ty, float *bmin, float *bmax, int &data_size, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg);
+	uint8_t *alloc_navdata(const int tx, const int ty, float *bmin, float *bmax, int &data_size, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg);
 private:
-	unsigned char *triareas = 0;
+	uint8_t *triareas = 0;
 	rcContext *context = nullptr;
 	rcHeightfield *solid = 0;
 	rcCompactHeightfield *chf = 0;
@@ -71,9 +71,9 @@ static const int TILE_SIZE = 128;
 std::mutex global_mutex;
 
 static void add_tile_mesh_rows(const int y, const int tw, const float tcs, const float *bmin, const float *bmax, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg, dtNavMesh *navmesh);
-static unsigned char* build_tile_mesh(const int tx, const int ty, float *bmin, float *bmax, int &data_size, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg);
+static uint8_t* build_tile_mesh(const int tx, const int ty, float *bmin, float *bmax, int &data_size, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg);
 
-static inline unsigned int nextpow2(unsigned int v)
+static inline uint32_t nextpow2(uint32_t v)
 {
 	v--;
 	v |= v >> 1;
@@ -85,11 +85,11 @@ static inline unsigned int nextpow2(unsigned int v)
 	return v;
 }
 
-static inline unsigned int ilog2(unsigned int v)
+static inline uint32_t ilog2(uint32_t v)
 {
-	unsigned int r = (v > 0xffff) << 4; 
+	uint32_t r = (v > 0xffff) << 4; 
 	v >>= r;
-	unsigned int shift = (v > 0xff) << 3; 
+	uint32_t shift = (v > 0xff) << 3; 
 	v >>= shift; 
 	r |= shift;
 	shift = (v > 0xf) << 2; 
@@ -367,7 +367,7 @@ static void add_tile_mesh_rows(const int y, const int tw, const float tcs, const
 		
 		int data_size = 0;
 		Navbuilder builder;
-		unsigned char *data = builder.alloc_navdata(x, y, tile_min, tile_max, data_size, verts, nverts, chunky_mesh, cfg);
+		uint8_t *data = builder.alloc_navdata(x, y, tile_min, tile_max, data_size, verts, nverts, chunky_mesh, cfg);
 		std::lock_guard<std::mutex> guard(global_mutex);
 		if (data) {
 			// Remove any previous data (navmesh owns and deletes the data).
@@ -379,7 +379,7 @@ static void add_tile_mesh_rows(const int y, const int tw, const float tcs, const
 	}
 }
 
-unsigned char* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin, float *bmax, int &data_size, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg)
+uint8_t* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin, float *bmax, int &data_size, const float *verts, const int nverts, const rcChunkyTriMesh *chunky_mesh, const rcConfig *cfg)
 {
 	// Expand the heighfield bounding box by border size to find the extents of geometry we need to build this tile.
 	//
@@ -421,7 +421,7 @@ unsigned char* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin
 	// Allocate array that can hold triangle flags.
 	// If you have multiple meshes you need to process, allocate
 	// and array which can hold the max number of triangles you need to process.
-	triareas = new unsigned char[chunky_mesh->maxTrisPerChunk];
+	triareas = new uint8_t[chunky_mesh->maxTrisPerChunk];
 	if (!triareas) {
 		write_log(LogType::ERROR, "buildNavigation: Out of memory 'triareas'");
 		return 0;
@@ -446,7 +446,7 @@ unsigned char* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin
 		
 		tile_tri_count += nctris;
 		
-		memset(triareas, 0, nctris*sizeof(unsigned char));
+		memset(triareas, 0, nctris*sizeof(uint8_t));
 		rcMarkWalkableTriangles(context, cfg->walkableSlopeAngle, verts, nverts, ctris, nctris, triareas);
 		if (!rcRasterizeTriangles(context, verts, nverts, ctris, triareas, nctris, *solid, cfg->walkableClimb)) { write_log(LogType::ERROR, "nav: could not rasterize tris"); return 0; }
 	}
@@ -487,7 +487,7 @@ unsigned char* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin
 	/*
 	const ConvexVolume* vols = m_geom->getConvexVolumes();
 	for (int i  = 0; i < m_geom->getConvexVolumeCount(); ++i)
-		rcMarkConvexPolyArea(context, vols[i].verts, vols[i].nverts, vols[i].hmin, vols[i].hmax, (unsigned char)vols[i].area, *chf);
+		rcMarkConvexPolyArea(context, vols[i].verts, vols[i].nverts, vols[i].hmin, vols[i].hmax, (uint8_t)vols[i].area, *chf);
 	
 		*/
 	
@@ -564,7 +564,7 @@ unsigned char* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin
 	rcFreeContourSet(cset);
 	cset = 0;
 	
-	unsigned char *navdata = 0;
+	uint8_t *navdata = 0;
 	int navdata_size = 0;
 	if (cfg->maxVertsPerPoly <= DT_VERTS_PER_POLYGON) {
 		if (pmesh->nverts >= 0xffff) {
