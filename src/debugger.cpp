@@ -124,9 +124,44 @@ void Debugger::delete_navmeshes(void)
 	}
 	navmeshes.clear();
 }
+	
+void Debugger::add_grid(const glm::vec2 &min, const glm::vec2 &max)
+{
+	std::vector<struct vertex> vertices;
+	std::vector<uint16_t> indices;
+	const glm::vec3 color = { 0.4f, 0.6f, 0.6f };
+
+	for (int i = int(min.x); i < int(max.x)+1; i++) {
+		struct vertex a = { { i, 0.f, min.y }, color };
+		struct vertex b = { { i, 0.f, max.y }, color };
+		vertices.push_back(a);
+		vertices.push_back(b);
+	}
+	for (int i = int(min.y); i < int(max.y)+1; i++) {
+		struct vertex a = { { min.x, 0.f, i }, color };
+		struct vertex b = { { max.x, 0.f, i }, color };
+		vertices.push_back(a);
+		vertices.push_back(b);
+	}
+	Mesh *grid = new Mesh { vertices, indices, GL_LINES, GL_STATIC_DRAW };
+	grids.push_back(grid);
+}
+
+void Debugger::render_grids(void)
+{
+	for (const auto &grid : grids) {
+		grid->draw();
+	}
+}
+
 void Debugger::teardown(void)
 {
 	delete_navmeshes();
+
+	for (int i = 0; i < grids.size(); i++) {
+		delete grids[i];
+	}
+	grids.clear();
 
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL2_Shutdown();

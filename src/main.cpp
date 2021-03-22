@@ -276,22 +276,7 @@ void Game::run(void)
 {
 	init();
 	
-	std::vector<struct vertex> vertices;
-	std::vector<uint16_t> indices;
-	glm::vec3 raster_color = { 0.4f, 0.6f, 0.6f };
-	for (int i = -10; i < 11; i++) {
-		struct vertex a = { { i, 0.f, -10.f }, raster_color };
-		struct vertex b = { { i, 0.f, 10.f }, raster_color };
-		vertices.push_back(a);
-		vertices.push_back(b);
-	}
-	for (int i = -10; i < 11; i++) {
-		struct vertex a = { { -10.f, 0.f, i }, raster_color };
-		struct vertex b = { { 10.f, 0.f, i }, raster_color };
-		vertices.push_back(a);
-		vertices.push_back(b);
-	}
-	Mesh grid = { vertices, indices, GL_LINES, GL_STATIC_DRAW };
+	debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
 
 	GLTF::Model building = { "media/models/building.glb", "" };
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
@@ -417,10 +402,9 @@ void Game::run(void)
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), endpoint));
 		cone.display();
 
-		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
-		grid.draw();
-
 		if (debugmode) {
+			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
+			debugger.render_grids();
 			debugger.render_navmeshes();
 		}
 	
