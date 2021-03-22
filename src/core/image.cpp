@@ -2,6 +2,9 @@
 #include <iostream>
 #include <cstring>
 
+#include <glm/glm.hpp>
+#include <glm/vec2.hpp>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "../extern/stbimage/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -9,6 +12,8 @@
 
 #include "../extern/fastgaussianblur/fast_gaussian_blur.h"
 #include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
+
+//#include "../extern/fastnoise/FastNoise.h"
 
 #include "image.h"
 
@@ -78,4 +83,37 @@ void Image::blur(float sigma)
 	std::memcpy(data, blurred, size);
 
 	delete [] blurred;
+}
+	
+void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan)
+{
+	/*
+	FastNoise fastnoise;
+	fastnoise.SetSeed(1337);
+	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
+	fastnoise.SetFractalType(FastNoise::FBM);
+	fastnoise.SetFrequency(0.001f);
+	fastnoise.SetPerturbFrequency(0.001f);
+	fastnoise.SetFractalOctaves(6);
+	fastnoise.SetFractalLacunarity(2.5f);
+	fastnoise.SetGradientPerturbAmp(200.f);
+	*/
+
+	const int nsteps = 32;
+	const int stepsize = width / nsteps;
+
+	#pragma omp parallel for
+	for (int step_x = 0; step_x < width; step_x += stepsize) {
+		int w = step_x + stepsize;
+		int h = height;
+		for (int i = 0; i < h; i++) {
+			for (int j = step_x; j < w; j++) {
+				float x = sample_freq.x * (j + sample_offset.x);
+				float y = sample_freq.y * (i + sample_offset.y);
+				fastnoise->GradientPerturbFractal(x, y);
+				float value = (fastnoise->GetNoise(x, y) + 1.f) / 2.f;
+				plot(j, i, chan, 255 * value);
+			}
+		}
+	}
 }

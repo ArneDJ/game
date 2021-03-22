@@ -36,6 +36,8 @@
 #include "extern/imgui/imgui_impl_sdl.h"
 #include "extern/imgui/imgui_impl_opengl3.h"
 
+//#include "extern/fastnoise/FastNoise.h"
+
 #include "core/logger.h"
 #include "core/image.h"
 #include "core/entity.h"
@@ -199,6 +201,23 @@ void Game::run(void)
 
 	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
 	GLTF::Model dragon = { "media/models/dragon.glb", "" };
+
+	FastNoise fastnoise;
+	fastnoise.SetSeed(1337);
+	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
+	fastnoise.SetFractalType(FastNoise::FBM);
+	fastnoise.SetFrequency(0.001f);
+	fastnoise.SetPerturbFrequency(0.001f);
+	fastnoise.SetFractalOctaves(6);
+	fastnoise.SetFractalLacunarity(2.5f);
+	fastnoise.SetGradientPerturbAmp(200.f);
+	Image image = { 512, 512, 1 };
+	auto start = std::chrono::steady_clock::now();
+	image.noise(&fastnoise, glm::vec2(4.f, 4.f), glm::vec2(0.f, 0.f), CHANNEL_RED);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+	image.write("media/textures/noise.png");
 
 	while (running) {
 		timer.begin();

@@ -1,3 +1,5 @@
+#pragma once
+#include "../extern/fastnoise/FastNoise.h"
 
 enum COLOR_CHANNEL : uint8_t {
 	CHANNEL_RED = 0,
@@ -26,6 +28,8 @@ public:
 	void clear(void);
 	// save to file
 	void write(const std::string &filepath);
+	// fill image with random noise at the specified channel
+	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
 public:
 	uint16_t width = 0;
 	uint16_t height = 0;
