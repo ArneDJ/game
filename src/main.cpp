@@ -54,6 +54,7 @@
 #include "core/navigation.h"
 #include "crowd.h"
 #include "object.h"
+#include "debugger.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 class Game {
@@ -74,6 +75,7 @@ private:
 	Skybox *skybox;
 	Navigation navigation;
 	Crowd *crowd;
+	Debugger debugger;
 	struct {
 		uint16_t window_width;
 		uint16_t window_height;
@@ -140,7 +142,6 @@ void Game::init(void)
 	creature_shader.compile("shaders/creature.frag", GL_FRAGMENT_SHADER);
 	creature_shader.link();
 
-	//float aspect_ratio = float(settings.window_width) / float(settings.window_height);
 	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	camera.position = { 10.f, 5.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
@@ -149,17 +150,7 @@ void Game::init(void)
 	skybox = new Skybox { glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f) };
 
 	if (debugmode) {
-		// Setup Dear ImGui context
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO &io = ImGui::GetIO(); (void)io;
-
-		// Setup Dear ImGui style
-		ImGui::StyleColorsDark();
-
-		// Setup Platform/Renderer bindings
-		ImGui_ImplSDL2_InitForOpenGL(windowman.window, windowman.glcontext);
-		ImGui_ImplOpenGL3_Init("#version 430");
+		debugger.init(windowman.window, windowman.glcontext);
 	}
 }
 
@@ -223,9 +214,7 @@ void Game::teardown(void)
 	delete crowd;
 
 	if (debugmode) {
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplSDL2_Shutdown();
-		ImGui::DestroyContext();
+		debugger.teardown();
 	}
 
 	delete skybox;
@@ -259,10 +248,8 @@ void Game::update(void)
 
 	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
 		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
-		//glm::vec3 ray = camera.direction;
 		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
 		if (result.hit) {
-			//puts("ray hit!");
 			change_endpoint = true;
 			endpoint = result.point;
 		}
@@ -278,6 +265,11 @@ void Game::update(void)
 	}
 
 	crowd->update(timer.delta);
+
+	if (debugmode) {
+		debugger.update(timer.ms_per_frame, camera.position);
+		if (debugger.exit_request) { running = false; }
+	}
 }
 
 void Game::run(void)
@@ -373,51 +365,11 @@ void Game::run(void)
 	}
 
 	crowd = new Crowd { navigation.navmesh };
-	crowd->add_agent(glm::vec3(-14.f, 1.35f, -4.34f), glm::vec3(-7.4f, 3.3f, -37.f), navigation.navquery);
-
-	// visualize the navigation mesh
-	std::vector<struct vertex> navmesh_vertices;
-	glm::vec3 navmesh_debug_color = { 0.2f, 0.5f, 1.f };
-	const dtNavMesh *mesh = navigation.navmesh;
-	for (int i = 0; i < mesh->getMaxTiles(); i++) {
-		const dtMeshTile *tile = mesh->getTile(i);
-		if (!tile) { continue; }
-		if (!tile->header) { continue; }
-		dtPolyRef base = mesh->getPolyRefBase(tile);
-		for (int i = 0; i < tile->header->polyCount; i++) {
-			const dtPoly *p = &tile->polys[i];
-			if (p->getType() == DT_POLYTYPE_OFFMESH_CONNECTION) { // Skip off-mesh links.
-				continue;
-			}
-			const dtPolyDetail *pd = &tile->detailMeshes[i];
-			for (int j = 0; j < pd->triCount; j++) {
-				const unsigned char *t = &tile->detailTris[(pd->triBase+j)*4];
-				for (int k = 0; k < 3; k++) {
-					if (t[k] < p->vertCount) {
-						float x = tile->verts[p->verts[t[k]]*3];
-						float y = tile->verts[p->verts[t[k]]*3 + 1] + 0.05f;
-						float z = tile->verts[p->verts[t[k]]*3 + 2];
-						struct vertex v = {
-							{ x, y, z},
-							navmesh_debug_color
-						};
-						navmesh_vertices.push_back(v);
-					} else {
-						float x = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3];
-						float y = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 1];
-						float z = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 2];
-						struct vertex v = {
-							{ x, y, z},
-							navmesh_debug_color
-						};
-						navmesh_vertices.push_back(v);
-					}
-				}
-			}
-		}
+	crowd->add_agent(glm::vec3(-14.f, 1.35f, -4.34f), endpoint, navigation.navquery);
+	
+	if (debugmode) {
+		debugger.add_navmesh(navigation.navmesh);
 	}
-
-	Mesh navmesh_debug = { navmesh_vertices, indices, GL_TRIANGLES, GL_STATIC_DRAW };
 
 	while (running) {
 		timer.begin();
@@ -468,7 +420,9 @@ void Game::run(void)
 		debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 		grid.draw();
 
-		navmesh_debug.draw();
+		if (debugmode) {
+			debugger.render_navmeshes();
+		}
 	
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
@@ -485,26 +439,15 @@ void Game::run(void)
 
 		skybox->display(&camera);
 
-		// Start the Dear ImGui frame
 		if (debugmode) {
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplSDL2_NewFrame(windowman.window);
-			ImGui::NewFrame();
-			ImGui::Begin("Debug Mode");
-			ImGui::SetWindowSize(ImVec2(400, 200));
-			if (ImGui::Button("Exit")) { running = false; }
-			ImGui::Text("ms per frame: %d", timer.ms_per_frame);
-			ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
-			ImGui::End();
-
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+			debugger.render_GUI();
 		}
 
 		windowman.swap();
 		timer.end();
 	}
 
+	delete crowd;
 	physicsman.remove_body(stationary.body);
 	physicsman.remove_body(building_ent.body);
 	physicsman.remove_body(monkey_ent.body);
