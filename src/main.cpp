@@ -36,8 +36,6 @@
 #include "extern/imgui/imgui_impl_sdl.h"
 #include "extern/imgui/imgui_impl_opengl3.h"
 
-//#include "extern/fastnoise/FastNoise.h"
-
 #include "core/logger.h"
 #include "core/image.h"
 #include "core/entity.h"
@@ -58,38 +56,51 @@
 #include "debugger.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
+enum game_state {
+	GAME_STATE_TITLE,
+	GAME_STATE_CAMPAIGN,
+	GAME_STATE_BATTLE,
+	GAME_STATE_EXIT
+};
+
+struct game_settings {
+	uint16_t window_width;
+	uint16_t window_height;
+	bool fullscreen;
+	int FOV;
+	float look_sensitivity;
+};
+
 class Game {
 public:
 	void run(void);
 private:
 	bool running;
 	bool debugmode;
+	enum game_state state;
+	struct game_settings settings;
 	WindowManager windowman;
 	InputManager inputman;
-	RenderManager renderman;
 	PhysicsManager physicsman;
 	Timer timer;
-	Shader object_shader;
-	Shader debug_shader;
 	Camera camera;
-	Skybox *skybox;
 	Navigation navigation;
 	Debugger debugger;
-	struct {
-		uint16_t window_width;
-		uint16_t window_height;
-		bool fullscreen;
-		int FOV;
-		float look_sensitivity;
-	} settings;
-	bool change_endpoint = false;
-	glm::vec3 endpoint = {};
+	// graphics
+	RenderManager renderman;
+	Skybox skybox;
+	Shader object_shader;
+	Shader debug_shader;
+	// temporary assets
+	Image *image;
+	GLTF::Model *duck;
+	GLTF::Model *dragon;
 private:
 	void init(void);
 	void init_settings(void);
-	void load_scene(void);
-	void clear_scene(void);
-	void update(void);
+	void load_assets(void);
+	void run_campaign(void);
+	void update_campaign(void);
 	void teardown(void);
 };
 	
@@ -110,8 +121,6 @@ void Game::init_settings(void)
 
 void Game::init(void)
 {
-	running = true;
-
 	// load settings
 	init_settings();
 
@@ -141,35 +150,60 @@ void Game::init(void)
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	camera.project();
 
-	skybox = new Skybox { glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f) };
+	skybox.init(glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f));
 
 	if (debugmode) {
-		debugger.init(windowman.window, windowman.glcontext);
-	}
-}
+		// Setup Dear ImGui context
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO &io = ImGui::GetIO(); (void)io;
 
-void Game::clear_scene(void)
-{
-	// then clear the physics manager
-	physicsman.clear();
+		// Setup Dear ImGui style
+		ImGui::StyleColorsDark();
+
+		// Setup Platform/Renderer bindings
+		ImGui_ImplSDL2_InitForOpenGL(windowman.window, windowman.glcontext);
+		ImGui_ImplOpenGL3_Init("#version 430");
+	}
 }
 
 void Game::teardown(void)
 {
+	delete dragon;
+	delete duck;
+
+	delete image;
+
 	if (debugmode) {
 		debugger.teardown();
+
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplSDL2_Shutdown();
+		ImGui::DestroyContext();
 	}
 
-	delete skybox;
+	skybox.teardown();
 
 	windowman.teardown();
 }
+	
+void Game::load_assets(void)
+{
+	if (debugmode) {
+		debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
+	}
 
-void Game::update(void)
+	image = new Image { 512, 512, COLORSPACE_GRAYSCALE };
+
+	duck = new GLTF::Model { "media/models/duck.glb", "media/textures/duck.dds" };
+	dragon = new GLTF::Model { "media/models/dragon.glb", "" };
+}
+
+void Game::update_campaign(void)
 {
 	inputman.update();
 	if (inputman.exit_request()) {
-		running = false;
+		state = GAME_STATE_EXIT;
 	}
 	
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
@@ -186,21 +220,24 @@ void Game::update(void)
 	physicsman.update(timer.delta);
 
 	if (debugmode) {
-		debugger.update(timer.ms_per_frame, camera.position);
-		if (debugger.exit_request) { running = false; }
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(windowman.window);
+		ImGui::NewFrame();
+		ImGui::Begin("Debug Mode");
+		ImGui::SetWindowSize(ImVec2(400, 200));
+		if (ImGui::Button("Exit Game")) { state = GAME_STATE_EXIT; }
+		if (ImGui::Button("Title screen")) { state = GAME_STATE_TITLE; }
+		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
+		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+		ImGui::End();
 	}
 
 	inputman.update_keymap();
 }
 
-void Game::run(void)
+void Game::run_campaign(void)
 {
-	init();
-	
-	debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
-
-	GLTF::Model duck = { "media/models/duck.glb", "media/textures/duck.dds" };
-	GLTF::Model dragon = { "media/models/dragon.glb", "" };
+	state = GAME_STATE_CAMPAIGN;
 
 	FastNoise fastnoise;
 	fastnoise.SetSeed(1337);
@@ -211,18 +248,18 @@ void Game::run(void)
 	fastnoise.SetFractalOctaves(6);
 	fastnoise.SetFractalLacunarity(2.5f);
 	fastnoise.SetGradientPerturbAmp(200.f);
-	Image image = { 512, 512, 1 };
+	//Image image = { 1024, 1024, 1 };
 	auto start = std::chrono::steady_clock::now();
-	image.noise(&fastnoise, glm::vec2(4.f, 4.f), glm::vec2(0.f, 0.f), CHANNEL_RED);
+	image->noise(&fastnoise, glm::vec2(2.f, 2.f), glm::vec2(0.f, 0.f), CHANNEL_RED);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-	image.write("media/textures/noise.png");
+	//image.write("media/textures/noise.png");
 
-	while (running) {
+	while (state == GAME_STATE_CAMPAIGN) {
 		timer.begin();
 
-		update();
+		update_campaign();
 
 		renderman.prepare_to_render();
 
@@ -230,7 +267,7 @@ void Game::run(void)
 		debug_shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
 		debug_shader.uniform_mat4("VP", camera.VP);
 		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
-		dragon.display();
+		dragon->display();
 
 		if (debugmode) {
 			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
@@ -243,19 +280,60 @@ void Game::run(void)
 		object_shader.uniform_bool("INSTANCED", false);
 
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 10.f)));
-		duck.display();
+		duck->display();
 
-		skybox->display(&camera);
+		skybox.display(&camera);
 
 		if (debugmode) {
-			debugger.render_GUI();
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		}
 
 		windowman.swap();
 		timer.end();
 	}
 
-	clear_scene();
+	physicsman.clear();
+}
+
+void Game::run(void)
+{
+	state = GAME_STATE_TITLE;
+
+	init();
+	load_assets();
+
+	while (state == GAME_STATE_TITLE) {
+		inputman.update();
+		if (inputman.exit_request()) {
+			state = GAME_STATE_EXIT;
+		}
+
+		// Start the Dear ImGui frame
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(windowman.window);
+		ImGui::NewFrame();
+		ImGui::Begin("Debug Mode");
+		ImGui::SetWindowSize(ImVec2(400, 200));
+		if (ImGui::Button("New World")) {
+			state = GAME_STATE_CAMPAIGN;
+		}
+		if (ImGui::Button("Exit")) { state = GAME_STATE_EXIT; }
+		ImGui::End();
+		
+		renderman.prepare_to_render();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		windowman.swap();
+
+		if (state == GAME_STATE_CAMPAIGN) {
+			run_campaign();
+		}
+	}
+
+	teardown();
 }
 
 int main(int argc, char *argv[])

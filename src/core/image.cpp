@@ -13,8 +13,6 @@
 #include "../extern/fastgaussianblur/fast_gaussian_blur.h"
 #include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
 
-//#include "../extern/fastnoise/FastNoise.h"
-
 #include "image.h"
 
 // normal image creation
@@ -87,18 +85,6 @@ void Image::blur(float sigma)
 	
 void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan)
 {
-	/*
-	FastNoise fastnoise;
-	fastnoise.SetSeed(1337);
-	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
-	fastnoise.SetFractalType(FastNoise::FBM);
-	fastnoise.SetFrequency(0.001f);
-	fastnoise.SetPerturbFrequency(0.001f);
-	fastnoise.SetFractalOctaves(6);
-	fastnoise.SetFractalLacunarity(2.5f);
-	fastnoise.SetGradientPerturbAmp(200.f);
-	*/
-
 	const int nsteps = 32;
 	const int stepsize = width / nsteps;
 
@@ -111,8 +97,8 @@ void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm:
 				float x = sample_freq.x * (j + sample_offset.x);
 				float y = sample_freq.y * (i + sample_offset.y);
 				fastnoise->GradientPerturbFractal(x, y);
-				float value = (fastnoise->GetNoise(x, y) + 1.f) / 2.f;
-				plot(j, i, chan, 255 * value);
+				float value = 0.5f * (fastnoise->GetNoise(x, y) + 1.f);
+				plot(j, i, chan, 255 * glm::clamp(value, 0.f, 1.f));
 			}
 		}
 	}

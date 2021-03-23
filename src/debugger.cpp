@@ -27,46 +27,11 @@
 #include "core/mesh.h"
 #include "debugger.h"
 
-void Debugger::init(SDL_Window *win, SDL_GLContext glcontext)
-{
-	window = win;
-	// Setup Dear ImGui context
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO &io = ImGui::GetIO(); (void)io;
-
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-
-	// Setup Platform/Renderer bindings
-	ImGui_ImplSDL2_InitForOpenGL(win, glcontext);
-	ImGui_ImplOpenGL3_Init("#version 430");
-}
-
-void Debugger::update(int msperframe, glm::vec3 campos)
-{
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame(window);
-	ImGui::NewFrame();
-	ImGui::Begin("Debug Mode");
-	ImGui::SetWindowSize(ImVec2(400, 200));
-	if (ImGui::Button("Exit")) { exit_request = true; }
-	ImGui::Text("ms per frame: %d", msperframe);
-	ImGui::Text("cam position: %f, %f, %f", campos.x, campos.y, campos.z);
-	ImGui::End();
-}
-
 void Debugger::render_navmeshes(void)
 {
 	for (const auto &mesh : navmeshes) {
 		mesh->draw();
 	}
-}
-
-void Debugger::render_GUI(void)
-{
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Debugger::add_navmesh(const dtNavMesh *mesh)
@@ -162,8 +127,4 @@ void Debugger::teardown(void)
 		delete grids[i];
 	}
 	grids.clear();
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL2_Shutdown();
-	ImGui::DestroyContext();
 }

@@ -11,7 +11,7 @@
 #include "mesh.h"
 #include "sky.h"
 
-Skybox::Skybox(glm::vec3 top, glm::vec3 bottom)
+void Skybox::init(glm::vec3 top, glm::vec3 bottom)
 {
 	colortop = top;
 	colorbottom = bottom;
@@ -44,7 +44,7 @@ Skybox::Skybox(glm::vec3 top, glm::vec3 bottom)
 	shader.link();
 }
 
-Skybox::~Skybox(void)
+void Skybox::teardown(void)
 {
 	delete cubemap;
 }
