@@ -79,6 +79,8 @@ private:
 	bool debugmode;
 	enum game_state state;
 	struct game_settings settings;
+	std::string savedir;
+	bool saveable;
 	WindowManager windowman;
 	InputManager inputman;
 	PhysicsManager physicsman;
@@ -146,8 +148,6 @@ void Game::init(void)
 	object_shader.link();
 
 	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
-	camera.position = { 10.f, 5.f, -10.f };
-	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	camera.project();
 
 	skybox.init(glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f));
@@ -165,6 +165,20 @@ void Game::init(void)
 		ImGui_ImplSDL2_InitForOpenGL(windowman.window, windowman.glcontext);
 		ImGui_ImplOpenGL3_Init("#version 430");
 	}
+
+	char *pref_path = NULL;
+	char *base_path = SDL_GetPrefPath("archeon", "saves");
+	if (base_path) {
+		saveable = true;
+		pref_path = base_path;
+		savedir = pref_path;
+		SDL_free(pref_path);
+	} else {
+		saveable = false;
+		write_log(LogType::ERROR, "Save error: could not find user pref path");
+	}
+		
+	std::cout << savedir << std::endl;
 }
 
 void Game::teardown(void)
@@ -193,7 +207,7 @@ void Game::load_assets(void)
 		debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
 	}
 
-	image = new Image { 512, 512, COLORSPACE_GRAYSCALE };
+	image = new Image { 1024, 1024, COLORSPACE_GRAYSCALE };
 
 	duck = new GLTF::Model { "media/models/duck.glb", "media/textures/duck.dds" };
 	dragon = new GLTF::Model { "media/models/dragon.glb", "" };
@@ -223,12 +237,12 @@ void Game::update_campaign(void)
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(windowman.window);
 		ImGui::NewFrame();
-		ImGui::Begin("Debug Mode");
+		ImGui::Begin("Campaign Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
-		if (ImGui::Button("Exit Game")) { state = GAME_STATE_EXIT; }
-		if (ImGui::Button("Title screen")) { state = GAME_STATE_TITLE; }
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+		if (ImGui::Button("Title screen")) { state = GAME_STATE_TITLE; }
+		if (ImGui::Button("Exit Game")) { state = GAME_STATE_EXIT; }
 		ImGui::End();
 	}
 
@@ -239,6 +253,9 @@ void Game::run_campaign(void)
 {
 	state = GAME_STATE_CAMPAIGN;
 
+	camera.position = { 10.f, 5.f, -10.f };
+	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
+
 	FastNoise fastnoise;
 	fastnoise.SetSeed(1337);
 	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
@@ -248,13 +265,14 @@ void Game::run_campaign(void)
 	fastnoise.SetFractalOctaves(6);
 	fastnoise.SetFractalLacunarity(2.5f);
 	fastnoise.SetGradientPerturbAmp(200.f);
-	//Image image = { 1024, 1024, 1 };
 	auto start = std::chrono::steady_clock::now();
 	image->noise(&fastnoise, glm::vec2(2.f, 2.f), glm::vec2(0.f, 0.f), CHANNEL_RED);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
-	//image.write("media/textures/noise.png");
+	if (saveable) {
+		image->write(savedir + "noise.png");
+	}
 
 	while (state == GAME_STATE_CAMPAIGN) {
 		timer.begin();
@@ -264,7 +282,6 @@ void Game::run_campaign(void)
 		renderman.prepare_to_render();
 
 		debug_shader.use();
-		debug_shader.uniform_vec3("COLOR", glm::vec3(0.f, 1.f, 0.f));
 		debug_shader.uniform_mat4("VP", camera.VP);
 		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
 		dragon->display();
@@ -313,7 +330,7 @@ void Game::run(void)
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(windowman.window);
 		ImGui::NewFrame();
-		ImGui::Begin("Debug Mode");
+		ImGui::Begin("Main Menu Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		if (ImGui::Button("New World")) {
 			state = GAME_STATE_CAMPAIGN;
@@ -340,8 +357,8 @@ int main(int argc, char *argv[])
 {
 	write_start_log();
 
-	Game game;
-	game.run();
+	Game archeon;
+	archeon.run();
 
 	write_exit_log();
 
