@@ -8,7 +8,7 @@
 
 #include "module.h"
 	
-void Module::init(const std::string &modname)
+void Module::load(const std::string &modname)
 {
 	name = modname;
 	path = "modules/" + modname + "/";

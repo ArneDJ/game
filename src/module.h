@@ -1,8 +1,8 @@
 #pragma once
-#include <cereal/types/unordered_map.hpp>
-#include <cereal/types/vector.hpp>
-#include <cereal/types/memory.hpp>
-#include <cereal/archives/json.hpp>
+#include "extern/cereal/types/unordered_map.hpp"
+#include "extern/cereal/types/vector.hpp"
+#include "extern/cereal/types/memory.hpp"
+#include "extern/cereal/archives/json.hpp"
 
 struct heightparams {
 	float frequency;
@@ -96,7 +96,7 @@ public:
 	// the world generation settings
 	struct worldparams params;
 public:
-	void init(const std::string &modname);
+	void load(const std::string &modname);
 private:
 	std::string path;
 	std::string name;

@@ -79,7 +79,7 @@ public:
 private:
 	bool running;
 	bool debugmode;
-	Module mod;
+	Module modular;
 	enum game_state state;
 	struct game_settings settings;
 	std::string savedir;
@@ -130,7 +130,7 @@ void Game::init(void)
 	init_settings();
 
 	// load module data
-	mod.init("native");
+	modular.load("native");
 
 	if (!windowman.init(settings.window_width, settings.window_height)) {
 		exit(EXIT_FAILURE);
@@ -260,7 +260,7 @@ void Game::run_campaign(void)
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	auto start = std::chrono::steady_clock::now();
-	terragen->generate(1337, &mod.params);
+	terragen->generate(1337, &modular.params);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
