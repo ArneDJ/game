@@ -178,7 +178,7 @@ void Game::init(void)
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
 
-	terragen = new Terragen { 1024, 512, 512 };
+	terragen = new Terragen { 2048, 512, 512 };
 }
 
 void Game::teardown(void)
@@ -255,19 +255,28 @@ void Game::run_campaign(void)
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	static const struct worldparams DEFAULT_WORLD_PARAMETERS = {
-		0.001f,
-		0.001f,
-		200.f,
-		6,
-		2.5f,
-		glm::vec2(2.f, 2.f),
-		glm::vec2(0.f, 0.f),
-		0.005f,
-		100.f,
-		25.f,
+		{
+			0.001f, 0.001f, 200.f, 6, 2.5f,
+			glm::vec2(1.f, 1.f), glm::vec2(0.f, 0.f),
+		},
+		{ 
+			0.005f, 100.f, 
+		},
+		{
+			25.f,
+			0.01f,
+			6,
+			3.f,
+			0.01f,
+			50.f,
+			0.25f,
+			0.25f,
+			0.5f,
+		},
 		0.48f,
 		0.58f,
-		0.66f
+		0.66f,
+		true
 	};
 
 	auto start = std::chrono::steady_clock::now();

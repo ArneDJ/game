@@ -15,8 +15,9 @@ On Windows install the 64-bit version libraries using [vcpkg](https://github.com
 ### Static Libraries
 * [Bullet3](https://github.com/bulletphysics/bullet3)
 * [Ozz Animation](https://github.com/guillaumeblanc/ozz-animation)
+* [Recast Navigation](https://github.com/recastnavigation/recastnavigation)
 
-### Header Libraries
+### Source Libraries
 These are included with the source code of this project.
 * [dds-ktx](https://github.com/septag/dds-ktx)
 * [stb image](https://github.com/nothings/stb)
@@ -24,3 +25,4 @@ These are included with the source code of this project.
 * [inih](https://github.com/jtilly/inih)
 * [cgltf](https://github.com/jkuhlmann/cgltf)
 * [imgui](https://github.com/ocornut/imgui)
+* [FastNoise](https://github.com/Auburn/FastNoiseLite/tree/FastNoise-Legacy)

@@ -9,16 +9,6 @@
 #include "core/image.h"
 #include "terra.h"
 
-// TODO add these to module config file
-#define RAIN_FREQUENCY 0.01F
-#define RAIN_OCTAVES 6
-#define RAIN_LACUNARITY 3.F
-#define RAIN_PERTURB_FREQUENCY 0.01F
-#define RAIN_PERTURB_AMP 50.F
-#define RAIN_GAUSS_CENTER 0.25F
-#define RAIN_GAUSS_SIGMA 0.25F
-#define RAIN_DETAIL_MIX 0.5F
-
 // The parameter a is the height of the curve's peak, b is the position of the center of the peak and c (the standard deviation, sometimes called the Gaussian RMS width) controls the width of the "bell".
 static inline float gauss(float a, float b, float c, float x);
 
@@ -42,10 +32,10 @@ void Terragen::generate(int64_t seed, const struct worldparams *params)
 	gen_heightmap(seed, params);
 
 	tempmap->clear();
-	gen_tempmap(seed, params->tempfreq, params->tempperturb);
+	gen_tempmap(seed, params);
 
 	rainmap->clear();
-	gen_rainmap(seed, params->lowland, params->rainblur);
+	gen_rainmap(seed, params);
 }
 
 void Terragen::gen_heightmap(int64_t seed, const struct worldparams *params)
@@ -54,23 +44,23 @@ void Terragen::gen_heightmap(int64_t seed, const struct worldparams *params)
 	fastnoise.SetSeed(seed);
 	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
 	fastnoise.SetFractalType(FastNoise::FBM);
-	fastnoise.SetFrequency(params->frequency);
-	fastnoise.SetPerturbFrequency(params->perturbfreq);
-	fastnoise.SetFractalOctaves(params->octaves);
-	fastnoise.SetFractalLacunarity(params->lacunarity);
-	fastnoise.SetGradientPerturbAmp(params->perturbamp);
+	fastnoise.SetFrequency(params->height.frequency);
+	fastnoise.SetPerturbFrequency(params->height.perturbfreq);
+	fastnoise.SetFractalOctaves(params->height.octaves);
+	fastnoise.SetFractalLacunarity(params->height.lacunarity);
+	fastnoise.SetGradientPerturbAmp(params->height.perturbamp);
 
-	heightmap->noise(&fastnoise, params->sampling_scale, params->sampling_offset, CHANNEL_RED);
+	heightmap->noise(&fastnoise, params->height.sampling_scale, params->height.sampling_offset, CHANNEL_RED);
 }
 
-void Terragen::gen_tempmap(int64_t seed, float freq, float perturb)
+void Terragen::gen_tempmap(int64_t seed, const struct worldparams *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
 	fastnoise.SetNoiseType(FastNoise::Perlin);
-	fastnoise.SetFrequency(freq);
-	fastnoise.SetPerturbFrequency(2.f*freq);
-	fastnoise.SetGradientPerturbAmp(perturb);
+	fastnoise.SetFrequency(params->temperature.frequency);
+	fastnoise.SetPerturbFrequency(2.f*params->temperature.frequency);
+	fastnoise.SetGradientPerturbAmp(params->temperature.perturb);
 
 	const float longitude = float(tempmap->height);
 	for (int i = 0; i < tempmap->width; i++) {
@@ -83,7 +73,7 @@ void Terragen::gen_tempmap(int64_t seed, float freq, float perturb)
 	}
 }
 
-void Terragen::gen_rainmap(int64_t seed, float sealevel, float blur)
+void Terragen::gen_rainmap(int64_t seed, const struct worldparams *params)
 {
 	// create the land mask image
 	// land is white (255), sea is black (0)
@@ -94,22 +84,22 @@ void Terragen::gen_rainmap(int64_t seed, float sealevel, float blur)
 	for (int i = 0; i < rainmap->width; i++) {
 		for (int j = 0; j < rainmap->height; j++) {
 			float height = heightmap->sample(scale.x * i, scale.y * j, CHANNEL_RED);
-			uint8_t color = (height > sealevel) ? 255 : 0;
+			uint8_t color = (height > params->lowland) ? 255 : 0;
 			rainmap->plot(i, j, CHANNEL_RED, color);
 		}
 	}
 
 	// blur the land mask
-	rainmap->blur(blur);
+	rainmap->blur(params->rain.blur);
 
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
 	fastnoise.SetNoiseType(FastNoise::Perlin);
-	fastnoise.SetFrequency(RAIN_FREQUENCY);
-	fastnoise.SetFractalOctaves(RAIN_OCTAVES);
-	fastnoise.SetFractalLacunarity(RAIN_LACUNARITY);
-	fastnoise.SetPerturbFrequency(RAIN_PERTURB_FREQUENCY);
-	fastnoise.SetGradientPerturbAmp(RAIN_PERTURB_AMP);
+	fastnoise.SetFrequency(params->rain.frequency);
+	fastnoise.SetFractalOctaves(params->rain.octaves);
+	fastnoise.SetFractalLacunarity(params->rain.lacunarity);
+	fastnoise.SetPerturbFrequency(params->rain.perturb_frequency);
+	fastnoise.SetGradientPerturbAmp(params->rain.perturb_amp);
 
 	for (int i = 0; i < rainmap->width; i++) {
 		for (int j = 0; j < rainmap->height; j++) {
@@ -117,8 +107,8 @@ void Terragen::gen_rainmap(int64_t seed, float sealevel, float blur)
 			float y = i; float x = j;
 			fastnoise.GradientPerturbFractal(x, y);
 			float detail = 0.5f * (fastnoise.GetNoise(x, y) + 1.f);
-			float dev = gauss(1.f, RAIN_GAUSS_CENTER, RAIN_GAUSS_SIGMA, rain);
-			rain = glm::mix(rain, detail, RAIN_DETAIL_MIX*dev);
+			float dev = gauss(1.f, params->rain.gauss_center, params->rain.gauss_sigma, rain);
+			rain = glm::mix(rain, detail, params->rain.detail_mix*dev);
 			rainmap->plot(i, j, CHANNEL_RED, 255 * glm::clamp(rain, 0.f, 1.f));
 		}
 	}
