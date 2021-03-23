@@ -54,6 +54,7 @@
 #include "core/navigation.h"
 #include "object.h"
 #include "debugger.h"
+#include "module.h"
 #include "terra.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -78,6 +79,7 @@ public:
 private:
 	bool running;
 	bool debugmode;
+	Module mod;
 	enum game_state state;
 	struct game_settings settings;
 	std::string savedir;
@@ -126,6 +128,9 @@ void Game::init(void)
 {
 	// load settings
 	init_settings();
+
+	// load module data
+	mod.init("native");
 
 	if (!windowman.init(settings.window_width, settings.window_height)) {
 		exit(EXIT_FAILURE);
@@ -254,33 +259,8 @@ void Game::run_campaign(void)
 	camera.position = { 10.f, 5.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	static const struct worldparams DEFAULT_WORLD_PARAMETERS = {
-		{
-			0.001f, 0.001f, 200.f, 6, 2.5f,
-			glm::vec2(1.f, 1.f), glm::vec2(0.f, 0.f),
-		},
-		{ 
-			0.005f, 100.f, 
-		},
-		{
-			25.f,
-			0.01f,
-			6,
-			3.f,
-			0.01f,
-			50.f,
-			0.25f,
-			0.25f,
-			0.5f,
-		},
-		0.48f,
-		0.58f,
-		0.66f,
-		true
-	};
-
 	auto start = std::chrono::steady_clock::now();
-	terragen->generate(1337, &DEFAULT_WORLD_PARAMETERS);
+	terragen->generate(1337, &mod.params);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";

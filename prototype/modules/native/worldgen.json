@@ -1,23 +1,33 @@
-  "firstName": "John",
-  "lastName": "Smith",
-  "isAlive": true,
-  "age": 27,
-  "address": {
-    "streetAddress": "21 2nd Street",
-    "city": "New York",
-    "state": "NY",
-    "postalCode": "10021-3100"
-  },
-  "phoneNumbers": [
-    {
-      "type": "home",
-      "number": "212 555-1234"
-    },
-    {
-      "type": "office",
-      "number": "646 555-4567"
+{
+    "worldgen_config": {
+        "heightmap_parameters": {
+            "frequency": 0.001,
+            "perturbfreq": 0.001,
+            "octaves": 6,
+            "lacunarity": 2.5,
+            "sampling_scale_x": 1.0,
+            "sampling_scale_y": 1.0,
+            "sampling_offset_x": 0.0,
+            "sampling_offset_y": 0.0
+        },
+        "temperature_parameters": {
+            "frequency": 0.005,
+            "perturb": 100.0
+        },
+        "rain_parameters": {
+            "blur": 25.0,
+            "frequency": 0.01,
+            "octaves": 6,
+            "lacunarity": 3.0,
+            "perturb_frequency": 0.01,
+            "perturb_amp": 50.0,
+            "gauss_center": 0.25,
+            "gauss_sigma": 0.25,
+            "detail_mix": 0.5
+        },
+        "lowland": 0.48,
+        "upland": 0.58,
+        "highland": 0.66,
+        "erode_mountains": true
     }
-  ],
-  "children": [],
-  "spouse": null
 }
