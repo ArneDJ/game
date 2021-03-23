@@ -25,6 +25,7 @@ public:
 	Image(const std::string &filepath);
 	Image(uint16_t w, uint16_t h, uint8_t chan);
 	~Image(void);
+	uint8_t sample(uint16_t x, uint16_t y, uint8_t chan) const;
 	void plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color);
 	// gaussian blur
 	void blur(float sigma);
@@ -36,4 +37,25 @@ public:
 	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
 private:
 	bool malloced = false;
+};
+
+// floating point image, used mostly for high precision heightmaps
+class FloatImage {
+public:
+	uint16_t width = 0;
+	uint16_t height = 0;
+	uint8_t channels = 0;
+	float *data = nullptr;
+	size_t size = 0;
+public:
+	FloatImage(uint16_t w, uint16_t h, uint8_t chan);
+	~FloatImage(void);
+	float sample(uint16_t x, uint16_t y, uint8_t chan) const;
+	void plot(uint16_t x, uint16_t y, uint8_t chan, float color);
+	// gaussian blur
+	void blur(float sigma);
+	// wipe image clean but do not free memory
+	void clear(void);
+	// fill image with random noise at the specified channel
+	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
 };

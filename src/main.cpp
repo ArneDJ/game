@@ -54,6 +54,7 @@
 #include "core/navigation.h"
 #include "object.h"
 #include "debugger.h"
+#include "terra.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state {
@@ -88,13 +89,13 @@ private:
 	Camera camera;
 	Navigation navigation;
 	Debugger debugger;
+	Terragen *terragen;
 	// graphics
 	RenderManager renderman;
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
 	// temporary assets
-	Image *image;
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
 private:
@@ -166,19 +167,18 @@ void Game::init(void)
 		ImGui_ImplOpenGL3_Init("#version 430");
 	}
 
-	char *pref_path = NULL;
-	char *base_path = SDL_GetPrefPath("archeon", "saves");
-	if (base_path) {
+	// find the save directory on the system
+	char *prefpath = SDL_GetPrefPath("archeon", "saves");
+	if (prefpath) {
 		saveable = true;
-		pref_path = base_path;
-		savedir = pref_path;
-		SDL_free(pref_path);
+		savedir = prefpath;
+		SDL_free(prefpath);
 	} else {
 		saveable = false;
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
-		
-	std::cout << savedir << std::endl;
+
+	terragen = new Terragen { 1024, 512, 512 };
 }
 
 void Game::teardown(void)
@@ -186,7 +186,7 @@ void Game::teardown(void)
 	delete dragon;
 	delete duck;
 
-	delete image;
+	delete terragen;
 
 	if (debugmode) {
 		debugger.teardown();
@@ -206,8 +206,6 @@ void Game::load_assets(void)
 	if (debugmode) {
 		debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
 	}
-
-	image = new Image { 1024, 1024, COLORSPACE_GRAYSCALE };
 
 	duck = new GLTF::Model { "media/models/duck.glb", "media/textures/duck.dds" };
 	dragon = new GLTF::Model { "media/models/dragon.glb", "" };
@@ -256,22 +254,30 @@ void Game::run_campaign(void)
 	camera.position = { 10.f, 5.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	FastNoise fastnoise;
-	fastnoise.SetSeed(1337);
-	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
-	fastnoise.SetFractalType(FastNoise::FBM);
-	fastnoise.SetFrequency(0.001f);
-	fastnoise.SetPerturbFrequency(0.001f);
-	fastnoise.SetFractalOctaves(6);
-	fastnoise.SetFractalLacunarity(2.5f);
-	fastnoise.SetGradientPerturbAmp(200.f);
+	static const struct worldparams DEFAULT_WORLD_PARAMETERS = {
+		0.001f,
+		0.001f,
+		200.f,
+		6,
+		2.5f,
+		glm::vec2(2.f, 2.f),
+		glm::vec2(0.f, 0.f),
+		0.005f,
+		100.f,
+		25.f,
+		0.48f,
+		0.58f,
+		0.66f
+	};
+
 	auto start = std::chrono::steady_clock::now();
-	image->noise(&fastnoise, glm::vec2(2.f, 2.f), glm::vec2(0.f, 0.f), CHANNEL_RED);
+	terragen->generate(1337, &DEFAULT_WORLD_PARAMETERS);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 	if (saveable) {
-		image->write(savedir + "noise.png");
+		terragen->rainmap->write(savedir + "rain.png");
+		terragen->tempmap->write(savedir + "temperature.png");
 	}
 
 	while (state == GAME_STATE_CAMPAIGN) {
