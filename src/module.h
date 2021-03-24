@@ -103,5 +103,5 @@ private:
 private:
 	void load_world_parameters(const std::string &filepath);
 	// only used when the file is missing
-	void save_world_parameters(void);
+	void save_world_parameters(const std::string &filepath);
 };

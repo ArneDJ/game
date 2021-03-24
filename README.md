@@ -26,3 +26,4 @@ These are included with the source code of this project.
 * [cgltf](https://github.com/jkuhlmann/cgltf)
 * [imgui](https://github.com/ocornut/imgui)
 * [FastNoise](https://github.com/Auburn/FastNoiseLite/tree/FastNoise-Legacy)
+* [Cereal](https://github.com/USCiLab/cereal)
