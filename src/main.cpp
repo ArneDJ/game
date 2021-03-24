@@ -56,8 +56,8 @@
 #include "debugger.h"
 #include "module.h"
 #include "terra.h"
-#include "save.h"
 #include "atlas.h"
+#include "save.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state {
@@ -94,7 +94,7 @@ private:
 	Camera camera;
 	Navigation navigation;
 	Debugger debugger;
-	Terragen *terragen;
+	Atlas *atlas;
 	// graphics
 	RenderManager renderman;
 	Skybox skybox;
@@ -186,7 +186,7 @@ void Game::init(void)
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
 
-	terragen = new Terragen { 2048, 512, 512 };
+	atlas = new Atlas { 2048, 512, 512 };
 }
 
 void Game::teardown(void)
@@ -194,7 +194,7 @@ void Game::teardown(void)
 	delete dragon;
 	delete duck;
 
-	delete terragen;
+	delete atlas;
 
 	if (debugmode) {
 		debugger.teardown();
@@ -262,16 +262,18 @@ void Game::run_campaign(void)
 	camera.position = { 10.f, 5.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
+	atlas->generate(1337, &modular.params);
 	auto start = std::chrono::steady_clock::now();
-	//terragen->generate(1337, &modular.params);
-	//saver.save(savedir + "game.save", terragen);
-	saver.load(savedir + "game.save", terragen);
+	saver.save(savedir + "game.save", atlas);
+	saver.load(savedir + "game.save", atlas);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 	if (saveable) {
-		terragen->rainmap->write(savedir + "rain.png");
-		terragen->tempmap->write(savedir + "temperature.png");
+		const Image *rainmap = atlas->get_rainmap();
+		rainmap->write(savedir + "rain.png");
+		const Image *tempmap = atlas->get_tempmap();
+		tempmap->write(savedir + "temperature.png");
 	}
 
 	while (state == GAME_STATE_CAMPAIGN) {

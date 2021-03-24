@@ -2,31 +2,28 @@
 class Atlas {
 public:
 	const glm::vec3 scale = {4096.F, 200.F, 4096.F};
-	FloatImage *topology;
-	Image *temperature;
-	Image *rain;
 	//std::vector<struct tile> tiles;
 	//std::vector<struct corner> corners;
 	//std::vector<struct border> borders;
 	//std::list<struct holding> holdings;
 public:
-	Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
-	{
-		topology = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
-		rain = new Image { rainres, rainres, COLORSPACE_GRAYSCALE };
-		temperature = new Image { tempres, tempres, COLORSPACE_GRAYSCALE };
-	}
-	~Atlas(void)
-	{
-		delete topology;
-		delete temperature;
-		delete rain;
-	}
-	void generate(int64_t seed);
+	Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres);
+	~Atlas(void);
+	void generate(int64_t seed, const struct worldparams *params);
+	const FloatImage* get_heightmap(void) const;
+	const Image* get_rainmap(void) const;
+	const Image* get_tempmap(void) const;
+	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
+	void load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
+	void load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 
 private:
-	//Terragen terragen;
+	Terragen *terragen;
 	//Worldgen worldgen;
 	//Mosaicfield mosaicfield;
+private:
+	void gen_heightmap(int64_t seed, const struct worldparams *params);
+	void gen_tempmap(int64_t seed, const struct worldparams *params);
+	void gen_rainmap(int64_t seed, const struct worldparams *params);
 };
 

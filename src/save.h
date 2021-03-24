@@ -34,8 +34,8 @@ struct floatimage_record {
 
 class Saver {
 public:
-	void save(const std::string &filepath, const Terragen *terra);
-	void load(const std::string &filepath, Terragen *terra);
+	void save(const std::string &filepath, const Atlas *atlas);
+	void load(const std::string &filepath, Atlas *atlas);
 private:
 	struct floatimage_record topology;
 	struct image_record temperature;
