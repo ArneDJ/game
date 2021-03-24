@@ -60,7 +60,7 @@ void Saver::load(const std::string &filepath, Terragen *terra)
 		cereal::BinaryInputArchive archive(stream);
 		archive(cereal::make_nvp("topology", topology), cereal::make_nvp("rain", rain), cereal::make_nvp("temperature", temperature));
 	} else {
-		write_log(LogType::ERROR, "Save error: save file " + filepath + "could not be loaded");
+		write_log(LogType::ERROR, "Save error: save file " + filepath + " could not be loaded");
 		return;
 	}
 

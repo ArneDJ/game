@@ -263,9 +263,9 @@ void Game::run_campaign(void)
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	auto start = std::chrono::steady_clock::now();
-	terragen->generate(1337, &modular.params);
-	saver.load(savedir + "game.save", terragen);
+	//terragen->generate(1337, &modular.params);
 	//saver.save(savedir + "game.save", terragen);
+	saver.load(savedir + "game.save", terragen);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
