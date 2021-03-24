@@ -62,10 +62,12 @@
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state {
-	GAME_STATE_TITLE,
-	GAME_STATE_CAMPAIGN,
-	GAME_STATE_BATTLE,
-	GAME_STATE_EXIT
+	GS_TITLE,
+	GS_NEW_CAMPAIGN,
+	GS_LOAD_CAMPAIGN,
+	GS_CAMPAIGN,
+	GS_BATTLE,
+	GS_EXIT
 };
 
 struct game_settings {
@@ -118,6 +120,8 @@ private:
 	void init(void);
 	void init_settings(void);
 	void load_assets(void);
+	void new_campaign(void);
+	void load_campaign(void);
 	void run_campaign(void);
 	void update_campaign(void);
 	void teardown(void);
@@ -174,7 +178,7 @@ void Game::init(void)
 	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	camera.project();
 
-	skybox.init(glm::vec3(0.447f, 0.639f, 0.784f), glm::vec3(0.647f, 0.623f, 0.672f));
+	skybox.init(modular.atmos.skytop, modular.atmos.skybottom);
 
 	if (debugmode) {
 		// Setup Dear ImGui context
@@ -248,7 +252,7 @@ void Game::update_campaign(void)
 {
 	inputman.update();
 	if (inputman.exit_request()) {
-		state = GAME_STATE_EXIT;
+		state = GS_EXIT;
 	}
 	
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
@@ -272,40 +276,52 @@ void Game::update_campaign(void)
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
-		if (ImGui::Button("Title screen")) { state = GAME_STATE_TITLE; }
-		if (ImGui::Button("Exit Game")) { state = GAME_STATE_EXIT; }
+		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
+		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
 		ImGui::End();
 	}
 
 	inputman.update_keymap();
 }
-
-void Game::run_campaign(void)
+	
+void Game::new_campaign(void)
 {
-	state = GAME_STATE_CAMPAIGN;
-
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
 
-	camera.position = { 10.f, 5.f, -10.f };
-	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
-
-	auto start = std::chrono::steady_clock::now();
 	atlas->generate(seed, &modular.params);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+
 	if (saveable) {
 		saver.save(savedir + "game.save", atlas);
 	}
+
+	run_campaign();
+}
+	
+void Game::load_campaign(void)
+{
+	auto start = std::chrono::steady_clock::now();
 	saver.load(savedir + "game.save", atlas);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+
+	run_campaign();
+}
+
+void Game::run_campaign(void)
+{
+	state = GS_CAMPAIGN;
+
+	camera.position = { 10.f, 5.f, -10.f };
+	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	heightmap->reload(atlas->get_heightmap());
 	rainmap->reload(atlas->get_rainmap());
 	tempmap->reload(atlas->get_tempmap());
 
-	while (state == GAME_STATE_CAMPAIGN) {
+	while (state == GS_CAMPAIGN) {
 		timer.begin();
 
 		update_campaign();
@@ -358,15 +374,15 @@ void Game::run_campaign(void)
 
 void Game::run(void)
 {
-	state = GAME_STATE_TITLE;
+	state = GS_TITLE;
 
 	init();
 	load_assets();
 
-	while (state == GAME_STATE_TITLE) {
+	while (state == GS_TITLE) {
 		inputman.update();
 		if (inputman.exit_request()) {
-			state = GAME_STATE_EXIT;
+			state = GS_EXIT;
 		}
 
 		// Start the Dear ImGui frame
@@ -376,9 +392,12 @@ void Game::run(void)
 		ImGui::Begin("Main Menu Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		if (ImGui::Button("New World")) {
-			state = GAME_STATE_CAMPAIGN;
+			state = GS_NEW_CAMPAIGN;
 		}
-		if (ImGui::Button("Exit")) { state = GAME_STATE_EXIT; }
+		if (ImGui::Button("Load World")) {
+			state = GS_LOAD_CAMPAIGN;
+		}
+		if (ImGui::Button("Exit")) { state = GS_EXIT; }
 		ImGui::End();
 		
 		renderman.prepare_to_render();
@@ -388,8 +407,11 @@ void Game::run(void)
 
 		windowman.swap();
 
-		if (state == GAME_STATE_CAMPAIGN) {
-			run_campaign();
+		if (state == GS_NEW_CAMPAIGN) {
+			new_campaign();
+		}
+		if (state == GS_LOAD_CAMPAIGN) {
+			load_campaign();
 		}
 	}
 

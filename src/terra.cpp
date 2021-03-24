@@ -27,7 +27,7 @@ Terragen::~Terragen(void)
 	delete rainmap;
 }
 	
-void Terragen::generate(int64_t seed, const struct worldparams *params)
+void Terragen::generate(long seed, const struct worldparams *params)
 {
 	heightmap->clear();
 	gen_heightmap(seed, params);
@@ -39,7 +39,7 @@ void Terragen::generate(int64_t seed, const struct worldparams *params)
 	gen_rainmap(seed, params);
 }
 
-void Terragen::gen_heightmap(int64_t seed, const struct worldparams *params)
+void Terragen::gen_heightmap(long seed, const struct worldparams *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -54,7 +54,7 @@ void Terragen::gen_heightmap(int64_t seed, const struct worldparams *params)
 	heightmap->noise(&fastnoise, params->height.sampling_scale, params->height.sampling_offset, CHANNEL_RED);
 }
 
-void Terragen::gen_tempmap(int64_t seed, const struct worldparams *params)
+void Terragen::gen_tempmap(long seed, const struct worldparams *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -74,7 +74,7 @@ void Terragen::gen_tempmap(int64_t seed, const struct worldparams *params)
 	}
 }
 
-void Terragen::gen_rainmap(int64_t seed, const struct worldparams *params)
+void Terragen::gen_rainmap(long seed, const struct worldparams *params)
 {
 	// create the land mask image
 	// land is white (255), sea is black (0)

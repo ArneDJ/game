@@ -34,14 +34,23 @@ static const struct worldparams DEFAULT_WORLD_PARAMETERS = {
 	true
 };
 
+static const struct atmosphere DEFAULT_ATMOSPHERE = {
+	{ 1.f, 1.f, 1.f },
+	{ 0.447f, 0.639f, 0.784f }, 
+	{ 0.647f, 0.623f, 0.672f }
+};
+
 void Module::load(const std::string &modname)
 {
 	name = modname;
 	path = "modules/" + modname + "/";
 	
 	std::string worldpath = path + "worldgen.json";
+	std::string atmospath = path + "atmosphere.json";
 
 	load_world_parameters(worldpath);
+
+	load_atmosphere(atmospath);
 }
 
 void Module::save_world_parameters(const std::string &filepath)
@@ -69,5 +78,33 @@ void Module::load_world_parameters(const std::string &filepath)
 		write_log(LogType::ERROR, "Module load error: could not open " + filepath + ", resorting to default parameters");
 		params = DEFAULT_WORLD_PARAMETERS;
 		save_world_parameters(filepath);
+	}
+}
+
+void Module::load_atmosphere(const std::string &filepath)
+{
+	std::ifstream stream(filepath);
+
+	if (stream.is_open()) {
+		cereal::JSONInputArchive archive(stream);
+		archive(cereal::make_nvp("atmosphere", atmos));
+	} else {
+		// file not found 
+		// use default atmosphere and save the file
+		write_log(LogType::ERROR, "Module load error: could not open " + filepath + ", resorting to default atmosphere");
+		atmos = DEFAULT_ATMOSPHERE;
+		save_atmosphere(filepath);
+	}
+}
+
+void Module::save_atmosphere(const std::string &filepath)
+{
+	std::ofstream stream(filepath);
+
+	if (stream.is_open()) {
+		cereal::JSONOutputArchive archive(stream);
+		archive(cereal::make_nvp("atmosphere", atmos));
+	} else {
+		write_log(LogType::ERROR, "Module save error: could not save to " + filepath);
 	}
 }

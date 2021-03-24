@@ -15,9 +15,9 @@ struct heightparams {
 	glm::vec2 sampling_offset;
 
 	template <class Archive>
-	void serialize(Archive &ar)
+	void serialize(Archive &archive)
 	{
-		ar(
+		archive(
 			CEREAL_NVP(frequency), CEREAL_NVP(perturbfreq), 
 			CEREAL_NVP(octaves), CEREAL_NVP(lacunarity), 
 			cereal::make_nvp("sampling_scale_x", sampling_scale.x), 
@@ -40,9 +40,9 @@ struct rainparams {
 	float detail_mix;
 
 	template <class Archive>
-	void serialize(Archive &ar)
+	void serialize(Archive &archive)
 	{
-		ar(
+		archive(
 			CEREAL_NVP(blur), CEREAL_NVP(frequency), 
 			CEREAL_NVP(octaves), CEREAL_NVP(lacunarity), 
 			CEREAL_NVP(perturb_frequency), CEREAL_NVP(perturb_amp), 
@@ -57,9 +57,9 @@ struct temperatureparams {
 	float perturb;
 
 	template <class Archive>
-	void serialize(Archive &ar)
+	void serialize(Archive &archive)
 	{
-		ar(CEREAL_NVP(frequency), CEREAL_NVP(perturb));
+		archive(CEREAL_NVP(frequency), CEREAL_NVP(perturb));
 	}
 };
 
@@ -77,9 +77,9 @@ struct worldparams {
 	bool erode_mountains;
 
 	template <class Archive>
-	void serialize(Archive &ar)
+	void serialize(Archive &archive)
 	{
-		ar(
+		archive(
 			cereal::make_nvp("heightmap_parameters", height), 
 			cereal::make_nvp("temperature_parameters", temperature),
 			cereal::make_nvp("rain_parameters", rain), 
@@ -91,10 +91,27 @@ struct worldparams {
 	}
 };
 
+struct atmosphere {
+	glm::vec3 ambient;
+	glm::vec3 skytop;
+	glm::vec3 skybottom;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			cereal::make_nvp("ambient_x", ambient.x), cereal::make_nvp("ambient_y", ambient.y), cereal::make_nvp("ambient_z", ambient.z),
+			cereal::make_nvp("skytop_x", skytop.x), cereal::make_nvp("skytop_y", skytop.y), cereal::make_nvp("skytop_z", skytop.z),
+			cereal::make_nvp("skybottom_x", skybottom.x), cereal::make_nvp("skybottom_y", skybottom.y), cereal::make_nvp("skybottom_z", skybottom.z)
+		);
+	}
+};
+
 class Module {
 public:
 	// the world generation settings
 	struct worldparams params;
+	struct atmosphere atmos;
 public:
 	void load(const std::string &modname);
 private:
@@ -102,6 +119,8 @@ private:
 	std::string name;
 private:
 	void load_world_parameters(const std::string &filepath);
+	void load_atmosphere(const std::string &filepath);
 	// only used when the file is missing
 	void save_world_parameters(const std::string &filepath);
+	void save_atmosphere(const std::string &filepath);
 };

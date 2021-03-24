@@ -1,0 +1,13 @@
+{
+    "atmosphere": {
+        "ambient_x": 1.0,
+        "ambient_y": 1.0,
+        "ambient_z": 1.0,
+        "skytop_x": 0.44699999690055849,
+        "skytop_y": 0.6389999985694885,
+        "skytop_z": 0.7839999794960022,
+        "skybottom_x": 0.6470000147819519,
+        "skybottom_y": 0.6230000257492065,
+        "skybottom_z": 0.671999990940094
+    }
+}

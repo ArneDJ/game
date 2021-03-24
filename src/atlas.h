@@ -9,7 +9,7 @@ public:
 public:
 	Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres);
 	~Atlas(void);
-	void generate(int64_t seed, const struct worldparams *params);
+	void generate(long seed, const struct worldparams *params);
 	const FloatImage* get_heightmap(void) const;
 	const Image* get_rainmap(void) const;
 	const Image* get_tempmap(void) const;
@@ -22,8 +22,8 @@ private:
 	//Worldgen worldgen;
 	//Mosaicfield mosaicfield;
 private:
-	void gen_heightmap(int64_t seed, const struct worldparams *params);
-	void gen_tempmap(int64_t seed, const struct worldparams *params);
-	void gen_rainmap(int64_t seed, const struct worldparams *params);
+	void gen_heightmap(long seed, const struct worldparams *params);
+	void gen_tempmap(long seed, const struct worldparams *params);
+	void gen_rainmap(long seed, const struct worldparams *params);
 };
 

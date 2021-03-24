@@ -22,7 +22,7 @@ Atlas::~Atlas(void)
 	delete terragen;
 }
 
-void Atlas::generate(int64_t seed, const struct worldparams *params)
+void Atlas::generate(long seed, const struct worldparams *params)
 {
 	terragen->generate(seed, params);
 }
