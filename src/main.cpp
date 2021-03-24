@@ -56,6 +56,8 @@
 #include "debugger.h"
 #include "module.h"
 #include "terra.h"
+#include "save.h"
+#include "atlas.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state {
@@ -84,6 +86,7 @@ private:
 	struct game_settings settings;
 	std::string savedir;
 	bool saveable;
+	Saver saver;
 	WindowManager windowman;
 	InputManager inputman;
 	PhysicsManager physicsman;
@@ -173,11 +176,11 @@ void Game::init(void)
 	}
 
 	// find the save directory on the system
-	char *prefpath = SDL_GetPrefPath("archeon", "saves");
-	if (prefpath) {
+	char *savepath = SDL_GetPrefPath("archeon", "saves");
+	if (savepath) {
 		saveable = true;
-		savedir = prefpath;
-		SDL_free(prefpath);
+		savedir = savepath;
+		SDL_free(savepath);
 	} else {
 		saveable = false;
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
@@ -261,6 +264,8 @@ void Game::run_campaign(void)
 
 	auto start = std::chrono::steady_clock::now();
 	terragen->generate(1337, &modular.params);
+	saver.load(savedir + "game.save", terragen);
+	//saver.save(savedir + "game.save", terragen);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";

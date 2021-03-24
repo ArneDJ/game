@@ -19,6 +19,9 @@ find_package(OpenMP REQUIRED)
 include_directories("src/extern/bullet")
 
 # external headers
+include_directories("src/extern/cereal")
+
+# external headers
 include_directories("src/extern")
 
 file(GLOB all_SRCS

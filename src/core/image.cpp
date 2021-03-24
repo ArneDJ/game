@@ -1,6 +1,7 @@
 #include <chrono>
 #include <iostream>
 #include <cstring>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/vec2.hpp>
@@ -59,7 +60,7 @@ void Image::clear(void)
 	std::memset(data, 0, size);
 }
 	
-void Image::write(const std::string &filepath)
+void Image::write(const std::string &filepath) const
 {
 	stbi_write_png(filepath.c_str(), width, height, channels, data, channels*width);
 }
@@ -122,7 +123,6 @@ FloatImage::FloatImage(uint16_t w, uint16_t h, uint8_t chan)
 	channels = chan;
 
 	size = width * height * channels;
-
 	data = new float[size];
 
 	clear();

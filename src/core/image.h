@@ -32,7 +32,7 @@ public:
 	// wipe image clean but do not free memory
 	void clear(void);
 	// save to file
-	void write(const std::string &filepath);
+	void write(const std::string &filepath) const;
 	// fill image with random noise at the specified channel
 	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
 private:
