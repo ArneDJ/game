@@ -21,10 +21,8 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 	topology.channels = heightmap->channels;
 	topology.size = heightmap->size;
 	topology.data.resize(heightmap->size);
-	// TODO use memcpy
-	for (int i = 0; i < heightmap->size; i++) {
-		topology.data[i] = heightmap->data[i];
-	}
+
+	std::copy(heightmap->data, heightmap->data + heightmap->size, topology.data.begin());
 
 	const Image *tempmap = atlas->get_tempmap();
 	temperature.width = tempmap->width;
@@ -32,9 +30,8 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 	temperature.channels = tempmap->channels;
 	temperature.size = tempmap->size;
 	temperature.data.resize(tempmap->size);
-	for (int i = 0; i < tempmap->size; i++) {
-		temperature.data[i] = tempmap->data[i];
-	}
+
+	std::copy(tempmap->data, tempmap->data + tempmap->size, temperature.data.begin());
 
 	const Image *rainmap = atlas->get_rainmap();
 	rain.width = rainmap->width;
@@ -42,9 +39,8 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 	rain.channels = rainmap->channels;
 	rain.size = rainmap->size;
 	rain.data.resize(rainmap->size);
-	for (int i = 0; i < rainmap->size; i++) {
-		rain.data[i] = rainmap->data[i];
-	}
+
+	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
 
 	std::ofstream stream(filepath, std::ios::binary);
 

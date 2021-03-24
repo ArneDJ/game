@@ -45,10 +45,7 @@ const Image* Atlas::get_tempmap(void) const
 void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data)
 {
 	if (width == terragen->heightmap->width && height == terragen->heightmap->height && data.size() == terragen->heightmap->size) {
-		//TODO memcpy(
-		for (int i = 0; i < data.size(); i++) {
-			terragen->heightmap->data[i] = data[i];
-		}
+		std::copy(data.begin(), data.end(), terragen->heightmap->data);
 	} else {
 		write_log(LogType::ERROR, "World error: could not load height map");
 	}
@@ -57,10 +54,7 @@ void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<fl
 void Atlas::load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
 {
 	if (width == terragen->rainmap->width && height == terragen->rainmap->height && data.size() == terragen->rainmap->size) {
-		//TODO memcpy(
-		for (int i = 0; i < data.size(); i++) {
-			terragen->rainmap->data[i] = data[i];
-		}
+		std::copy(data.begin(), data.end(), terragen->rainmap->data);
 	} else {
 		write_log(LogType::ERROR, "World error: could not load rain map");
 	}
@@ -69,10 +63,7 @@ void Atlas::load_rainmap(uint16_t width, uint16_t height, const std::vector<uint
 void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
 {
 	if (width == terragen->tempmap->width && height == terragen->tempmap->height && data.size() == terragen->tempmap->size) {
-		//TODO memcpy(
-		for (int i = 0; i < data.size(); i++) {
-			terragen->tempmap->data[i] = data[i];
-		}
+		std::copy(data.begin(), data.end(), terragen->tempmap->data);
 	} else {
 		write_log(LogType::ERROR, "World error: could not load temperature map");
 	}

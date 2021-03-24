@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <map>
+#include <random>
 #include <vector>
 #include <span>
 
@@ -94,15 +95,25 @@ private:
 	Camera camera;
 	Navigation navigation;
 	Debugger debugger;
+	// random seed generator
+	std::random_device rd;
+	std::uniform_int_distribution<long> dis;
+	// campaign data
 	Atlas *atlas;
+	long seed;
 	// graphics
 	RenderManager renderman;
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
+	Shader world_shader;
 	// temporary assets
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
+	GLTF::Model *cube;
+	Texture *heightmap;
+	Texture *rainmap;
+	Texture *tempmap;
 private:
 	void init(void);
 	void init_settings(void);
@@ -156,6 +167,10 @@ void Game::init(void)
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
 
+	world_shader.compile("shaders/worldmap.vert", GL_VERTEX_SHADER);
+	world_shader.compile("shaders/worldmap.frag", GL_FRAGMENT_SHADER);
+	world_shader.link();
+
 	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	camera.project();
 
@@ -187,12 +202,21 @@ void Game::init(void)
 	}
 
 	atlas = new Atlas { 2048, 512, 512 };
+
+	heightmap = new Texture { atlas->get_heightmap() };
+	rainmap = new Texture { atlas->get_rainmap() };
+	tempmap = new Texture { atlas->get_tempmap() };
 }
 
 void Game::teardown(void)
 {
+	delete heightmap;
+	delete rainmap;
+	delete tempmap;
+
 	delete dragon;
 	delete duck;
+	delete cube;
 
 	delete atlas;
 
@@ -217,6 +241,7 @@ void Game::load_assets(void)
 
 	duck = new GLTF::Model { "media/models/duck.glb", "media/textures/duck.dds" };
 	dragon = new GLTF::Model { "media/models/dragon.glb", "" };
+	cube = new GLTF::Model { "media/models/cube.glb", "" };
 }
 
 void Game::update_campaign(void)
@@ -259,22 +284,26 @@ void Game::run_campaign(void)
 {
 	state = GAME_STATE_CAMPAIGN;
 
+	// generate a new seed
+	std::mt19937 gen(rd());
+	seed = dis(gen);
+
 	camera.position = { 10.f, 5.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	atlas->generate(1337, &modular.params);
 	auto start = std::chrono::steady_clock::now();
-	saver.save(savedir + "game.save", atlas);
-	saver.load(savedir + "game.save", atlas);
+	atlas->generate(seed, &modular.params);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 	if (saveable) {
-		const Image *rainmap = atlas->get_rainmap();
-		rainmap->write(savedir + "rain.png");
-		const Image *tempmap = atlas->get_tempmap();
-		tempmap->write(savedir + "temperature.png");
+		saver.save(savedir + "game.save", atlas);
 	}
+	saver.load(savedir + "game.save", atlas);
+
+	heightmap->reload(atlas->get_heightmap());
+	rainmap->reload(atlas->get_rainmap());
+	tempmap->reload(atlas->get_tempmap());
 
 	while (state == GAME_STATE_CAMPAIGN) {
 		timer.begin();
@@ -300,6 +329,18 @@ void Game::run_campaign(void)
 
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 10.f)));
 		duck->display();
+
+		world_shader.use();
+		world_shader.uniform_mat4("VP", camera.VP);
+		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f)));
+		rainmap->bind(GL_TEXTURE1);
+		cube->display();
+		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(13.f, 0.f, -10.f)));
+		tempmap->bind(GL_TEXTURE1);
+		cube->display();
+		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(16.f, 0.f, -10.f)));
+		heightmap->bind(GL_TEXTURE1);
+		cube->display();
 
 		skybox.display(&camera);
 
