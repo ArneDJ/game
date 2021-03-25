@@ -13,7 +13,7 @@
 #include "core/image.h"
 #include "core/voronoi.h"
 #include "terra.h"
-#include "worldgen.h"
+#include "worldgraph.h"
 #include "atlas.h"
 #include "save.h"
 	

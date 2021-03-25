@@ -103,7 +103,7 @@ struct holding {
 	std::vector<const struct holding*> neighbors; // neighbouring holds
 };
 
-class Worldgen {
+class Worldgraph {
 public:
 	struct rectangle area;
 	std::vector<struct tile> tiles;
@@ -112,8 +112,8 @@ public:
 	std::list<struct holding> holdings;
 	long seed;
 public:
-	Worldgen(const struct rectangle bounds);
-	~Worldgen(void);
+	Worldgraph(const struct rectangle bounds);
+	~Worldgraph(void);
 	void generate(long seedling, const struct worldparams *params, const Terragen *terra);
 private:
 	std::list<struct basin> basins;

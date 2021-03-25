@@ -14,7 +14,18 @@
 #include "../extern/fastgaussianblur/fast_gaussian_blur.h"
 #include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
 
+#include "geom.h"
 #include "image.h"
+
+static inline int min3(int a, int b, int c)
+{
+	return std::min(a, std::min(b, c));
+}
+
+static inline int max3(int a, int b, int c)
+{
+	return std::max(a, std::max(b, c));
+}
 
 // normal image creation
 Image::Image(uint16_t w, uint16_t h, uint8_t chan)
@@ -111,6 +122,51 @@ void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm:
 				fastnoise->GradientPerturbFractal(x, y);
 				float value = 0.5f * (fastnoise->GetNoise(x, y) + 1.f);
 				plot(j, i, chan, 255 * glm::clamp(value, 0.f, 1.f));
+			}
+		}
+	}
+}
+	
+void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, uint8_t color)
+{
+	// make sure the triangle is counter clockwise
+	if (clockwise(a, b, c)) {
+		std::swap(b, c);
+	}
+	a.x = roundf(a.x);
+	a.y = roundf(a.y);
+	b.x = roundf(b.x);
+	b.y = roundf(b.y);
+	c.x = roundf(c.x);
+	c.y = roundf(c.y);
+
+	int area = orient(a.x, a.y, b.x, b.y, c.x, c.y);
+	if (area == 0) { return; }
+
+	// Compute triangle bounding box
+	int minX = min3((int)a.x, (int)b.x, (int)c.x);
+	int minY = min3((int)a.y, (int)b.y, (int)c.y);
+	int maxX = max3((int)a.x, (int)b.x, (int)c.x);
+	int maxY = max3((int)a.y, (int)b.y, (int)c.y);
+
+	// Clip against screen bounds
+	minX = std::max(minX, 0);
+	minY = std::max(minY, 0);
+	maxX = std::min(maxX, width - 1);
+	maxY = std::min(maxY, height - 1);
+
+	// Rasterize
+	float px, py;
+	for (py = minY; py <= maxY; py++) {
+		for (px = minX; px <= maxX; px++) {
+			// Determine barycentric coordinates
+			int w0 = orient(b.x, b.y, c.x, c.y, px, py);
+			int w1 = orient(c.x, c.y, a.x, a.y, px, py);
+			int w2 = orient(a.x, a.y, b.x, b.y, px, py);
+
+			// If p is on or inside all edges, render pixel.
+			if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+				plot(int(px), int(py), chan, color);
 			}
 		}
 	}

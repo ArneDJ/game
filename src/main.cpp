@@ -60,7 +60,7 @@
 #include "debugger.h"
 #include "module.h"
 #include "terra.h"
-#include "worldgen.h"
+#include "worldgraph.h"
 #include "atlas.h"
 #include "worldmap.h"
 #include "save.h"
@@ -117,6 +117,7 @@ private:
 	// temporary assets
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
+	Texture *worldtex;
 private:
 	void init(void);
 	void init_settings(void);
@@ -205,6 +206,8 @@ void Game::init(void)
 	atlas = new Atlas { 2048, 512, 512 };
 
 	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap(), atlas->get_rainmap() };
+
+	worldtex = new Texture { atlas->get_relief() };
 }
 
 void Game::teardown(void)
@@ -215,6 +218,8 @@ void Game::teardown(void)
 	delete worldmap;
 
 	delete atlas;
+
+	delete worldtex;
 
 	if (debugmode) {
 		debugger.teardown();
@@ -277,7 +282,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	//seed = 1337;
+	seed = 1337;
 
 	atlas->generate(seed, &modular.params);
 
@@ -308,6 +313,8 @@ void Game::run_campaign(void)
 
 	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
 
+	worldtex->reload(atlas->get_relief());
+
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
 
@@ -327,6 +334,7 @@ void Game::run_campaign(void)
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2010.f, 200.f, 2010.f)));
 		duck->display();
 
+		worldtex->bind(GL_TEXTURE2);
 		worldmap->display(&camera);
 
 		skybox.display(&camera);

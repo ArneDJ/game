@@ -20,7 +20,7 @@
 #include "core/image.h"
 #include "module.h"
 #include "terra.h"
-#include "worldgen.h"
+#include "worldgraph.h"
 
 enum TEMPERATURE { COLD, TEMPERATE, WARM };
 enum VEGETATION { ARID, DRY, HUMID };
@@ -48,24 +48,24 @@ static const float MIN_RIVER_DIST = 40.F;
 static const int MIN_BRANCH_SIZE = 3;
 static const int MIN_BASIN_SIZE = 4;
 
-Worldgen::Worldgen(const struct rectangle bounds)
+Worldgraph::Worldgraph(const struct rectangle bounds)
 {
 	area = bounds;
 }
 
-Worldgen::~Worldgen(void)
+Worldgraph::~Worldgraph(void)
 {
 	prune_basins();
 }
 
-void Worldgen::prune_basins(void)
+void Worldgraph::prune_basins(void)
 {
 	for (auto &bas : basins) {
 		delete_basin(&bas);
 	}
 }
 
-void Worldgen::generate(long seedling, const struct worldparams *params, const Terragen *terra)
+void Worldgraph::generate(long seedling, const struct worldparams *params, const Terragen *terra)
 {
 	// TODO pass this down instead of keeping it
 	seed = seedling;
@@ -123,7 +123,7 @@ void Worldgen::generate(long seedling, const struct worldparams *params, const T
 	}
 }
 
-void Worldgen::gen_diagram(void)
+void Worldgraph::gen_diagram(void)
 {
 	float radius = POISSON_DISK_RADIUS;
 	auto min = std::array<float, 2>{{area.min.x + BOUNDS_OFFSET, area.min.y + BOUNDS_OFFSET}};
@@ -222,7 +222,7 @@ void Worldgen::gen_diagram(void)
 	}
 }
 
-void Worldgen::gen_relief(const FloatImage *heightmap, const struct worldparams *params)
+void Worldgraph::gen_relief(const FloatImage *heightmap, const struct worldparams *params)
 {
 	const float scale_x = float(heightmap->width) / area.max.x;
 	const float scale_y = float(heightmap->height) / area.max.y;
@@ -262,7 +262,7 @@ void Worldgen::gen_relief(const FloatImage *heightmap, const struct worldparams 
 	correct_walls();
 }
 
-void Worldgen::correct_walls(void)
+void Worldgraph::correct_walls(void)
 {
 	for (auto &c : corners) {
 		c.wall = false;
@@ -291,7 +291,7 @@ void Worldgen::correct_walls(void)
 	}
 }
 
-void Worldgen::floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement)
+void Worldgraph::floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement)
 {
 	std::unordered_map<const struct tile*, bool> umap;
 	for (struct tile &t : tiles) {
@@ -335,7 +335,7 @@ void Worldgen::floodfill_relief(unsigned int minsize, enum RELIEF target, enum R
 
 // removes encircling mountains from the worldmap
 // uses a slightly different version of the floodfill algorithm
-void Worldgen::remove_echoriads(void)
+void Worldgraph::remove_echoriads(void)
 {
 	// add extra mountains to borders of the map
 	std::unordered_map<const struct tile*, bool> candidate;
@@ -394,7 +394,7 @@ void Worldgen::remove_echoriads(void)
 	}
 }
 
-void Worldgen::gen_rivers(bool erodable)
+void Worldgraph::gen_rivers(bool erodable)
 {
 	// construct the drainage basin candidate graph
 	// only land and coast corners not on the edge of the map can be candidates for the graph
@@ -511,7 +511,7 @@ void Worldgen::gen_rivers(bool erodable)
 	}
 }
 
-void Worldgen::gen_drainage_basins(std::vector<const struct corner*> &graph)
+void Worldgraph::gen_drainage_basins(std::vector<const struct corner*> &graph)
 {
 	struct meta {
 		bool visited;
@@ -600,7 +600,7 @@ void Worldgen::gen_drainage_basins(std::vector<const struct corner*> &graph)
 	}
 }
 
-void Worldgen::trim_river_basins(void)
+void Worldgraph::trim_river_basins(void)
 {
 	// prune binary tree branch if the stream order is too low
 	for (auto it = basins.begin(); it != basins.end(); ) {
@@ -638,7 +638,7 @@ void Worldgen::trim_river_basins(void)
 	}
 }
 
-void Worldgen::trim_stubby_rivers(void)
+void Worldgraph::trim_stubby_rivers(void)
 {
 	std::unordered_map<const struct branch*, int> depth;
 	std::unordered_map<const struct branch*, bool> removable;
@@ -717,7 +717,7 @@ void Worldgen::trim_stubby_rivers(void)
 	}
 }
 
-void Worldgen::correct_border_rivers(void)
+void Worldgraph::correct_border_rivers(void)
 {
 	// link the borders with the river corners
 	std::map<std::pair<int, int>, struct border*> link;
@@ -750,7 +750,7 @@ void Worldgen::correct_border_rivers(void)
 	}
 }
 
-void Worldgen::erode_mountains(void)
+void Worldgraph::erode_mountains(void)
 {
 	for (auto it = basins.begin(); it != basins.end(); ) {
 		struct basin &bas = *it;
@@ -777,7 +777,7 @@ void Worldgen::erode_mountains(void)
 	}
 }
 
-void Worldgen::gen_biomes(const Image *tempmap, const Image *rainmap)
+void Worldgraph::gen_biomes(const Image *tempmap, const Image *rainmap)
 {
 	std::mt19937 gen(seed);
 	const glm::vec2 scale_temp = {
@@ -822,7 +822,7 @@ void Worldgen::gen_biomes(const Image *tempmap, const Image *rainmap)
 	}
 }
 
-void Worldgen::gen_sites(void)
+void Worldgraph::gen_sites(void)
 {
 	// add candidate tiles that can have a site on them
 	std::unordered_map<const struct tile*, bool> visited;
@@ -870,7 +870,7 @@ void Worldgen::gen_sites(void)
 	}
 }
 
-void Worldgen::gen_holds(void)
+void Worldgraph::gen_holds(void)
 {
 	int index = 0;
 	std::vector<struct tile*> candidates;
@@ -990,7 +990,6 @@ static struct branch *insert_branch(const struct corner *confluence)
 
 	return node;
 }
-
 
 // Strahler stream order
 // https://en.wikipedia.org/wiki/Strahler_number

@@ -35,6 +35,8 @@ public:
 	void write(const std::string &filepath) const;
 	// fill image with random noise at the specified channel
 	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
+	// triangle rasterize
+	void draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, uint8_t color);
 private:
 	bool malloced = false;
 };

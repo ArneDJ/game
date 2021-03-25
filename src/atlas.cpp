@@ -13,7 +13,7 @@
 #include "core/voronoi.h"
 #include "module.h"
 #include "terra.h"
-#include "worldgen.h"
+#include "worldgraph.h"
 #include "atlas.h"
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
@@ -24,13 +24,16 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 		glm::vec2(0.F, 0.F),
 		glm::vec2(scale.x, scale.z)
 	};
-	worldgen = new Worldgen { area };
+	worldgraph = new Worldgraph { area };
+
+	relief = new Image { 2048, 2048, COLORSPACE_GRAYSCALE };
 }
 
 Atlas::~Atlas(void)
 {
 	delete terragen;
-	delete worldgen;
+	delete worldgraph;
+	delete relief;
 }
 
 void Atlas::generate(long seed, const struct worldparams *params)
@@ -39,7 +42,28 @@ void Atlas::generate(long seed, const struct worldparams *params)
 	terragen->generate(seed, params);
 
 	// then generate the world graph data (mountains, seas, rivers, etc)
-	worldgen->generate(seed, params, terragen);
+	worldgraph->generate(seed, params, terragen);
+
+	// create relief texture
+	const glm::vec2 mapscale = {
+		float(relief->width) / scale.x,
+		float(relief->height) / scale.z
+	};
+	for (const auto &t : worldgraph->tiles) {
+		uint8_t color = 0;
+		switch (t.relief) {
+		case SEABED: color = 10; break;
+		case LOWLAND: color = 128; break;
+		case UPLAND: color = 160; break;
+		case HIGHLAND: color = 250; break;
+		}
+		glm::vec2 a = mapscale * t.center;
+		for (const auto &bord : t.borders) {
+			glm::vec2 b = mapscale * bord->c0->position;
+			glm::vec2 c = mapscale * bord->c1->position;
+			relief->draw_triangle(a, b, c, CHANNEL_RED, color);
+		}
+	}
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -55,6 +79,11 @@ const Image* Atlas::get_rainmap(void) const
 const Image* Atlas::get_tempmap(void) const
 {
 	return terragen->tempmap;
+}
+	
+const Image* Atlas::get_relief(void) const
+{
+	return relief;
 }
 	
 void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data)
