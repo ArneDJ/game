@@ -146,6 +146,50 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 }
 	
+Mesh::Mesh(size_t res, const glm::vec2 &min, const glm::vec2 &max)
+{
+	struct primitive primi;
+	primi.mode = GL_PATCHES;
+	primi.vertexcount = GLsizei(4 * res * res);
+	primi.indexcount = 0;
+	primi.indexed = false;
+
+	std::vector<glm::vec3> positions;
+	const glm::vec2 offset = { max.x / float(res), max.y / float(res) };
+
+	glm::vec3 origin = { min.x, 0.f, min.y };
+	for (int x = 0; x < res; x++) {
+		for (int z = 0; z < res; z++) {
+			positions.push_back(glm::vec3(origin.x, origin.y, origin.z));
+			positions.push_back(glm::vec3(origin.x+offset.x, origin.y, origin.z));
+			positions.push_back(glm::vec3(origin.x, origin.y, origin.z+offset.y));
+			positions.push_back(glm::vec3(origin.x+offset.x, origin.y, origin.z+offset.y));
+			origin.x += offset.x;
+		}
+		origin.x = min.x;
+		origin.z += offset.y;
+	}
+
+	primi.vertexcount = positions.size();
+
+	primitives.push_back(primi);
+
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3)*positions.size(), positions.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
+
+	glBindVertexArray(0);
+	glDisableVertexAttribArray(0);
+}
+
 Mesh::~Mesh(void)
 {
 	glDeleteBuffers(1, &EBO);

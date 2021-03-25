@@ -1,17 +1,16 @@
 #version 430 core
 
-in vec2 texcoords;
-in vec3 normal;
+in TESSEVAL {
+	vec3 position;
+	vec2 texcoord;
+} fragment;
 
 out vec4 fcolor;
 
-layout(binding = 0) uniform sampler2D BASEMAP;
-layout(binding = 1) uniform sampler2D COLORMAP;
-
-uniform vec3 COLOR;
+layout(binding = 0) uniform sampler2D DISPLACEMENT;
 
 void main(void)
 {
-	vec4 color = texture(COLORMAP, texcoords);
-	fcolor = vec4(vec3(color.r), 1.0);
+	vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
+	fcolor = color;
 }

@@ -210,6 +210,8 @@ void Game::init(void)
 	heightmap = new Texture { atlas->get_heightmap() };
 	rainmap = new Texture { atlas->get_rainmap() };
 	tempmap = new Texture { atlas->get_tempmap() };
+
+	renderman.init_worldmap(atlas->scale, atlas->get_heightmap());
 }
 
 void Game::teardown(void)
@@ -233,6 +235,7 @@ void Game::teardown(void)
 	}
 
 	skybox.teardown();
+	renderman.teardown();
 
 	windowman.teardown();
 }
@@ -258,7 +261,7 @@ void Game::update_campaign(void)
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
 	camera.target(rel_mousecoords);
 
-	float modifier = 2.f * timer.delta;
+	float modifier = 20.f * timer.delta;
 	if (inputman.key_down(SDLK_w)) { camera.move_forward(modifier); }
 	if (inputman.key_down(SDLK_s)) { camera.move_backward(modifier); }
 	if (inputman.key_down(SDLK_d)) { camera.move_right(modifier); }
@@ -314,12 +317,14 @@ void Game::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
 
-	camera.position = { 10.f, 5.f, -10.f };
+	camera.position = { 10.f, 200.f, -10.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	heightmap->reload(atlas->get_heightmap());
 	rainmap->reload(atlas->get_rainmap());
 	tempmap->reload(atlas->get_tempmap());
+
+	renderman.reload_worldmap(atlas->get_heightmap());
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -333,11 +338,13 @@ void Game::run_campaign(void)
 		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
 		dragon->display();
 
+		/*
 		if (debugmode) {
 			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
 			debugger.render_grids();
 			debugger.render_navmeshes();
 		}
+		*/
 	
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
@@ -357,6 +364,8 @@ void Game::run_campaign(void)
 		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(16.f, 0.f, -10.f)));
 		heightmap->bind(GL_TEXTURE1);
 		cube->display();
+
+		renderman.display_worldmap(&camera);
 
 		skybox.display(&camera);
 
