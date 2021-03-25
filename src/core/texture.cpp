@@ -110,6 +110,18 @@ void Texture::cleanup(void)
 	}
 }
 	
+void Texture::change_wrapping(GLint wrapping)
+{
+	glBindTexture(target, handle);
+
+	glTexParameteri(target, GL_TEXTURE_WRAP_S, wrapping);
+	glTexParameteri(target, GL_TEXTURE_WRAP_T, wrapping);
+	// for 3D textures
+	glTexParameteri(target, GL_TEXTURE_WRAP_R, wrapping);
+
+	glBindTexture(target, 0);
+}
+	
 void Texture::load(const std::string &filepath)
 {
 	// first delete texture data if it is present

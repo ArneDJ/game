@@ -30,7 +30,7 @@ public:
 	Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	// tesselation mesh
-	Mesh(size_t res, const glm::vec2 &min, const glm::vec2 &max);
+	Mesh(uint32_t res, const glm::vec2 &min, const glm::vec2 &max);
 	~Mesh(void);
 	void draw(void) const;
 	void draw_instanced(GLsizei count);

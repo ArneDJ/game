@@ -13,6 +13,8 @@ public:
 	// update texture data
 	void reload(const FloatImage *image);
 	void reload(const Image *image);
+	// change wrapping method
+	void change_wrapping(GLint wrapping);
 private:
 	GLuint handle = 0;
 	GLenum target = GL_TEXTURE_2D; // usually GL_TEXTURE_2D

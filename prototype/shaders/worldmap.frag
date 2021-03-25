@@ -11,6 +11,6 @@ layout(binding = 0) uniform sampler2D DISPLACEMENT;
 
 void main(void)
 {
-	vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
-	fcolor = color;
+	vec4 color = texture(DISPLACEMENT, fragment.texcoord);
+	fcolor = vec4(vec3(color.r), 1.0);
 }

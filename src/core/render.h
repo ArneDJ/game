@@ -7,9 +7,4 @@ public:
 	void display_worldmap(const Camera *camera);
 	void teardown(void);
 	void prepare_to_render(void);
-private:
-	Mesh *patches = nullptr;
-	Texture *topology = nullptr;
-	Shader landshader;
-	glm::vec3 mapscale;
 };

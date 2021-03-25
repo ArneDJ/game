@@ -146,7 +146,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 }
 	
-Mesh::Mesh(size_t res, const glm::vec2 &min, const glm::vec2 &max)
+Mesh::Mesh(uint32_t res, const glm::vec2 &min, const glm::vec2 &max)
 {
 	struct primitive primi;
 	primi.mode = GL_PATCHES;

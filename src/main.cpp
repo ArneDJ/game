@@ -58,6 +58,7 @@
 #include "module.h"
 #include "terra.h"
 #include "atlas.h"
+#include "worldmap.h"
 #include "save.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -106,6 +107,7 @@ private:
 	// graphics
 	RenderManager renderman;
 	Skybox skybox;
+	Worldmap *worldmap;
 	Shader object_shader;
 	Shader debug_shader;
 	Shader world_shader;
@@ -113,7 +115,6 @@ private:
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
 	GLTF::Model *cube;
-	Texture *heightmap;
 	Texture *rainmap;
 	Texture *tempmap;
 private:
@@ -207,16 +208,14 @@ void Game::init(void)
 
 	atlas = new Atlas { 2048, 512, 512 };
 
-	heightmap = new Texture { atlas->get_heightmap() };
 	rainmap = new Texture { atlas->get_rainmap() };
 	tempmap = new Texture { atlas->get_tempmap() };
 
-	renderman.init_worldmap(atlas->scale, atlas->get_heightmap());
+	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap() };
 }
 
 void Game::teardown(void)
 {
-	delete heightmap;
 	delete rainmap;
 	delete tempmap;
 
@@ -235,17 +234,13 @@ void Game::teardown(void)
 	}
 
 	skybox.teardown();
-	renderman.teardown();
+	//renderman.teardown();
 
 	windowman.teardown();
 }
 	
 void Game::load_assets(void)
 {
-	if (debugmode) {
-		debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
-	}
-
 	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
 	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
@@ -317,14 +312,13 @@ void Game::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
 
-	camera.position = { 10.f, 200.f, -10.f };
+	camera.position = { 2048.f, 200.f, 2048.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	heightmap->reload(atlas->get_heightmap());
 	rainmap->reload(atlas->get_rainmap());
 	tempmap->reload(atlas->get_tempmap());
 
-	renderman.reload_worldmap(atlas->get_heightmap());
+	worldmap->reload(atlas->get_heightmap());
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -335,22 +329,14 @@ void Game::run_campaign(void)
 
 		debug_shader.use();
 		debug_shader.uniform_mat4("VP", camera.VP);
-		debug_shader.uniform_mat4("MODEL", glm::scale(glm::mat4(1.f), glm::vec3(0.1f, 0.1f, 0.1f)));
+		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2048.f, 160.f, 2048.f)));
 		dragon->display();
 
-		/*
-		if (debugmode) {
-			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
-			debugger.render_grids();
-			debugger.render_navmeshes();
-		}
-		*/
-	
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
 
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, 10.f)));
+		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2010.f, 200.f, 2010.f)));
 		duck->display();
 
 		world_shader.use();
@@ -361,11 +347,8 @@ void Game::run_campaign(void)
 		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(13.f, 0.f, -10.f)));
 		tempmap->bind(GL_TEXTURE1);
 		cube->display();
-		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(16.f, 0.f, -10.f)));
-		heightmap->bind(GL_TEXTURE1);
-		cube->display();
 
-		renderman.display_worldmap(&camera);
+		worldmap->display(&camera);
 
 		skybox.display(&camera);
 
