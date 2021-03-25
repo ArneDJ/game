@@ -6,7 +6,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <bullet/btBulletDynamicsCommon.h>
+#include "btBulletDynamicsCommon.h"
 
 #include "logger.h"
 #include "physics.h"
