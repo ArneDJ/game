@@ -3,13 +3,17 @@
 #include <vector>
 #include <random>
 #include <algorithm>
+#include <list>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "core/logger.h"
+#include "core/geom.h"
 #include "core/image.h"
+#include "core/voronoi.h"
 #include "terra.h"
+#include "worldgen.h"
 #include "atlas.h"
 #include "save.h"
 	

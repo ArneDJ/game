@@ -19,7 +19,7 @@
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
-Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap)
+Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *rainmap)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -30,6 +30,10 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap)
 	// special wrapping mode so edges of the map are at height 0
 	topology->change_wrapping(GL_CLAMP_TO_EDGE);
 
+	rain = new Texture { rainmap };
+	// special wrapping mode so edges of the map are at height 0
+	rain->change_wrapping(GL_CLAMP_TO_EDGE);
+
 	land.compile("shaders/worldmap.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/worldmap.tesc", GL_TESS_CONTROL_SHADER);
 	land.compile("shaders/worldmap.tese", GL_TESS_EVALUATION_SHADER);
@@ -37,9 +41,18 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap)
 	land.link();
 }
 
-void Worldmap::reload(const FloatImage *heightmap)
+Worldmap::~Worldmap(void)
+{
+	delete patches;
+	
+	delete topology;
+	delete rain;
+}
+
+void Worldmap::reload(const FloatImage *heightmap, const Image *rainmap)
 {
 	topology->reload(heightmap);
+	rain->reload(rainmap);
 }
 
 void Worldmap::display(const Camera *camera)
@@ -50,6 +63,7 @@ void Worldmap::display(const Camera *camera)
 	land.uniform_vec3("MAP_SCALE", scale);
 
 	topology->bind(GL_TEXTURE0);
+	rain->bind(GL_TEXTURE1);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();

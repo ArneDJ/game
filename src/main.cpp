@@ -4,6 +4,7 @@
 #include <map>
 #include <random>
 #include <vector>
+#include <list>
 #include <span>
 
 #include <SDL2/SDL.h>
@@ -38,6 +39,7 @@
 #include "extern/imgui/imgui_impl_opengl3.h"
 
 #include "core/logger.h"
+#include "core/geom.h"
 #include "core/image.h"
 #include "core/entity.h"
 #include "core/camera.h"
@@ -53,10 +55,12 @@
 #include "core/physics.h"
 #include "core/animation.h"
 #include "core/navigation.h"
+#include "core/voronoi.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
 #include "terra.h"
+#include "worldgen.h"
 #include "atlas.h"
 #include "worldmap.h"
 #include "save.h"
@@ -110,13 +114,9 @@ private:
 	Worldmap *worldmap;
 	Shader object_shader;
 	Shader debug_shader;
-	Shader world_shader;
 	// temporary assets
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
-	GLTF::Model *cube;
-	Texture *rainmap;
-	Texture *tempmap;
 private:
 	void init(void);
 	void init_settings(void);
@@ -172,10 +172,6 @@ void Game::init(void)
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
 
-	world_shader.compile("shaders/worldmap.vert", GL_VERTEX_SHADER);
-	world_shader.compile("shaders/worldmap.frag", GL_FRAGMENT_SHADER);
-	world_shader.link();
-
 	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	camera.project();
 
@@ -208,20 +204,15 @@ void Game::init(void)
 
 	atlas = new Atlas { 2048, 512, 512 };
 
-	rainmap = new Texture { atlas->get_rainmap() };
-	tempmap = new Texture { atlas->get_tempmap() };
-
-	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap() };
+	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap(), atlas->get_rainmap() };
 }
 
 void Game::teardown(void)
 {
-	delete rainmap;
-	delete tempmap;
-
 	delete dragon;
 	delete duck;
-	delete cube;
+
+	delete worldmap;
 
 	delete atlas;
 
@@ -243,7 +234,6 @@ void Game::load_assets(void)
 {
 	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
-	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
 }
 
 void Game::update_campaign(void)
@@ -287,6 +277,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
+	//seed = 1337;
 
 	atlas->generate(seed, &modular.params);
 
@@ -315,10 +306,7 @@ void Game::run_campaign(void)
 	camera.position = { 2048.f, 200.f, 2048.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	rainmap->reload(atlas->get_rainmap());
-	tempmap->reload(atlas->get_tempmap());
-
-	worldmap->reload(atlas->get_heightmap());
+	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -338,15 +326,6 @@ void Game::run_campaign(void)
 
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2010.f, 200.f, 2010.f)));
 		duck->display();
-
-		world_shader.use();
-		world_shader.uniform_mat4("VP", camera.VP);
-		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(10.f, 0.f, -10.f)));
-		rainmap->bind(GL_TEXTURE1);
-		cube->display();
-		world_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(13.f, 0.f, -10.f)));
-		tempmap->bind(GL_TEXTURE1);
-		cube->display();
 
 		worldmap->display(&camera);
 

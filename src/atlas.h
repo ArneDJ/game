@@ -19,11 +19,7 @@ public:
 
 private:
 	Terragen *terragen;
-	//Worldgen worldgen;
+	Worldgen *worldgen;
 	//Mosaicfield mosaicfield;
-private:
-	void gen_heightmap(long seed, const struct worldparams *params);
-	void gen_tempmap(long seed, const struct worldparams *params);
-	void gen_rainmap(long seed, const struct worldparams *params);
 };
 

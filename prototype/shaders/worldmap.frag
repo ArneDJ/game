@@ -8,6 +8,7 @@ in TESSEVAL {
 out vec4 fcolor;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
+layout(binding = 1) uniform sampler2D RAINMAP;
 
 void main(void)
 {

@@ -2,29 +2,44 @@
 #include <vector>
 #include <random>
 #include <algorithm>
+#include <list>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "core/logger.h"
+#include "core/geom.h"
 #include "core/image.h"
+#include "core/voronoi.h"
 #include "module.h"
 #include "terra.h"
+#include "worldgen.h"
 #include "atlas.h"
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
 	terragen = new Terragen { heightres, rainres, tempres };
+
+	struct rectangle area = {
+		glm::vec2(0.F, 0.F),
+		glm::vec2(scale.x, scale.z)
+	};
+	worldgen = new Worldgen { area };
 }
 
 Atlas::~Atlas(void)
 {
 	delete terragen;
+	delete worldgen;
 }
 
 void Atlas::generate(long seed, const struct worldparams *params)
 {
+	// first generate the world heightmap, rain and temperature data
 	terragen->generate(seed, params);
+
+	// then generate the world graph data (mountains, seas, rivers, etc)
+	worldgen->generate(seed, params, terragen);
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
