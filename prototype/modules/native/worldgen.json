@@ -3,6 +3,7 @@
         "heightmap_parameters": {
             "frequency": 0.001,
             "perturbfreq": 0.001,
+            "perturbamp": 200.0,
             "octaves": 6,
             "lacunarity": 2.5,
             "sampling_scale_x": 1.0,

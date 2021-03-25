@@ -19,6 +19,7 @@ struct heightparams {
 	{
 		archive(
 			CEREAL_NVP(frequency), CEREAL_NVP(perturbfreq), 
+			CEREAL_NVP(perturbamp),
 			CEREAL_NVP(octaves), CEREAL_NVP(lacunarity), 
 			cereal::make_nvp("sampling_scale_x", sampling_scale.x), 
 			cereal::make_nvp("sampling_scale_y", sampling_scale.y),

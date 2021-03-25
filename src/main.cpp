@@ -243,9 +243,9 @@ void Game::load_assets(void)
 		debugger.add_grid(glm::vec2(-20.f, -20.f), glm::vec2(20.f, 20.f));
 	}
 
-	duck = new GLTF::Model { "media/models/duck.glb", "media/textures/duck.dds" };
-	dragon = new GLTF::Model { "media/models/dragon.glb", "" };
-	cube = new GLTF::Model { "media/models/cube.glb", "" };
+	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
+	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
+	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
 }
 
 void Game::update_campaign(void)
