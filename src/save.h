@@ -1,8 +1,8 @@
 #pragma once
-#include "extern/cereal/types/unordered_map.hpp"
-#include "extern/cereal/types/vector.hpp"
-#include "extern/cereal/types/memory.hpp"
-#include "extern/cereal/archives/binary.hpp"
+#include "cereal/types/unordered_map.hpp"
+#include "cereal/types/vector.hpp"
+#include "cereal/types/memory.hpp"
+#include "cereal/archives/binary.hpp"
 
 struct image_record {
 	uint16_t width;

@@ -40,10 +40,10 @@
 #include <cstdint>
 #include <functional>
 
-#include "macros.hpp"
-#include "details/traits.hpp"
-#include "details/helpers.hpp"
-#include "types/base_class.hpp"
+#include "cereal/macros.hpp"
+#include "cereal/details/traits.hpp"
+#include "cereal/details/helpers.hpp"
+#include "cereal/types/base_class.hpp"
 
 namespace cereal
 {
@@ -1093,6 +1093,6 @@ namespace cereal
 } // namespace cereal
 
 // This include needs to come after things such as binary_data, make_nvp, etc
-#include "types/common.hpp"
+#include "cereal/types/common.hpp"
 
 #endif // CEREAL_CEREAL_HPP_

@@ -29,7 +29,7 @@
 
 // define this to make bullet and ozz animation compile on Windows
 #define BT_NO_SIMD_OPERATOR_OVERLOADS
-#include "btBulletDynamicsCommon.h"
+#include "extern/bullet/btBulletDynamicsCommon.h"
 
 #include "extern/inih/INIReader.h"
 
