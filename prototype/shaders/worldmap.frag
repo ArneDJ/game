@@ -14,6 +14,7 @@ layout(binding = 3) uniform sampler2D BIOMEMAP;
 
 void main(void)
 {
-	vec4 color = texture(BIOMEMAP, fragment.texcoord);
-	fcolor = vec4(color.rgb, 1.0);
+	float height = texture(DISPLACEMENT, fragment.texcoord).r;
+	vec4 color = texture(RELIEFMAP, fragment.texcoord);
+	fcolor = vec4(mix(vec3(height), vec3(color.r), 0.1), 1.0);
 }

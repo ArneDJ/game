@@ -16,7 +16,6 @@
 #include "terra.h"
 #include "worldgraph.h"
 #include "atlas.h"
-#include "save.h" // TODO fix CIRCULAR DEPENDENCY!!!
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
@@ -184,33 +183,33 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 	}
 }
 	
-void Atlas::load_worldgraph(const std::vector<struct tile_record> &tile_records, const std::vector<struct corner_record> &corner_records, const std::vector<struct border_record> &border_records)
+void Atlas::load_worldgraph(const std::vector<struct tile> &tiles, const std::vector<struct corner> &corners, const std::vector<struct border> &borders)
 {
 	worldgraph->tiles.clear();
 	worldgraph->corners.clear();
 	worldgraph->borders.clear();
 
-	worldgraph->tiles.resize(tile_records.size());
-	worldgraph->corners.resize(corner_records.size());
-	worldgraph->borders.resize(border_records.size());
+	worldgraph->tiles.resize(tiles.size());
+	worldgraph->corners.resize(corners.size());
+	worldgraph->borders.resize(borders.size());
 
 	// the tiles
-	for (const auto &record : tile_records) {
+	for (const auto &record : tiles) {
 		struct tile til;
 		til.index = record.index;
 		til.frontier = record.frontier;
 		til.land = record.land;
 		til.coast = record.coast;
-		til.center.x = record.center_x;
-		til.center.y = record.center_y;
+		til.center = record.center;
+		//til.center.y = record.center_y;
 		for (const auto &neighbor : record.neighbors) {
-			til.neighbors.push_back(&worldgraph->tiles[neighbor]);
+			til.neighbors.push_back(&worldgraph->tiles[neighbor->index]);
 		}
 		for (const auto &corner : record.corners) {
-			til.corners.push_back(&worldgraph->corners[corner]);
+			til.corners.push_back(&worldgraph->corners[corner->index]);
 		}
 		for (const auto &border : record.borders) {
-			til.borders.push_back(&worldgraph->borders[border]);
+			til.borders.push_back(&worldgraph->borders[border->index]);
 		}
 		//record.amp = til.amp;
 		til.relief = static_cast<enum RELIEF>(record.relief);
@@ -222,16 +221,15 @@ void Atlas::load_worldgraph(const std::vector<struct tile_record> &tile_records,
 	}
 
 	// the corners
-	for (const auto &record : corner_records) {
+	for (const auto &record : corners) {
 		struct corner corn;
 		corn.index = record.index;
-		corn.position.x = record.position_x;
-		corn.position.y = record.position_y;
+		corn.position = record.position;
 		for (const auto &adj : record.adjacent) {
-			corn.adjacent.push_back(&worldgraph->corners[adj]);
+			corn.adjacent.push_back(&worldgraph->corners[adj->index]);
 		}
 		for (const auto &index : record.touches) {
-			corn.touches.push_back(&worldgraph->tiles[index]);
+			corn.touches.push_back(&worldgraph->tiles[index->index]);
 		}
 		// world data
 		corn.frontier = record.frontier;
@@ -244,13 +242,13 @@ void Atlas::load_worldgraph(const std::vector<struct tile_record> &tile_records,
 	}
 
 	// the borders
-	for (const auto &record : border_records) {
+	for (const auto &record : borders) {
 		struct border bord;
 		bord.index = record.index;
-		bord.c0 = &worldgraph->corners[record.c0];
-		bord.c1 = &worldgraph->corners[record.c1];
-		bord.t0 = &worldgraph->tiles[record.t0];
-		bord.t1 = &worldgraph->tiles[record.t1];
+		bord.c0 = &worldgraph->corners[record.c0->index];
+		bord.c1 = &worldgraph->corners[record.c1->index];
+		bord.t0 = &worldgraph->tiles[record.t0->index];
+		bord.t1 = &worldgraph->tiles[record.t1->index];
 		// world data
 		bord.frontier = record.frontier;
 		bord.coast = record.coast;

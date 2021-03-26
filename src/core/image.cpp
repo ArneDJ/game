@@ -130,14 +130,14 @@ void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm:
 // http://members.chello.at/~easyfilter/bresenham.html
 void Image::draw_line(int x0, int y0, int x1, int y1, uint8_t chan, uint8_t color)
 {
-	int dx =  abs(x1-x0), sx = x0 < x1 ? 1 : -1;
+	int dx = abs(x1-x0), sx = x0 < x1 ? 1 : -1;
 	int dy = -abs(y1-y0), sy = y0 < y1 ? 1 : -1;
 	int err = dx+dy, e2; // error value e_xy
 
 	for (;;) {
 		plot(x0, y0, chan, color);
 		if (x0 == x1 && y0 == y1) { break; }
-		e2 = 2*err;
+		e2 = 2 * err;
 		if (e2 >= dy) { err += dy; x0 += sx; } // e_xy+e_x > 0
 		if (e2 <= dx) { err += dx; y0 += sy; } // e_xy+e_y < 0
 	}
@@ -181,7 +181,6 @@ void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, u
 
 	// Barycentric coordinates at minX/minY corner
 	glm::ivec2 p = { minX, minY };
-	// TODO orient2D
 	int w0_row = orient(b.x, b.y, c.x, c.y, p.x, p.y);
 	int w1_row = orient(c.x, c.y, a.x, a.y, p.x, p.y);
 	int w2_row = orient(a.x, a.y, b.x, b.y, p.x, p.y);
@@ -198,7 +197,6 @@ void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, u
     			if ((w0 | w1 | w2) >= 0) {
 				plot(p.x, p.y, chan, color);
 			}
-			//renderPixel(p, w0, w1, w2);
 
 			// One step to the right
 			w0 += A12;
@@ -248,10 +246,10 @@ void Image::draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t 
 	int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
 	int err = dx+dy, e2; // error value e_xy
 
-	for(;;) {
+	for (;;) {
 		draw_filled_circle(x0,y0, radius, chan, color);
-		if (x0==x1 && y0==y1) { break; }
-		e2 = 2*err;
+		if (x0 == x1 && y0 == y1) { break; }
+		e2 = 2 * err;
 		if (e2 >= dy) { err += dy; x0 += sx; } // e_xy+e_x > 0
 		if (e2 <= dx) { err += dx; y0 += sy; } // e_xy+e_y < 0
 	}

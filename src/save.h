@@ -110,4 +110,7 @@ private:
 	std::vector<struct tile_record> tile_records;
 	std::vector<struct corner_record> corner_records;
 	std::vector<struct border_record> border_records;
+	std::vector<struct tile> tiles;
+	std::vector<struct corner> corners;
+	std::vector<struct border> borders;
 };

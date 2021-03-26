@@ -51,6 +51,15 @@ void Module::load(const std::string &modname)
 	load_world_parameters(worldpath);
 
 	load_atmosphere(atmospath);
+
+	// lowland may not be higher than upland
+	if (params.lowland > params.upland) {
+		std::swap(params.lowland, params.upland);
+	}
+	// upland may not be higher than highland
+	if (params.upland > params.highland) {
+		std::swap(params.upland, params.highland);
+	}
 }
 
 void Module::save_world_parameters(const std::string &filepath)

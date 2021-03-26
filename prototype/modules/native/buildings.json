@@ -1,0 +1,26 @@
+{
+    "houses": [
+	{
+		"name": "Dwarven House",
+		"creatures": "dwarves",
+		"type": "HOUSE",
+		"model": "media/models/houses/dwarven.glb",
+		"min_temp": 50,
+		"max_temp": 100,
+		"min_rain": 200,
+		"max_rain": 255,
+		"x": 20, "y": 25, "z": 25
+	},
+	{
+		"name": "Human House",
+		"creatures": "humans",
+		"type": "HOUSE",
+		"model": "media/models/houses/human.glb",
+		"min_temp": 50,
+		"max_temp": 100,
+		"min_rain": 200,
+		"max_rain": 255,
+		"x": 20, "y": 25, "z": 25
+	}
+    ]
+}

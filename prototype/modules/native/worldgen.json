@@ -6,8 +6,8 @@
             "perturbamp": 200.0,
             "octaves": 6,
             "lacunarity": 2.5,
-            "sampling_scale_x": 1.0,
-            "sampling_scale_y": 1.0,
+            "sampling_scale_x": 1.05,
+            "sampling_scale_y": 1.05,
             "sampling_offset_x": 0.0,
             "sampling_offset_y": 0.0
         },
@@ -16,7 +16,7 @@
             "perturb": 100.0
         },
         "rain_parameters": {
-            "blur": 25.0,
+            "blur": 40.0,
             "frequency": 0.01,
             "octaves": 6,
             "lacunarity": 3.0,
@@ -26,9 +26,9 @@
             "gauss_sigma": 0.25,
             "detail_mix": 0.5
         },
-        "lowland": 0.48,
+        "lowland": 0.45,
         "upland": 0.58,
-        "highland": 0.66,
+        "highland": 0.65,
         "erode_mountains": true
     }
 }

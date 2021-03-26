@@ -19,7 +19,7 @@ public:
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
 	void load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 	void load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
-	void load_worldgraph(const std::vector<struct tile_record> &tile_records, const std::vector<struct corner_record> &corner_records, const std::vector<struct border_record> &border_records);
+	void load_worldgraph(const std::vector<struct tile> &tiles, const std::vector<struct corner> &corners, const std::vector<struct border> &borders);
 	void create_maps(void);
 private:
 	Terragen *terragen;

@@ -125,11 +125,10 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 
 void Worldgraph::gen_diagram(long seed)
 {
-	float radius = POISSON_DISK_RADIUS;
 	auto min = std::array<float, 2>{{area.min.x + BOUNDS_OFFSET, area.min.y + BOUNDS_OFFSET}};
 	auto max = std::array<float, 2>{{area.max.x - BOUNDS_OFFSET, area.max.y - BOUNDS_OFFSET}};
 
-	std::vector<std::array<float, 2>> candidates = thinks::PoissonDiskSampling(radius, min, max, 30, seed);
+	std::vector<std::array<float, 2>> candidates = thinks::PoissonDiskSampling(POISSON_DISK_RADIUS, min, max, 30, seed);
 	std::vector<glm::vec2> locations;
 	for (const auto &point : candidates) {
 		locations.push_back(glm::vec2(point[0], point[1]));

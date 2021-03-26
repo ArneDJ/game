@@ -1,0 +1,28 @@
+{
+    "foliage": [
+	{
+		"name": "Oak tree",
+		"type": "TREE",
+		"model": "media/models/trees/oak.glb",
+		"min_temp": 50,
+		"max_temp": 100,
+		"min_rain": 200,
+		"max_rain": 255
+	},
+	{
+		"name": "Pine tree",
+		"type": "TREE",
+		"model": "media/models/trees/pine.glb",
+		"min_temp": 10,
+		"max_temp": 60,
+		"min_rain": 100,
+		"max_rain": 200
+	},
+	{
+		"name": "Bush",
+		"type": "BUSH",
+		"model": "media/models/foliage/bush.glb",
+		"biomes" [ "TEMP_GRASSLAND", WARM_GRASSLAND", "FOREST" ]
+	}
+    ]
+}

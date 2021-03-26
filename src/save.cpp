@@ -154,6 +154,10 @@ void Saver::load(const std::string &filepath, Atlas *atlas)
 	corner_records.clear();
 	border_records.clear();
 
+	tiles.clear();
+	corners.clear();
+	borders.clear();
+
 	uint32_t tilecount = 0;
 	uint32_t cornercount = 0;
 	uint32_t bordercount = 0;
@@ -190,6 +194,75 @@ void Saver::load(const std::string &filepath, Atlas *atlas)
 	atlas->load_tempmap(temperature.width, temperature.height, temperature.data);
 
 	// import the world graph data
+	tiles.resize(tilecount);
+	corners.resize(cornercount);
+	borders.resize(bordercount);
 
-	atlas->load_worldgraph(tile_records, corner_records, border_records);
+	// the tiles
+	for (const auto &record : tile_records) {
+		struct tile til;
+		til.index = record.index;
+		til.frontier = record.frontier;
+		til.land = record.land;
+		til.coast = record.coast;
+		til.center.x = record.center_x;
+		til.center.y = record.center_y;
+		for (const auto &neighbor : record.neighbors) {
+			til.neighbors.push_back(&tiles[neighbor]);
+		}
+		for (const auto &corner : record.corners) {
+			til.corners.push_back(&corners[corner]);
+		}
+		for (const auto &border : record.borders) {
+			til.borders.push_back(&borders[border]);
+		}
+		//record.amp = til.amp;
+		til.relief = static_cast<enum RELIEF>(record.relief);
+		til.biome = static_cast<enum BIOME>(record.biome);
+		til.site = static_cast<enum SITE>(record.site);
+		til.hold = nullptr;
+		//
+		tiles[til.index] = til;
+	}
+
+	// the corners
+	for (const auto &record : corner_records) {
+		struct corner corn;
+		corn.index = record.index;
+		corn.position.x = record.position_x;
+		corn.position.y = record.position_y;
+		for (const auto &adj : record.adjacent) {
+			corn.adjacent.push_back(&corners[adj]);
+		}
+		for (const auto &index : record.touches) {
+			corn.touches.push_back(&tiles[index]);
+		}
+		// world data
+		corn.frontier = record.frontier;
+		corn.coast = record.coast;
+		corn.river = record.river;
+		corn.wall = record.wall;
+		corn.depth = record.depth;
+		//
+		corners[corn.index] = corn;
+	}
+
+	// the borders
+	for (const auto &record : border_records) {
+		struct border bord;
+		bord.index = record.index;
+		bord.c0 = &corners[record.c0];
+		bord.c1 = &corners[record.c1];
+		bord.t0 = &tiles[record.t0];
+		bord.t1 = &tiles[record.t1];
+		// world data
+		bord.frontier = record.frontier;
+		bord.coast = record.coast;
+		bord.river = record.river;
+		bord.wall = record.wall;
+		//
+		borders[bord.index] = bord;
+	}
+
+	atlas->load_worldgraph(tiles, corners, borders);
 }
