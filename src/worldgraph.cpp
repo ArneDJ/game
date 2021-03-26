@@ -40,7 +40,7 @@ static const uint8_t N_RELAXATIONS = 1;
 static const float BOUNDS_OFFSET = 10.F;
 static const float POISSON_DISK_RADIUS = 16.F;
 static const int MIN_STREAM_ORDER = 4;
-static const size_t MIN_WATER_BODY = 1024;
+static const size_t MIN_WATER_BODY = 256;
 static const size_t MIN_MOUNTAIN_BODY = 128;
 static const int TOWN_SPAWN_RADIUS = 8;
 static const int CASTLE_SPAWN_RADIUS = 10;
@@ -65,10 +65,10 @@ void Worldgraph::prune_basins(void)
 	}
 }
 
-void Worldgraph::generate(long seedling, const struct worldparams *params, const Terragen *terra)
+void Worldgraph::generate(long seed, const struct worldparams *params, const Terragen *terra)
 {
 	// TODO pass this down instead of keeping it
-	seed = seedling;
+	//seed = seedling;
 
 	// reset data
 	tiles.clear();
@@ -80,7 +80,7 @@ void Worldgraph::generate(long seedling, const struct worldparams *params, const
 	basins.clear();
 
 	// now do the world generation
-	gen_diagram();
+	gen_diagram(seed);
 
 	gen_relief(terra->heightmap, params);
 
@@ -109,9 +109,9 @@ void Worldgraph::generate(long seedling, const struct worldparams *params, const
 		}
 	}
 
-	gen_biomes(terra->tempmap, terra->rainmap);
+	gen_biomes(seed, terra->tempmap, terra->rainmap);
 
-	gen_sites();
+	gen_sites(seed);
 
 	gen_holds(); 
 	// resources always have to be part of a hold
@@ -123,7 +123,7 @@ void Worldgraph::generate(long seedling, const struct worldparams *params, const
 	}
 }
 
-void Worldgraph::gen_diagram(void)
+void Worldgraph::gen_diagram(long seed)
 {
 	float radius = POISSON_DISK_RADIUS;
 	auto min = std::array<float, 2>{{area.min.x + BOUNDS_OFFSET, area.min.y + BOUNDS_OFFSET}};
@@ -242,7 +242,7 @@ void Worldgraph::gen_relief(const FloatImage *heightmap, const struct worldparam
 		}
 	}
 
-	//floodfill_relief(MIN_WATER_BODY, SEABED, LOWLAND);
+	floodfill_relief(MIN_WATER_BODY, SEABED, LOWLAND);
 	floodfill_relief(MIN_MOUNTAIN_BODY, HIGHLAND, UPLAND);
 	remove_echoriads();
 
@@ -777,7 +777,7 @@ void Worldgraph::erode_mountains(void)
 	}
 }
 
-void Worldgraph::gen_biomes(const Image *tempmap, const Image *rainmap)
+void Worldgraph::gen_biomes(long seed, const Image *tempmap, const Image *rainmap)
 {
 	std::mt19937 gen(seed);
 	const glm::vec2 scale_temp = {
@@ -822,7 +822,7 @@ void Worldgraph::gen_biomes(const Image *tempmap, const Image *rainmap)
 	}
 }
 
-void Worldgraph::gen_sites(void)
+void Worldgraph::gen_sites(long seed)
 {
 	// add candidate tiles that can have a site on them
 	std::unordered_map<const struct tile*, bool> visited;

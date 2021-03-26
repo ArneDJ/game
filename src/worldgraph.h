@@ -110,7 +110,6 @@ public:
 	std::vector<struct corner> corners;
 	std::vector<struct border> borders;
 	std::list<struct holding> holdings;
-	long seed;
 public:
 	Worldgraph(const struct rectangle bounds);
 	~Worldgraph(void);
@@ -119,11 +118,11 @@ private:
 	std::list<struct basin> basins;
 	Voronoi voronoi;
 private:
-	void gen_diagram(void);
+	void gen_diagram(long seed);
 	void gen_relief(const FloatImage *heightmap, const struct worldparams *params);
 	void gen_rivers(bool erodable);
-	void gen_biomes(const Image *tempmap, const Image *rainmap);
-	void gen_sites(void);
+	void gen_biomes(long seed, const Image *tempmap, const Image *rainmap);
+	void gen_sites(long seed);
 	void gen_holds(void);
 	void name_holds(void);
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);

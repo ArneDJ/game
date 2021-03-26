@@ -39,6 +39,8 @@ public:
 	void draw_line(int x0, int y0, int x1, int y1, uint8_t chan, uint8_t color);
 	// triangle rasterize
 	void draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, uint8_t color);
+	void draw_filled_circle(int x0, int y0, int radius, uint8_t chan, uint8_t color);
+	void draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t chan, uint8_t color);
 private:
 	bool malloced = false;
 private:

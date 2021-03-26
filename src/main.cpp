@@ -117,7 +117,8 @@ private:
 	// temporary assets
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
-	Texture *worldtex;
+	Texture *relief;
+	Texture *biomes;
 private:
 	void init(void);
 	void init_settings(void);
@@ -207,7 +208,10 @@ void Game::init(void)
 
 	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap(), atlas->get_rainmap() };
 
-	worldtex = new Texture { atlas->get_relief() };
+	relief = new Texture { atlas->get_relief() };
+	relief->change_wrapping(GL_CLAMP_TO_EDGE);
+	biomes = new Texture { atlas->get_biomes() };
+	biomes->change_wrapping(GL_CLAMP_TO_EDGE);
 }
 
 void Game::teardown(void)
@@ -219,7 +223,8 @@ void Game::teardown(void)
 
 	delete atlas;
 
-	delete worldtex;
+	delete relief;
+	delete biomes;
 
 	if (debugmode) {
 		debugger.teardown();
@@ -282,7 +287,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	seed = 1337;
+//	seed = 1337;
 
 	atlas->generate(seed, &modular.params);
 
@@ -308,12 +313,13 @@ void Game::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
 
-	camera.position = { 2913.f, 200.f, 315.f };
+	camera.position = { 2048.f, 200.f, 2048.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
 
-	worldtex->reload(atlas->get_relief());
+	relief->reload(atlas->get_relief());
+	biomes->reload(atlas->get_biomes());
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -334,7 +340,8 @@ void Game::run_campaign(void)
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2010.f, 200.f, 2010.f)));
 		duck->display();
 
-		worldtex->bind(GL_TEXTURE2);
+		relief->bind(GL_TEXTURE2);
+		biomes->bind(GL_TEXTURE3);
 		worldmap->display(&camera);
 
 		skybox.display(&camera);

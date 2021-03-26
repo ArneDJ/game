@@ -150,16 +150,17 @@ void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, u
 		std::swap(b, c);
 	}
 
-	draw_line(a.x, a.y, b.x, b.y, chan, color);
-	draw_line(b.x, b.y, c.x, c.y, chan, color);
-	draw_line(c.x, c.y, a.x, a.y, chan, color);
-
 	a.x = floorf(a.x);
 	a.y = floorf(a.y);
 	b.x = floorf(b.x);
 	b.y = floorf(b.y);
 	c.x = floorf(c.x);
 	c.y = floorf(c.y);
+
+	// this seems to fix holes
+	draw_line(a.x, a.y, b.x, b.y, chan, color);
+	draw_line(b.x, b.y, c.x, c.y, chan, color);
+	draw_line(c.x, c.y, a.x, a.y, chan, color);
 
 	// Compute triangle bounding box
 	int minX = min3(int(a.x), int(b.x), int(c.x));
@@ -209,6 +210,50 @@ void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, u
 		w0_row += B12;
 		w1_row += B20;
 		w2_row += B01;
+	}
+}
+
+void Image::draw_filled_circle(int x0, int y0, int radius, uint8_t chan, uint8_t color)
+{
+	int x = radius;
+	int y = 0;
+	int xchange = 1 - (radius << 1);
+	int ychange = 0;
+	int err = 0;
+
+	while (x >= y) {
+		for (int i = x0 - x; i <= x0 + x; i++) {
+			plot(i, y0 + y, chan, color);
+			plot(i, y0 - y, chan, color);
+		}
+		for (int i = x0 - y; i <= x0 + y; i++) {
+			plot(i, y0 + x, chan, color);
+			plot(i, y0 - x, chan, color);
+		}
+
+		y++;
+		err += ychange;
+		ychange += 2;
+		if (((err << 1) + xchange) > 0) {
+			x--;
+			err += xchange;
+			xchange += 2;
+		}
+	}
+}
+
+void Image::draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t chan, uint8_t color)
+{
+	int dx =  abs(x1-x0), sx = x0<x1 ? 1 : -1;
+	int dy = -abs(y1-y0), sy = y0<y1 ? 1 : -1;
+	int err = dx+dy, e2; // error value e_xy
+
+	for(;;) {
+		draw_filled_circle(x0,y0, radius, chan, color);
+		if (x0==x1 && y0==y1) { break; }
+		e2 = 2*err;
+		if (e2 >= dy) { err += dy; x0 += sx; } // e_xy+e_x > 0
+		if (e2 <= dx) { err += dx; y0 += sy; } // e_xy+e_y < 0
 	}
 }
 
