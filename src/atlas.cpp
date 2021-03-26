@@ -3,6 +3,7 @@
 #include <random>
 #include <algorithm>
 #include <list>
+#include <chrono>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -44,11 +45,14 @@ void Atlas::generate(long seed, const struct worldparams *params)
 	// then generate the world graph data (mountains, seas, rivers, etc)
 	worldgraph->generate(seed, params, terragen);
 
+auto start = std::chrono::steady_clock::now();
 	// create relief texture
 	const glm::vec2 mapscale = {
 		float(relief->width) / scale.x,
 		float(relief->height) / scale.z
 	};
+
+	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
 		uint8_t color = 0;
 		switch (t.relief) {
@@ -64,6 +68,9 @@ void Atlas::generate(long seed, const struct worldparams *params)
 			relief->draw_triangle(a, b, c, CHANNEL_RED, color);
 		}
 	}
+auto end = std::chrono::steady_clock::now();
+std::chrono::duration<double> elapsed_seconds = end-start;
+std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const

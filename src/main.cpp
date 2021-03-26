@@ -308,7 +308,7 @@ void Game::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
 
-	camera.position = { 2048.f, 200.f, 2048.f };
+	camera.position = { 2913.f, 200.f, 315.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());

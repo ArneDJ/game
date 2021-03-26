@@ -126,28 +126,46 @@ void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm:
 		}
 	}
 }
-	
+
+// http://members.chello.at/~easyfilter/bresenham.html
+void Image::draw_line(int x0, int y0, int x1, int y1, uint8_t chan, uint8_t color)
+{
+	int dx =  abs(x1-x0), sx = x0 < x1 ? 1 : -1;
+	int dy = -abs(y1-y0), sy = y0 < y1 ? 1 : -1;
+	int err = dx+dy, e2; // error value e_xy
+
+	for (;;) {
+		plot(x0, y0, chan, color);
+		if (x0 == x1 && y0 == y1) { break; }
+		e2 = 2*err;
+		if (e2 >= dy) { err += dy; x0 += sx; } // e_xy+e_x > 0
+		if (e2 <= dx) { err += dx; y0 += sy; } // e_xy+e_y < 0
+	}
+}
+
 void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, uint8_t color)
 {
 	// make sure the triangle is counter clockwise
 	if (clockwise(a, b, c)) {
 		std::swap(b, c);
 	}
-	a.x = roundf(a.x);
-	a.y = roundf(a.y);
-	b.x = roundf(b.x);
-	b.y = roundf(b.y);
-	c.x = roundf(c.x);
-	c.y = roundf(c.y);
 
-	int area = orient(a.x, a.y, b.x, b.y, c.x, c.y);
-	if (area == 0) { return; }
+	draw_line(a.x, a.y, b.x, b.y, chan, color);
+	draw_line(b.x, b.y, c.x, c.y, chan, color);
+	draw_line(c.x, c.y, a.x, a.y, chan, color);
+
+	a.x = floorf(a.x);
+	a.y = floorf(a.y);
+	b.x = floorf(b.x);
+	b.y = floorf(b.y);
+	c.x = floorf(c.x);
+	c.y = floorf(c.y);
 
 	// Compute triangle bounding box
-	int minX = min3((int)a.x, (int)b.x, (int)c.x);
-	int minY = min3((int)a.y, (int)b.y, (int)c.y);
-	int maxX = max3((int)a.x, (int)b.x, (int)c.x);
-	int maxY = max3((int)a.y, (int)b.y, (int)c.y);
+	int minX = min3(int(a.x), int(b.x), int(c.x));
+	int minY = min3(int(a.y), int(b.y), int(c.y));
+	int maxX = max3(int(a.x), int(b.x), int(c.x));
+	int maxY = max3(int(a.y), int(b.y), int(c.y));
 
 	// Clip against screen bounds
 	minX = std::max(minX, 0);
@@ -155,20 +173,42 @@ void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, u
 	maxX = std::min(maxX, width - 1);
 	maxY = std::min(maxY, height - 1);
 
-	// Rasterize
-	float px, py;
-	for (py = minY; py <= maxY; py++) {
-		for (px = minX; px <= maxX; px++) {
-			// Determine barycentric coordinates
-			int w0 = orient(b.x, b.y, c.x, c.y, px, py);
-			int w1 = orient(c.x, c.y, a.x, a.y, px, py);
-			int w2 = orient(a.x, a.y, b.x, b.y, px, py);
+	// Triangle setup
+	int A01 = a.y - b.y, B01 = b.x - a.x;
+	int A12 = b.y - c.y, B12 = c.x - b.x;
+	int A20 = c.y - a.y, B20 = a.x - c.x;
 
+	// Barycentric coordinates at minX/minY corner
+	glm::ivec2 p = { minX, minY };
+	// TODO orient2D
+	int w0_row = orient(b.x, b.y, c.x, c.y, p.x, p.y);
+	int w1_row = orient(c.x, c.y, a.x, a.y, p.x, p.y);
+	int w2_row = orient(a.x, a.y, b.x, b.y, p.x, p.y);
+
+	// Rasterize
+	for (p.y = minY; p.y <= maxY; p.y++) {
+		// Barycentric coordinates at start of row
+		int w0 = w0_row;
+		int w1 = w1_row;
+		int w2 = w2_row;
+
+		for (p.x = minX; p.x <= maxX; p.x++) {
 			// If p is on or inside all edges, render pixel.
-			if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-				plot(int(px), int(py), chan, color);
+    			if ((w0 | w1 | w2) >= 0) {
+				plot(p.x, p.y, chan, color);
 			}
+			//renderPixel(p, w0, w1, w2);
+
+			// One step to the right
+			w0 += A12;
+			w1 += A20;
+			w2 += A01;
 		}
+
+		// One row step
+		w0_row += B12;
+		w1_row += B20;
+		w2_row += B01;
 	}
 }
 
