@@ -289,7 +289,11 @@ void Game::new_campaign(void)
 	seed = dis(gen);
 //	seed = 1337;
 
+	write_log(LogType::RUN, "seed: " + std::to_string(seed));
+
 	atlas->generate(seed, &modular.params);
+
+	atlas->create_maps();
 
 	if (saveable) {
 		saver.save(savedir + "game.save", atlas);
@@ -305,6 +309,8 @@ void Game::load_campaign(void)
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+
+	atlas->create_maps();
 
 	run_campaign();
 }

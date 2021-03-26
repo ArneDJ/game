@@ -46,11 +46,103 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 
 	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
 
+	// save the graph data
+	tile_records.clear();
+	corner_records.clear();
+	border_records.clear();
+
+	const Worldgraph *worldgraph = atlas->get_worldgraph();
+
+	uint32_t tilecount = worldgraph->tiles.size();
+	uint32_t cornercount = worldgraph->corners.size();
+	uint32_t bordercount = worldgraph->borders.size();
+
+		// the tiles
+	for (const auto &til : worldgraph->tiles) {
+		struct tile_record record;
+		record.index = til.index;
+		record.frontier = til.frontier;
+		record.land = til.land;
+		record.coast = til.coast;
+		record.center_x = til.center.x;
+		record.center_y = til.center.y;
+		for (const auto &neighbor : til.neighbors) {
+			record.neighbors.push_back(neighbor->index);
+		}
+		for (const auto &corner : til.corners) {
+			record.corners.push_back(corner->index);
+		}
+		for (const auto &border : til.borders) {
+			record.borders.push_back(border->index);
+		}
+		//record.amp = til.amp;
+		record.relief = uint8_t(til.relief);
+		record.biome = uint8_t(til.biome);
+		record.site = uint8_t(til.site);
+		if (til.hold) {
+			record.holding = til.hold->index;
+		} else {
+			record.holding = -1;
+		}
+		//
+		tile_records.push_back(record);
+	}
+
+	// the corners
+	for (const auto &corn : worldgraph->corners) {
+		struct corner_record record;
+		record.index = corn.index;
+		record.position_x = corn.position.x;
+		record.position_y = corn.position.y;
+		for (const auto &adj : corn.adjacent) {
+			record.adjacent.push_back(adj->index);
+		}
+		for (const auto &til : corn.touches) {
+			record.touches.push_back(til->index);
+		}
+		// world data
+		record.frontier = corn.frontier;
+		record.coast = corn.coast;
+		record.river = corn.river;
+		record.wall = corn.wall;
+		record.depth = corn.depth;
+		//
+		corner_records.push_back(record);
+	}
+
+	// the borders
+	for (const auto &bord : worldgraph->borders) {
+		struct border_record record;
+		record.index = bord.index;
+		record.c0 = bord.c0->index;
+		record.c1 = bord.c1->index;
+		record.t0 = bord.t0->index;
+		record.t1 = bord.t1->index;
+		// world data
+		record.frontier = bord.frontier;
+		record.coast = bord.coast;
+		record.river = bord.river;
+		record.wall = bord.wall;
+		//
+		border_records.push_back(record);
+	}
+
 	std::ofstream stream(filepath, std::ios::binary);
 
 	if (stream.is_open()) {
 		cereal::BinaryOutputArchive archive(stream);
-		archive(cereal::make_nvp("topology", topology), cereal::make_nvp("rain", rain), cereal::make_nvp("temperature", temperature));
+		archive(
+			cereal::make_nvp("topology", topology), 
+			cereal::make_nvp("rain", rain), 
+			cereal::make_nvp("temperature", temperature),
+			cereal::make_nvp("seed", atlas->seed),
+			cereal::make_nvp("tilecount", tilecount),
+			cereal::make_nvp("cornercount", cornercount),
+			cereal::make_nvp("bordercount", bordercount),
+			cereal::make_nvp("tiles", tile_records),
+			cereal::make_nvp("corners", corner_records),
+			cereal::make_nvp("borders", border_records)
+		);
 	} else {
 		write_log(LogType::ERROR, "Save error: save file " + filepath + "could not be saved");
 	}
@@ -58,19 +150,46 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 
 void Saver::load(const std::string &filepath, Atlas *atlas)
 {
+	tile_records.clear();
+	corner_records.clear();
+	border_records.clear();
+
+	uint32_t tilecount = 0;
+	uint32_t cornercount = 0;
+	uint32_t bordercount = 0;
+
+	long seed;
+
 	std::ifstream stream(filepath, std::ios::binary);
 
 	if (stream.is_open()) {
 		cereal::BinaryInputArchive archive(stream);
-		archive(cereal::make_nvp("topology", topology), cereal::make_nvp("rain", rain), cereal::make_nvp("temperature", temperature));
+		archive(
+			cereal::make_nvp("topology", topology), 
+			cereal::make_nvp("rain", rain), 
+			cereal::make_nvp("temperature", temperature),
+			cereal::make_nvp("seed", seed),
+			cereal::make_nvp("tilecount", tilecount),
+			cereal::make_nvp("cornercount", cornercount),
+			cereal::make_nvp("bordercount", bordercount),
+			cereal::make_nvp("tiles", tile_records),
+			cereal::make_nvp("corners", corner_records),
+			cereal::make_nvp("borders", border_records)
+		);
 	} else {
 		write_log(LogType::ERROR, "Save error: save file " + filepath + " could not be loaded");
 		return;
 	}
+
+	atlas->seed = seed;
 
 	atlas->load_heightmap(topology.width, topology.height, topology.data);
 
 	atlas->load_rainmap(rain.width, rain.height, rain.data);
 
 	atlas->load_tempmap(temperature.width, temperature.height, temperature.data);
+
+	// import the world graph data
+
+	atlas->load_worldgraph(tile_records, corner_records, border_records);
 }

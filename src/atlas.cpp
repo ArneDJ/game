@@ -16,6 +16,7 @@
 #include "terra.h"
 #include "worldgraph.h"
 #include "atlas.h"
+#include "save.h" // TODO fix CIRCULAR DEPENDENCY!!!
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
@@ -39,14 +40,18 @@ Atlas::~Atlas(void)
 	delete biomes;
 }
 
-void Atlas::generate(long seed, const struct worldparams *params)
+void Atlas::generate(long seedling, const struct worldparams *params)
 {
+	seed = seedling;
 	// first generate the world heightmap, rain and temperature data
 	terragen->generate(seed, params);
 
 	// then generate the world graph data (mountains, seas, rivers, etc)
 	worldgraph->generate(seed, params, terragen);
-
+}
+	
+void Atlas::create_maps(void)
+{
 auto start = std::chrono::steady_clock::now();
 	// create relief texture
 	const glm::vec2 mapscale = {
@@ -124,6 +129,7 @@ auto start = std::chrono::steady_clock::now();
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
+
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -175,5 +181,82 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 		std::copy(data.begin(), data.end(), terragen->tempmap->data);
 	} else {
 		write_log(LogType::ERROR, "World error: could not load temperature map");
+	}
+}
+	
+void Atlas::load_worldgraph(const std::vector<struct tile_record> &tile_records, const std::vector<struct corner_record> &corner_records, const std::vector<struct border_record> &border_records)
+{
+	worldgraph->tiles.clear();
+	worldgraph->corners.clear();
+	worldgraph->borders.clear();
+
+	worldgraph->tiles.resize(tile_records.size());
+	worldgraph->corners.resize(corner_records.size());
+	worldgraph->borders.resize(border_records.size());
+
+	// the tiles
+	for (const auto &record : tile_records) {
+		struct tile til;
+		til.index = record.index;
+		til.frontier = record.frontier;
+		til.land = record.land;
+		til.coast = record.coast;
+		til.center.x = record.center_x;
+		til.center.y = record.center_y;
+		for (const auto &neighbor : record.neighbors) {
+			til.neighbors.push_back(&worldgraph->tiles[neighbor]);
+		}
+		for (const auto &corner : record.corners) {
+			til.corners.push_back(&worldgraph->corners[corner]);
+		}
+		for (const auto &border : record.borders) {
+			til.borders.push_back(&worldgraph->borders[border]);
+		}
+		//record.amp = til.amp;
+		til.relief = static_cast<enum RELIEF>(record.relief);
+		til.biome = static_cast<enum BIOME>(record.biome);
+		til.site = static_cast<enum SITE>(record.site);
+		til.hold = nullptr;
+		//
+		worldgraph->tiles[til.index] = til;
+	}
+
+	// the corners
+	for (const auto &record : corner_records) {
+		struct corner corn;
+		corn.index = record.index;
+		corn.position.x = record.position_x;
+		corn.position.y = record.position_y;
+		for (const auto &adj : record.adjacent) {
+			corn.adjacent.push_back(&worldgraph->corners[adj]);
+		}
+		for (const auto &index : record.touches) {
+			corn.touches.push_back(&worldgraph->tiles[index]);
+		}
+		// world data
+		corn.frontier = record.frontier;
+		corn.coast = record.coast;
+		corn.river = record.river;
+		corn.wall = record.wall;
+		corn.depth = record.depth;
+		//
+		worldgraph->corners[corn.index] = corn;
+	}
+
+	// the borders
+	for (const auto &record : border_records) {
+		struct border bord;
+		bord.index = record.index;
+		bord.c0 = &worldgraph->corners[record.c0];
+		bord.c1 = &worldgraph->corners[record.c1];
+		bord.t0 = &worldgraph->tiles[record.t0];
+		bord.t1 = &worldgraph->tiles[record.t1];
+		// world data
+		bord.frontier = record.frontier;
+		bord.coast = record.coast;
+		bord.river = record.river;
+		bord.wall = record.wall;
+		//
+		worldgraph->borders[bord.index] = bord;
 	}
 }
