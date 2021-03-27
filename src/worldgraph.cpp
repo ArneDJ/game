@@ -36,17 +36,19 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth);
 static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, long seed);
 
+ // TODO put these in module worldgen config
+static const float POISSON_DISK_RADIUS = 16.F;
+static const uint32_t MIN_WATER_BODY = 256;
+static const uint32_t MIN_MOUNTAIN_BODY = 128;
+static const uint8_t TOWN_SPAWN_RADIUS = 8;
+static const uint8_t CASTLE_SPAWN_RADIUS = 10;
+static const uint8_t MIN_STREAM_ORDER = 4;
+static const uint8_t MIN_BRANCH_SIZE = 3;
+static const uint8_t MIN_BASIN_SIZE = 4;
+
 static const uint8_t N_RELAXATIONS = 1;
 static const float BOUNDS_OFFSET = 10.F;
-static const float POISSON_DISK_RADIUS = 16.F;
-static const int MIN_STREAM_ORDER = 4;
-static const size_t MIN_WATER_BODY = 256;
-static const size_t MIN_MOUNTAIN_BODY = 128;
-static const int TOWN_SPAWN_RADIUS = 8;
-static const int CASTLE_SPAWN_RADIUS = 10;
 static const float MIN_RIVER_DIST = 40.F;
-static const int MIN_BRANCH_SIZE = 3;
-static const int MIN_BASIN_SIZE = 4;
 
 Worldgraph::Worldgraph(const struct rectangle bounds)
 {
@@ -104,14 +106,11 @@ void Worldgraph::reload_references(void)
 
 void Worldgraph::generate(long seed, const struct worldparams *params, const Terragen *terra)
 {
-	// TODO pass this down instead of keeping it
-	//seed = seedling;
-
 	// reset data
 	tiles.clear();
 	corners.clear();
 	borders.clear();
-	holdings.clear();
+	//holdings.clear();
 
 	prune_basins();
 	basins.clear();
@@ -149,6 +148,7 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 	gen_biomes(seed, terra->tempmap, terra->rainmap);
 
 	gen_sites(seed);
+	/*
 
 	gen_holds(); 
 	// resources always have to be part of a hold
@@ -158,6 +158,7 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 			t.site = VACANT;
 		}
 	}
+	*/
 }
 
 void Worldgraph::gen_diagram(long seed)
@@ -911,76 +912,6 @@ void Worldgraph::gen_sites(long seed)
 				std::bernoulli_distribution d(p);
 				if (d(gen) == false) {
 					root->site = VACANT;
-				}
-			}
-		}
-	}
-}
-
-void Worldgraph::gen_holds(void)
-{
-	int index = 0;
-	std::vector<struct tile*> candidates;
-	std::unordered_map<const struct tile*, bool> visited;
-	std::unordered_map<const struct tile*, int> depth;
-	for (auto &t : tiles) {
-		visited[&t] = false;
-		depth[&t] = 0;
-		if (t.site == TOWN || t.site == CASTLE) {
-			candidates.push_back(&t);
-			struct holding hold;
-			hold.index = index++;
-			hold.name = "unnamed";
-			hold.center = &t;
-			holdings.push_back(hold);
-		}
-	}
-
-	// find the nearest hold center for each tile
-	for (auto &hold : holdings) {
-		hold.center->hold = &hold; // mkay
-		std::queue<const struct tile*> queue;
-		queue.push(hold.center);
-		while (!queue.empty()) {
-			const struct tile *node = queue.front();
-			queue.pop();
-			int layer = depth[node] + 1;
-			for (auto border : node->borders) {
-				if (border->frontier == false && border->river == false) {
-					const struct tile *neighbor = border->t0 == node ? border->t1 : border->t0;
-					bool valid = neighbor->relief == LOWLAND || neighbor->relief == UPLAND;
-					if ((neighbor->site == VACANT || neighbor->site == RESOURCE) && valid == true) {
-						if (visited[neighbor] == false) {
-							visited[neighbor] = true;
-							depth[neighbor] = layer;
-							queue.push(neighbor);
-							tiles[neighbor->index].hold = &hold;
-						} else if (depth[neighbor] > layer) {
-							depth[neighbor] = layer;
-							queue.push(neighbor);
-							tiles[neighbor->index].hold = &hold;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	for (auto &t : tiles) {
-		if (t.hold != nullptr) {
-			t.hold->lands.push_back(&t);
-		}
-	}
-
-	// find neighbors
-	std::map<std::pair<int, int>, bool> link;
-	for (auto &bord : borders) {
-		if (bord.t0->hold != nullptr && bord.t1->hold != nullptr) {
-			if (bord.t0->hold != bord.t1->hold) {
-				if (link[std::minmax(bord.t0->hold->index, bord.t1->hold->index)] == false) {
-					link[std::minmax(bord.t0->hold->index, bord.t1->hold->index)] = true;
-					bord.t0->hold->neighbors.push_back(bord.t1->hold);
-					bord.t1->hold->neighbors.push_back(bord.t0->hold);
 				}
 			}
 		}

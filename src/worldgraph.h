@@ -109,8 +109,6 @@ struct tile {
 	enum BIOME biome;
 	enum SITE site;
 
-	struct holding *hold = nullptr; // TODO remove this and replace with map
-
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
@@ -131,21 +129,13 @@ struct basin {
 	size_t height; // binary tree height
 };
 
-struct holding {
-	int index;
-	std::string name;
-	struct tile *center; // center tile of the hold that contains a fortification
-	std::vector<struct tile*> lands; // tiles that the holding consists of
-	std::vector<const struct holding*> neighbors; // neighbouring holds
-};
-
 class Worldgraph {
 public:
 	struct rectangle area;
 	std::vector<struct tile> tiles;
 	std::vector<struct corner> corners;
 	std::vector<struct border> borders;
-	std::list<struct holding> holdings;
+	//std::list<struct holding> holdings;
 public:
 	Worldgraph(const struct rectangle bounds);
 	~Worldgraph(void);
@@ -160,8 +150,8 @@ private:
 	void gen_rivers(bool erodable);
 	void gen_biomes(long seed, const Image *tempmap, const Image *rainmap);
 	void gen_sites(long seed);
-	void gen_holds(void);
-	void name_holds(void);
+	//void gen_holds(void);
+	//void name_holds(void);
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);
 	void remove_echoriads(void);
 	void gen_drainage_basins(std::vector<const struct corner*> &graph);

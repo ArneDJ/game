@@ -1,4 +1,12 @@
 
+struct holding {
+	uint32_t ID;
+	std::string name;
+	struct tile *center; // center tile of the hold that contains a fortification
+	std::vector<struct tile*> lands; // tiles that the holding consists of
+	std::vector<const struct holding*> neighbors; // neighbouring holds
+};
+
 class Atlas {
 public:
 	const glm::vec3 scale = {4096.F, 200.F, 4096.F};
@@ -21,6 +29,11 @@ private:
 	Terragen *terragen;
 	Image *relief;
 	Image *biomes;
+	std::vector<struct holding> holdings;
+	std::unordered_map<uint32_t, uint32_t> holding_tiles;
+	//void name_holds(void);
 	//Mosaicfield mosaicfield;
+private:
+	void gen_holds(void);
 };
 

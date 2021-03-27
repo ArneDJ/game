@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <queue>
 #include <algorithm>
 #include <list>
 #include <chrono>
@@ -41,12 +42,17 @@ Atlas::~Atlas(void)
 
 void Atlas::generate(long seedling, const struct worldparams *params)
 {
+	holdings.clear();
+	holding_tiles.clear();
+
 	seed = seedling;
 	// first generate the world heightmap, rain and temperature data
 	terragen->generate(seed, params);
 
 	// then generate the world graph data (mountains, seas, rivers, etc)
 	worldgraph->generate(seed, params, terragen);
+
+	gen_holds();
 }
 	
 void Atlas::create_maps(void)
@@ -125,6 +131,27 @@ auto start = std::chrono::steady_clock::now();
 			biomes->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_BLUE, 255);
 		}
 	}
+
+	std::random_device rd;
+	std::mt19937 gen(seed);
+	#pragma omp parallel for
+	for (const auto &hold : holdings) {
+		glm::vec3 rgb = {1.f, 1.f, 1.f};
+		std::uniform_real_distribution<float> distrib(0.f, 1.f);
+		rgb.x = distrib(gen);
+		rgb.y = distrib(gen);
+		rgb.z = distrib(gen);
+		for (const auto &land : hold.lands) {
+			glm::vec2 a = mapscale * land->center;
+			for (const auto &bord : land->borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				biomes->draw_triangle(a, b, c, CHANNEL_RED, 255 * rgb.x);
+				biomes->draw_triangle(a, b, c, CHANNEL_GREEN, 255 * rgb.y);
+				biomes->draw_triangle(a, b, c, CHANNEL_BLUE, 255 * rgb.z);
+			}
+		}
+	}
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
@@ -180,5 +207,81 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 		std::copy(data.begin(), data.end(), terragen->tempmap->data);
 	} else {
 		write_log(LogType::ERROR, "World error: could not load temperature map");
+	}
+}
+
+void Atlas::gen_holds(void)
+{
+	uint32_t index = 0;
+	std::vector<struct tile*> candidates;
+	std::unordered_map<const struct tile*, bool> visited;
+	std::unordered_map<const struct tile*, int> depth;
+
+	// create the holds
+	for (auto &t : worldgraph->tiles) {
+		visited[&t] = false;
+		depth[&t] = 0;
+		if (t.site == TOWN || t.site == CASTLE) {
+			candidates.push_back(&t);
+			struct holding hold;
+			hold.ID = index++;
+			hold.name = "unnamed";
+			hold.center = &t;
+			holdings.push_back(hold);
+		}
+	}
+
+	// find the nearest hold center for each tile
+	for (auto &hold : holdings) {
+		holding_tiles[hold.center->index] = hold.ID;
+		std::queue<const struct tile*> queue;
+		queue.push(hold.center);
+		while (!queue.empty()) {
+			const struct tile *node = queue.front();
+			queue.pop();
+			int layer = depth[node] + 1;
+			for (auto border : node->borders) {
+				if (border->frontier == false && border->river == false) {
+					struct tile *neighbor = border->t0 == node ? border->t1 : border->t0;
+					bool valid = neighbor->relief == LOWLAND || neighbor->relief == UPLAND;
+					if ((neighbor->site == VACANT || neighbor->site == RESOURCE) && valid == true) {
+						if (visited[neighbor] == false) {
+							visited[neighbor] = true;
+							depth[neighbor] = layer;
+							queue.push(neighbor);
+							holding_tiles[neighbor->index] = hold.ID;
+						} else if (depth[neighbor] > layer) {
+							depth[neighbor] = layer;
+							queue.push(neighbor);
+							holding_tiles[neighbor->index] = hold.ID;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// add tiles to holding
+	for (auto &t : worldgraph->tiles) {
+		if (holding_tiles.find(t.index) != holding_tiles.end()) {
+			uint32_t ID = holding_tiles[t.index];
+			holdings[ID].lands.push_back(&t);
+		}
+	}
+
+	// find neighbor holdings
+	std::map<std::pair<uint32_t, uint32_t>, bool> link;
+	for (auto &bord : worldgraph->borders) {
+		if (holding_tiles.find(bord.t0->index) != holding_tiles.end() && holding_tiles.find(bord.t1->index) != holding_tiles.end()) {
+			uint32_t ID0 = holding_tiles[bord.t0->index];
+			uint32_t ID1 = holding_tiles[bord.t1->index];
+			if (ID0 != ID1) {
+				if (link[std::minmax(ID0, ID1)] == false) {
+					link[std::minmax(ID0, ID1)] = true;
+					holdings[ID0].neighbors.push_back(&holdings[ID1]);
+					holdings[ID1].neighbors.push_back(&holdings[ID0]);
+				}
+			}
+		}
 	}
 }
