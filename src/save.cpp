@@ -68,8 +68,6 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 
 void Saver::load(const std::string &filepath, Atlas *atlas)
 {
-	long seed;
-
 	Worldgraph *worldgraph = atlas->worldgraph;
 
 	std::ifstream stream(filepath, std::ios::binary);
@@ -80,7 +78,7 @@ void Saver::load(const std::string &filepath, Atlas *atlas)
 			cereal::make_nvp("topology", topology), 
 			cereal::make_nvp("rain", rain), 
 			cereal::make_nvp("temperature", temperature),
-			cereal::make_nvp("seed", seed),
+			cereal::make_nvp("seed", atlas->seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders)
@@ -89,8 +87,6 @@ void Saver::load(const std::string &filepath, Atlas *atlas)
 		write_log(LogType::ERROR, "Save error: save file " + filepath + " could not be loaded");
 		return;
 	}
-
-	atlas->seed = seed;
 
 	atlas->load_heightmap(topology.width, topology.height, topology.data);
 

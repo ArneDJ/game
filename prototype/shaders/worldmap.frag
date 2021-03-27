@@ -16,5 +16,6 @@ void main(void)
 {
 	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 	vec4 color = texture(RELIEFMAP, fragment.texcoord);
+	vec4 biomecolor = texture(BIOMEMAP, fragment.texcoord);
 	fcolor = vec4(mix(vec3(height), vec3(color.r), 0.1), 1.0);
 }
