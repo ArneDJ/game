@@ -64,6 +64,43 @@ void Worldgraph::prune_basins(void)
 		delete_basin(&bas);
 	}
 }
+	
+void Worldgraph::reload_references(void)
+{
+	for (auto &til : tiles) {
+		til.neighbors.clear();
+		til.corners.clear();
+		til.borders.clear();
+		for (uint32_t ID : til.neighborIDs) {
+			til.neighbors.push_back(&tiles[ID]);
+		}
+		for (uint32_t ID : til.cornerIDs) {
+			til.corners.push_back(&corners[ID]);
+		}
+		for (uint32_t ID : til.borderIDs) {
+			til.borders.push_back(&borders[ID]);
+		}
+	}
+	
+	for (auto &corn : corners) {
+		corn.adjacent.clear();
+		corn.touches.clear();
+		for (uint32_t ID : corn.adjacentIDs) {
+			corn.adjacent.push_back(&corners[ID]);
+		}
+
+		for (uint32_t ID : corn.touchesIDs) {
+			corn.touches.push_back(&tiles[ID]);
+		}
+	}
+
+	for (auto &bord : borders) {
+		bord.t0 = &tiles[bord.t0ID];
+		bord.t1 = &tiles[bord.t1ID];
+		bord.c0 = &corners[bord.c0ID];
+		bord.c1 = &corners[bord.c1ID];
+	}
+}
 
 void Worldgraph::generate(long seed, const struct worldparams *params, const Terragen *terra)
 {
@@ -157,12 +194,15 @@ void Worldgraph::gen_diagram(long seed)
 
 		for (const auto &neighbor : cell.neighbors) {
 			t.neighbors.push_back(&tiles[neighbor->index]);
+			t.neighborIDs.push_back(neighbor->index);
 		}
 		for (const auto &vertex : cell.vertices) {
 			t.corners.push_back(&corners[vertex->index]);
+			t.cornerIDs.push_back(vertex->index);
 		}
 		for (const auto &edge : cell.edges) {
 			t.borders.push_back(&borders[edge->index]);
+			t.borderIDs.push_back(edge->index);
 		}
 
 		tiles[cell.index] = t;
@@ -181,10 +221,12 @@ void Worldgraph::gen_diagram(long seed)
 		//
 		for (const auto &neighbor : vertex.adjacent) {
 			c.adjacent.push_back(&corners[neighbor->index]);
+			c.adjacentIDs.push_back(neighbor->index);
 		}
 
 		for (const auto &cell : vertex.cells) {
 			c.touches.push_back(&tiles[cell->index]);
+			c.touchesIDs.push_back(cell->index);
 		}
 
 		corners[vertex.index] = c;
@@ -196,14 +238,18 @@ void Worldgraph::gen_diagram(long seed)
 		borders[index].index = index;
 		borders[index].c0 = &corners[edge.v0->index];
 		borders[index].c1 = &corners[edge.v1->index];
+		borders[index].c0ID = edge.v0->index;
+		borders[index].c1ID = edge.v1->index;
 		borders[index].coast = false;
 		borders[index].river = false;
 		borders[index].frontier = false;
 		borders[index].wall = false;
 		if (edge.c0 != nullptr) {
 			borders[index].t0 = &tiles[edge.c0->index];
+			borders[index].t0ID = edge.c0->index;
 		} else {
 			borders[index].t0 = &tiles[edge.c1->index];
+			borders[index].t0ID = edge.c1->index;
 			borders[index].t0->frontier = true;
 			borders[index].frontier = true;
 			borders[index].c0->frontier = true;
@@ -211,8 +257,10 @@ void Worldgraph::gen_diagram(long seed)
 		}
 		if (edge.c1 != nullptr) {
 			borders[index].t1 = &tiles[edge.c1->index];
+			borders[index].t1ID = edge.c1->index;
 		} else {
 			borders[index].t1 = &tiles[edge.c0->index];
+			borders[index].t1ID = edge.c0->index;
 			borders[index].t1->frontier = true;
 			borders[index].frontier = true;
 			borders[index].c0->frontier = true;

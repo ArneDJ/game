@@ -1,3 +1,7 @@
+#pragma once
+#include "cereal/types/vector.hpp"
+#include "cereal/types/memory.hpp"
+
 struct tile;
 struct corner;
 struct border;
@@ -44,6 +48,17 @@ struct border {
 	struct corner *c1 = nullptr;
 	struct tile *t0 = nullptr;
 	struct tile *t1 = nullptr;
+	// save
+	uint32_t c0ID;
+	uint32_t c1ID;
+	uint32_t t0ID;
+	uint32_t t1ID;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(index, c0ID, c1ID, t0ID, t1ID, frontier, coast, river, wall);
+	}
 };
 
 struct corner {
@@ -58,7 +73,17 @@ struct corner {
 	glm::vec2 position;
 	std::vector<struct corner*> adjacent;
 	std::vector<struct tile*> touches;
+	// save
+	std::vector<uint32_t> adjacentIDs;
+	std::vector<uint32_t> touchesIDs;
+
 	int depth;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(index, position.x, position.y, adjacentIDs, touchesIDs, frontier, coast, river, wall, depth);
+	}
 };
 
 struct tile {
@@ -74,12 +99,23 @@ struct tile {
 	std::vector<const struct tile*> neighbors;
 	std::vector<const struct corner*> corners;
 	std::vector<const struct border*> borders;
+	// to store in save file
+	std::vector<uint32_t> neighborIDs;
+	std::vector<uint32_t> cornerIDs;
+	std::vector<uint32_t> borderIDs;
 	//
 	float amp;
 	enum RELIEF relief;
 	enum BIOME biome;
 	enum SITE site;
-	struct holding *hold = nullptr;
+
+	struct holding *hold = nullptr; // TODO remove this and replace with map
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, relief, biome, site);
+	}
 };
 
 struct branch {
@@ -114,6 +150,7 @@ public:
 	Worldgraph(const struct rectangle bounds);
 	~Worldgraph(void);
 	void generate(long seedling, const struct worldparams *params, const Terragen *terra);
+	void reload_references(void);
 private:
 	std::list<struct basin> basins;
 	Voronoi voronoi;
