@@ -64,6 +64,34 @@ struct temperatureparams {
 	}
 };
 
+struct graphparams {
+	float lowland;
+	float upland;
+	float highland;
+	bool erode_mountains;
+	float poisson_disk_radius;
+	uint32_t min_water_body;
+	uint32_t min_mountain_body;
+	uint8_t min_stream_order;
+	uint8_t min_branch_size;
+	uint8_t min_basin_size;
+	uint8_t town_spawn_radius;
+	uint8_t castle_spawn_radius;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(lowland), CEREAL_NVP(upland), CEREAL_NVP(highland),
+			CEREAL_NVP(erode_mountains), CEREAL_NVP(poisson_disk_radius),
+			CEREAL_NVP(min_water_body), CEREAL_NVP(min_mountain_body),
+			CEREAL_NVP(min_stream_order),
+			CEREAL_NVP(min_branch_size), CEREAL_NVP(min_basin_size),
+			CEREAL_NVP(town_spawn_radius), CEREAL_NVP(castle_spawn_radius)
+		);
+	}
+};
+
 struct worldparams {
 	// heightmap
 	struct heightparams height;
@@ -71,11 +99,8 @@ struct worldparams {
 	struct temperatureparams temperature;
 	// rain
 	struct rainparams rain;
-	// relief
-	float lowland;
-	float upland;
-	float highland;
-	bool erode_mountains;
+	// graph data
+	struct graphparams graph;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -84,10 +109,7 @@ struct worldparams {
 			cereal::make_nvp("heightmap_parameters", height), 
 			cereal::make_nvp("temperature_parameters", temperature),
 			cereal::make_nvp("rain_parameters", rain), 
-			cereal::make_nvp("lowland", lowland),
-			cereal::make_nvp("upland", upland), 
-			cereal::make_nvp("highland", highland), 
-			cereal::make_nvp("erode_mountains", erode_mountains) 
+			cereal::make_nvp("graph_parameters", graph)
 		);
 	}
 };

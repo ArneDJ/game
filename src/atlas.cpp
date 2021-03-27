@@ -52,6 +52,7 @@ void Atlas::generate(long seedling, const struct worldparams *params)
 	// then generate the world graph data (mountains, seas, rivers, etc)
 	worldgraph->generate(seed, params, terragen);
 
+	// generate holds based on generated world data
 	gen_holds();
 }
 	
@@ -134,6 +135,7 @@ auto start = std::chrono::steady_clock::now();
 
 	std::random_device rd;
 	std::mt19937 gen(seed);
+	/*
 	#pragma omp parallel for
 	for (const auto &hold : holdings) {
 		glm::vec3 rgb = {1.f, 1.f, 1.f};
@@ -152,6 +154,7 @@ auto start = std::chrono::steady_clock::now();
 			}
 		}
 	}
+	*/
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
@@ -282,6 +285,13 @@ void Atlas::gen_holds(void)
 					holdings[ID1].neighbors.push_back(&holdings[ID0]);
 				}
 			}
+		}
+	}
+
+	// sites always have to be part of a hold
+	for (auto &t : worldgraph->tiles) {
+		if (holding_tiles.find(t.index) == holding_tiles.end()) {
+			t.site = VACANT;
 		}
 	}
 }

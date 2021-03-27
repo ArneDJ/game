@@ -28,10 +28,15 @@ static const struct worldparams DEFAULT_WORLD_PARAMETERS = {
 		0.25f,
 		0.5f,
 	},
-	0.48f,
-	0.58f,
-	0.66f,
-	true
+	{
+		0.48f, 0.58f, 0.66f,
+		true,
+		16.F,
+		256,
+		128,
+		4, 3, 4,
+		8, 10
+	}
 };
 
 static const struct atmosphere DEFAULT_ATMOSPHERE = {
@@ -53,12 +58,12 @@ void Module::load(const std::string &modname)
 	load_atmosphere(atmospath);
 
 	// lowland may not be higher than upland
-	if (params.lowland > params.upland) {
-		std::swap(params.lowland, params.upland);
+	if (params.graph.lowland > params.graph.upland) {
+		std::swap(params.graph.lowland, params.graph.upland);
 	}
 	// upland may not be higher than highland
-	if (params.upland > params.highland) {
-		std::swap(params.upland, params.highland);
+	if (params.graph.upland > params.graph.highland) {
+		std::swap(params.graph.upland, params.graph.highland);
 	}
 }
 

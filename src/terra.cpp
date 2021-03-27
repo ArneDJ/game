@@ -85,7 +85,7 @@ void Terragen::gen_rainmap(long seed, const struct worldparams *params)
 	for (int i = 0; i < rainmap->width; i++) {
 		for (int j = 0; j < rainmap->height; j++) {
 			float height = heightmap->sample(scale.x * i, scale.y * j, CHANNEL_RED);
-			uint8_t color = (height > params->lowland) ? 255 : 0;
+			uint8_t color = (height > params->graph.lowland) ? 255 : 0;
 			rainmap->plot(i, j, CHANNEL_RED, color);
 		}
 	}

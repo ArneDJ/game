@@ -287,7 +287,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	//seed = 1337;
+	seed = 1337;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(seed));
 

@@ -145,13 +145,12 @@ private:
 	std::list<struct basin> basins;
 	Voronoi voronoi;
 private:
-	void gen_diagram(long seed);
+	void gen_diagram(long seed, float radius);
 	void gen_relief(const FloatImage *heightmap, const struct worldparams *params);
-	void gen_rivers(bool erodable);
+	void gen_rivers(const struct worldparams *params);
 	void gen_biomes(long seed, const Image *tempmap, const Image *rainmap);
-	void gen_sites(long seed);
-	//void gen_holds(void);
-	//void name_holds(void);
+	void gen_sites(long seed, const struct worldparams *params);
+	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);
 	void remove_echoriads(void);
 	void gen_drainage_basins(std::vector<const struct corner*> &graph);
@@ -160,7 +159,7 @@ private:
 	void find_obstructions(void);
 	void correct_walls(void);
 	//
-	void trim_river_basins(void);
-	void trim_stubby_rivers(void);
+	void trim_river_basins(uint8_t min_stream);
+	void trim_stubby_rivers(uint8_t min_branch, uint8_t min_basin);
 	void prune_basins(void);
 };

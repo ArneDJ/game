@@ -28,23 +28,13 @@ enum VEGETATION { ARID, DRY, HUMID };
 static struct branch *insert_branch(const struct corner *confluence);
 static void delete_basin(struct basin *tree);
 static void prune_branches(struct branch *root);
-static bool prunable(const struct branch *node);
+static bool prunable(const struct branch *node, uint8_t min_stream);
 static void stream_postorder(struct basin *tree);
 static enum BIOME pick_biome(enum RELIEF relief, enum TEMPERATURE temper, enum VEGETATION veg);
 static enum TEMPERATURE pick_temperature(float warmth);
-static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth);
-static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth);
+static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius);
+static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius);
 static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, long seed);
-
- // TODO put these in module worldgen config
-static const float POISSON_DISK_RADIUS = 16.F;
-static const uint32_t MIN_WATER_BODY = 256;
-static const uint32_t MIN_MOUNTAIN_BODY = 128;
-static const uint8_t TOWN_SPAWN_RADIUS = 8;
-static const uint8_t CASTLE_SPAWN_RADIUS = 10;
-static const uint8_t MIN_STREAM_ORDER = 4;
-static const uint8_t MIN_BRANCH_SIZE = 3;
-static const uint8_t MIN_BASIN_SIZE = 4;
 
 static const uint8_t N_RELAXATIONS = 1;
 static const float BOUNDS_OFFSET = 10.F;
@@ -110,22 +100,21 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 	tiles.clear();
 	corners.clear();
 	borders.clear();
-	//holdings.clear();
 
 	prune_basins();
 	basins.clear();
 
 	// now do the world generation
-	gen_diagram(seed);
+	gen_diagram(seed, params->graph.poisson_disk_radius);
 
 	gen_relief(terra->heightmap, params);
 
-	gen_rivers(params->erode_mountains);
+	gen_rivers(params);
 
 	// relief has been altered by rivers, remove small mountain chains
 	// and apply corrections
-	if (params->erode_mountains) {
-		floodfill_relief(MIN_MOUNTAIN_BODY, HIGHLAND, UPLAND);
+	if (params->graph.erode_mountains) {
+		floodfill_relief(params->graph.min_mountain_body, HIGHLAND, UPLAND);
 		correct_walls();
 	}
 
@@ -147,26 +136,15 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 
 	gen_biomes(seed, terra->tempmap, terra->rainmap);
 
-	gen_sites(seed);
-	/*
-
-	gen_holds(); 
-	// resources always have to be part of a hold
-	// we can't let the peasants be independent
-	for (auto &t : tiles) {
-		if (t.site == RESOURCE && t.hold == nullptr) {
-			t.site = VACANT;
-		}
-	}
-	*/
+	gen_sites(seed, params);
 }
 
-void Worldgraph::gen_diagram(long seed)
+void Worldgraph::gen_diagram(long seed, float radius)
 {
 	auto min = std::array<float, 2>{{area.min.x + BOUNDS_OFFSET, area.min.y + BOUNDS_OFFSET}};
 	auto max = std::array<float, 2>{{area.max.x - BOUNDS_OFFSET, area.max.y - BOUNDS_OFFSET}};
 
-	std::vector<std::array<float, 2>> candidates = thinks::PoissonDiskSampling(POISSON_DISK_RADIUS, min, max, 30, seed);
+	std::vector<std::array<float, 2>> candidates = thinks::PoissonDiskSampling(radius, min, max, 30, seed);
 	std::vector<glm::vec2> locations;
 	for (const auto &point : candidates) {
 		locations.push_back(glm::vec2(point[0], point[1]));
@@ -277,21 +255,21 @@ void Worldgraph::gen_relief(const FloatImage *heightmap, const struct worldparam
 
 	for (struct tile &t : tiles) {
 		float height = heightmap->sample(scale_x*t.center.x, scale_y*t.center.y, CHANNEL_RED);
-		t.land = (height < params->lowland) ? false : true;
-		t.amp = glm::smoothstep(params->lowland, params->highland, height);
-		if (height < params->lowland) {
+		t.land = (height < params->graph.lowland) ? false : true;
+		t.amp = glm::smoothstep(params->graph.lowland, params->graph.highland, height);
+		if (height < params->graph.lowland) {
 			t.relief = SEABED;
-		} else if (height < params->upland) {
+		} else if (height < params->graph.upland) {
 			t.relief = LOWLAND;
-		} else if (height < params->highland) {
+		} else if (height < params->graph.highland) {
 			t.relief = UPLAND;
 		} else {
 			t.relief = HIGHLAND;
 		}
 	}
 
-	floodfill_relief(MIN_WATER_BODY, SEABED, LOWLAND);
-	floodfill_relief(MIN_MOUNTAIN_BODY, HIGHLAND, UPLAND);
+	floodfill_relief(params->graph.min_water_body, SEABED, LOWLAND);
+	floodfill_relief(params->graph.min_mountain_body, HIGHLAND, UPLAND);
 	remove_echoriads();
 
 	// find coastal tiles
@@ -442,7 +420,7 @@ void Worldgraph::remove_echoriads(void)
 	}
 }
 
-void Worldgraph::gen_rivers(bool erodable)
+void Worldgraph::gen_rivers(const struct worldparams *params)
 {
 	// construct the drainage basin candidate graph
 	// only land and coast corners not on the edge of the map can be candidates for the graph
@@ -474,11 +452,11 @@ void Worldgraph::gen_rivers(bool erodable)
 	}
 
 	// rivers will erode some mountains
-	if (erodable) {
+	if (params->graph.erode_mountains) {
 		erode_mountains();
 	}
 
-	trim_river_basins();
+	trim_river_basins(params->graph.min_stream_order);
 
 	// after trimming make sure river properties of corners are correct
 	for (auto &c : corners) { c.river = false; }
@@ -545,7 +523,7 @@ void Worldgraph::gen_rivers(bool erodable)
 		}
 	}
 
-	trim_stubby_rivers();
+	trim_stubby_rivers(params->graph.min_branch_size, params->graph.min_basin_size);
 
 	// after trimming correct rivers again
 	for (auto &c : corners) { c.river = false; }
@@ -648,7 +626,7 @@ void Worldgraph::gen_drainage_basins(std::vector<const struct corner*> &graph)
 	}
 }
 
-void Worldgraph::trim_river_basins(void)
+void Worldgraph::trim_river_basins(uint8_t min_stream)
 {
 	// prune binary tree branch if the stream order is too low
 	for (auto it = basins.begin(); it != basins.end(); ) {
@@ -660,7 +638,7 @@ void Worldgraph::trim_river_basins(void)
 			queue.pop();
 
 			if (cur->right != nullptr) {
-				if (prunable(cur->right)) {
+				if (prunable(cur->right, min_stream)) {
 					prune_branches(cur->right);
 					cur->right = nullptr;
 				} else {
@@ -668,7 +646,7 @@ void Worldgraph::trim_river_basins(void)
 				}
 			}
 			if (cur->left != nullptr) {
-				if (prunable(cur->left)) {
+				if (prunable(cur->left, min_stream)) {
 					prune_branches(cur->left);
 					cur->left = nullptr;
 				} else {
@@ -686,7 +664,7 @@ void Worldgraph::trim_river_basins(void)
 	}
 }
 
-void Worldgraph::trim_stubby_rivers(void)
+void Worldgraph::trim_stubby_rivers(uint8_t min_branch, uint8_t min_basin)
 {
 	std::unordered_map<const struct branch*, int> depth;
 	std::unordered_map<const struct branch*, bool> removable;
@@ -734,7 +712,7 @@ void Worldgraph::trim_stubby_rivers(void)
 				depth[parent] = depth[cur] + 1;
 				if (parent->left != nullptr && parent->right != nullptr) {
 				// reached a branch
-					if (depth[cur] > -1 && depth[cur] < MIN_BRANCH_SIZE) {
+					if (depth[cur] > -1 && depth[cur] < min_branch) {
 						prune_branches(cur);
 						if (cur == parent->left) {
 							parent->left = nullptr;
@@ -745,7 +723,7 @@ void Worldgraph::trim_stubby_rivers(void)
 				} else {
 					queue.push(parent);
 				}
-			} else if (depth[cur] < MIN_BASIN_SIZE) {
+			} else if (depth[cur] < min_basin) {
 			// reached the river mouth
 			// river is simply too small so mark it for deletion
 				removable[cur] = true;
@@ -870,7 +848,7 @@ void Worldgraph::gen_biomes(long seed, const Image *tempmap, const Image *rainma
 	}
 }
 
-void Worldgraph::gen_sites(long seed)
+void Worldgraph::gen_sites(long seed, const struct worldparams *params)
 {
 	// add candidate tiles that can have a site on them
 	std::unordered_map<const struct tile*, bool> visited;
@@ -893,10 +871,10 @@ void Worldgraph::gen_sites(long seed)
 	}
 
 	// first priority goes to towns
-	spawn_towns(candidates, visited, depth);
+	spawn_towns(candidates, visited, depth, params->graph.town_spawn_radius);
 
 	// second priority goes to castles
-	spawn_castles(candidates, visited, depth);
+	spawn_castles(candidates, visited, depth, params->graph.castle_spawn_radius);
 
 	// third priority to villages
 	spawn_villages(candidates, visited, depth, seed);
@@ -946,14 +924,14 @@ static void delete_basin(struct basin *tree)
 	tree->mouth = nullptr;
 }
 
-static bool prunable(const struct branch *node)
+static bool prunable(const struct branch *node, uint8_t min_stream)
 {
 	// prune rivers right next to mountains
 	for (const auto t : node->confluence->touches) {
 		if (t->relief == HIGHLAND) { return true; }
 	}
 
-	if (node->streamorder < MIN_STREAM_ORDER) { return true; }
+	if (node->streamorder < min_stream) { return true; }
 
 	return false;
 }
@@ -1093,7 +1071,7 @@ static enum BIOME pick_biome(enum RELIEF relief, enum TEMPERATURE temper, enum V
 	return GLACIER; // the impossible happened
 }
 
-static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth)
+static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius)
 {
 	// use breadth first search to mark tiles within a certain radius around a site as visited so other sites won't spawn near them
 	// first priority goes to cities near the coast
@@ -1116,7 +1094,7 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 					for (auto neighbor : node->neighbors) {
 						if (visited[neighbor] == false) {
 							visited[neighbor] = true;
-							if (layer < TOWN_SPAWN_RADIUS) {
+							if (layer < radius) {
 								depth[neighbor] = layer;
 								queue.push(neighbor);
 							}
@@ -1141,7 +1119,7 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 				for (auto neighbor : node->neighbors) {
 					if (visited[neighbor] == false) {
 						visited[neighbor] = true;
-						if (layer < TOWN_SPAWN_RADIUS) {
+						if (layer < radius) {
 							depth[neighbor] = layer;
 							queue.push(neighbor);
 						}
@@ -1157,7 +1135,7 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 	}
 }
 
-static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth)
+static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius)
 {
 	for (auto root : candidates) {
 		if (visited[root] == false) {
@@ -1172,14 +1150,14 @@ static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_
 				for (auto neighbor : node->neighbors) {
 					if (visited[neighbor] == false) {
 						visited[neighbor] = true;
-						if (layer < CASTLE_SPAWN_RADIUS) {
+						if (layer < radius) {
 							depth[neighbor] = layer;
 							queue.push(neighbor);
 						}
 					}
 				}
 			}
-			if (max >= CASTLE_SPAWN_RADIUS) {
+			if (max >= radius) {
 				root->site = CASTLE;
 			}
 		}
