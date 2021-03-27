@@ -5,14 +5,14 @@
 #include "cereal/archives/json.hpp"
 
 struct heightparams {
-	float frequency;
-	float perturbfreq;
-	float perturbamp;
-	uint8_t octaves;
-	float lacunarity;
+	float frequency = 0.001f;
+	float perturbfreq = 0.001f;
+	float perturbamp = 200.f;
+	uint8_t octaves = 6;
+	float lacunarity = 2.5f;
 	// heightmap sampling methods
-	glm::vec2 sampling_scale;
-	glm::vec2 sampling_offset;
+	glm::vec2 sampling_scale = { 1.f, 1.f };
+	glm::vec2 sampling_offset = { 0.f, 0.f };
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -30,15 +30,15 @@ struct heightparams {
 };
 
 struct rainparams {
-	float blur;
-	float frequency;
-	uint8_t octaves;
-	float lacunarity;
-	float perturb_frequency;
-	float perturb_amp;
-	float gauss_center;
-	float gauss_sigma;
-	float detail_mix;
+	float blur = 30.f;
+	float frequency = 0.01f;
+	uint8_t octaves = 6;
+	float lacunarity = 3.f;
+	float perturb_frequency = 0.01f;
+	float perturb_amp = 50.f;
+	float gauss_center = 0.25f;
+	float gauss_sigma = 0.25f;
+	float detail_mix = 0.5f;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -54,8 +54,8 @@ struct rainparams {
 };
 
 struct temperatureparams {
-	float frequency;
-	float perturb;
+	float frequency = 0.005f;
+	float perturb = 100.f;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -65,18 +65,18 @@ struct temperatureparams {
 };
 
 struct graphparams {
-	float lowland;
-	float upland;
-	float highland;
-	bool erode_mountains;
-	float poisson_disk_radius;
-	uint32_t min_water_body;
-	uint32_t min_mountain_body;
-	uint8_t min_stream_order;
-	uint8_t min_branch_size;
-	uint8_t min_basin_size;
-	uint8_t town_spawn_radius;
-	uint8_t castle_spawn_radius;
+	float lowland = 0.45f;
+	float upland = 0.58f;
+	float highland = 0.66f;
+	bool erode_mountains = true;
+	float poisson_disk_radius = 16.f;
+	uint32_t min_water_body = 256;
+	uint32_t min_mountain_body = 128;
+	uint8_t min_stream_order = 4;
+	uint8_t min_branch_size = 3;
+	uint8_t min_basin_size = 4;
+	uint8_t town_spawn_radius = 8;
+	uint8_t castle_spawn_radius = 10;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -115,10 +115,10 @@ struct worldparams {
 };
 
 struct atmosphere {
-	glm::vec3 ambient;
-	glm::vec3 skytop;
-	glm::vec3 skybottom;
-
+	glm::vec3 ambient = { 1.f, 1.f, 1.f };
+	glm::vec3 skytop = { 0.447f, 0.639f, 0.784f };
+	glm::vec3 skybottom = { 0.647f, 0.623f, 0.672f };
+	
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
