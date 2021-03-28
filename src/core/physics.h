@@ -10,6 +10,7 @@ public:
 	~PhysicsManager(void);
 	void update(float timestep);
 	void add_ground_plane(const glm::vec3 &position);
+	void add_heightfield(const FloatImage *image, const glm::vec3 &scale);
 	btCollisionShape* add_box(const glm::vec3 &halfextents);
 	btCollisionShape* add_sphere(float radius);
 	btCollisionShape* add_cone(float radius, float height);

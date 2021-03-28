@@ -124,6 +124,7 @@ private:
 	GLTF::Model *dragon;
 	Texture *relief;
 	Texture *rivers;
+	glm::vec3 endpoint;
 private:
 	void init(void);
 	void init_settings(void);
@@ -217,6 +218,8 @@ void Game::init(void)
 	relief->change_wrapping(GL_CLAMP_TO_EDGE);
 	rivers = new Texture { atlas->get_biomes() };
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
+
+	physicsman.add_heightfield(atlas->get_heightmap(), atlas->scale);
 }
 
 void Game::teardown(void)
@@ -241,6 +244,8 @@ void Game::teardown(void)
 
 	skybox.teardown();
 	//renderman.teardown();
+
+	physicsman.clear();
 
 	windowman.teardown();
 }
@@ -269,7 +274,15 @@ void Game::update_campaign(void)
 
 	camera.update();
 
-	physicsman.update(timer.delta);
+	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
+		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
+		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
+		if (result.hit) {
+			endpoint = result.point;
+		}
+	}
+
+	//physicsman.update(timer.delta);
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -327,6 +340,8 @@ void Game::run_campaign(void)
 	camera.position = { 2048.f, 200.f, 2048.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
+	endpoint = { 2010.f, 200.f, 2010.f };
+
 	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
 
 	relief->reload(atlas->get_relief());
@@ -348,7 +363,10 @@ void Game::run_campaign(void)
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
 
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2010.f, 200.f, 2010.f)));
+		glm::vec3 duck_t = { 2010.f, 200.f, 2010.f };
+		glm::vec3 origin = { duck_t.x, atlas->scale.y, duck_t.z };
+		glm::vec3 end = { duck_t.x, 0.f, duck_t.z };
+		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), endpoint));
 		duck->display();
 
 		relief->bind(GL_TEXTURE2);
@@ -365,8 +383,6 @@ void Game::run_campaign(void)
 		windowman.swap();
 		timer.end();
 	}
-
-	physicsman.clear();
 }
 
 void Game::run(void)

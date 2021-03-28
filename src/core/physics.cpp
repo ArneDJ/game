@@ -7,8 +7,10 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "bullet/btBulletDynamicsCommon.h"
+#include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 
 #include "logger.h"
+#include "image.h"
 #include "physics.h"
 
 static const int MAX_SUB_STEPS = 10;
@@ -176,6 +178,38 @@ void PhysicsManager::add_ground_plane(const glm::vec3 &position)
 	world->addRigidBody(body);
 }
 	
+void PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &scale)
+{
+	btHeightfieldTerrainShape *shape = new btHeightfieldTerrainShape(image->width, image->height, image->data, 1.f, 0.f, 1.f, 1, PHY_FLOAT, false);
+
+	shapes.push_back(shape);
+
+	btVector3 scaling = { 
+		scale.x / float(image->width), 
+		scale.y, 
+		scale.z / float(image->height)
+	};
+	shape->setLocalScaling(scaling);
+	shape->setFlipTriangleWinding(true);
+
+	btVector3 origin = { 0.5f * scale.x, 0.5f * scale.y, 0.5f * scale.z };
+	btTransform transform;
+	transform.setIdentity();
+	transform.setOrigin(origin);
+
+	btScalar mass = { 0.f };
+	btVector3 inertia = { 0.f, 0.f, 0.f };
+
+	btDefaultMotionState *motionstate = new btDefaultMotionState(transform);
+	btRigidBody::btRigidBodyConstructionInfo rbinfo(mass, motionstate, shape, inertia);
+	btRigidBody *body = new btRigidBody(rbinfo);
+
+	body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+
+	//add the body to the dynamics world
+	insert_body(body);
+}
+
 void PhysicsManager::insert_body(btRigidBody *body)
 {
 	world->addRigidBody(body);

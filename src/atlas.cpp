@@ -70,6 +70,9 @@ auto start = std::chrono::steady_clock::now();
 		float(relief->height) / scale.z
 	};
 
+	relief->clear();
+	biomes->clear();
+
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
 		uint8_t color = 0;
