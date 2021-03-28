@@ -118,7 +118,7 @@ private:
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
 	Texture *relief;
-	Texture *biomes;
+	Texture *rivers;
 private:
 	void init(void);
 	void init_settings(void);
@@ -210,8 +210,8 @@ void Game::init(void)
 
 	relief = new Texture { atlas->get_relief() };
 	relief->change_wrapping(GL_CLAMP_TO_EDGE);
-	biomes = new Texture { atlas->get_biomes() };
-	biomes->change_wrapping(GL_CLAMP_TO_EDGE);
+	rivers = new Texture { atlas->get_biomes() };
+	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
 }
 
 void Game::teardown(void)
@@ -224,7 +224,7 @@ void Game::teardown(void)
 	delete atlas;
 
 	delete relief;
-	delete biomes;
+	delete rivers;
 
 	if (debugmode) {
 		debugger.teardown();
@@ -325,7 +325,7 @@ void Game::run_campaign(void)
 	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
 
 	relief->reload(atlas->get_relief());
-	biomes->reload(atlas->get_biomes());
+	rivers->reload(atlas->get_biomes());
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -347,7 +347,7 @@ void Game::run_campaign(void)
 		duck->display();
 
 		relief->bind(GL_TEXTURE2);
-		biomes->bind(GL_TEXTURE3);
+		rivers->bind(GL_TEXTURE3);
 		worldmap->display(&camera);
 
 		skybox.display(&camera);

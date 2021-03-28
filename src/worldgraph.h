@@ -21,21 +21,6 @@ enum RELIEF : uint8_t {
 	HIGHLAND
 };
 
-enum BIOME : uint8_t {
-	SEA,
-	GLACIER,
-	DESERT,
-	SAVANNA,
-	SHRUBLAND,
-	STEPPE,
-	BROADLEAF_GRASSLAND,
-	BROADLEAF_FOREST,
-	PINE_GRASSLAND,
-	PINE_FOREST,
-	FLOODPLAIN,
-	BADLANDS
-};
-
 struct border {
 	uint32_t index;
 	// world data
@@ -106,13 +91,12 @@ struct tile {
 	//
 	float amp;
 	enum RELIEF relief;
-	enum BIOME biome;
 	enum SITE site;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
-		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, relief, biome, site);
+		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, relief, site);
 	}
 };
 
@@ -148,7 +132,6 @@ private:
 	void gen_diagram(long seed, float radius);
 	void gen_relief(const FloatImage *heightmap, const struct worldparams *params);
 	void gen_rivers(const struct worldparams *params);
-	void gen_biomes(long seed, const Image *tempmap, const Image *rainmap);
 	void gen_sites(long seed, const struct worldparams *params);
 	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);

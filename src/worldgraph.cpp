@@ -30,8 +30,6 @@ static void delete_basin(struct basin *tree);
 static void prune_branches(struct branch *root);
 static bool prunable(const struct branch *node, uint8_t min_stream);
 static void stream_postorder(struct basin *tree);
-static enum BIOME pick_biome(enum RELIEF relief, enum TEMPERATURE temper, enum VEGETATION veg);
-static enum TEMPERATURE pick_temperature(float warmth);
 static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius);
 static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius);
 static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, long seed);
@@ -134,8 +132,6 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 		}
 	}
 
-	gen_biomes(seed, terra->tempmap, terra->rainmap);
-
 	gen_sites(seed, params);
 }
 
@@ -168,7 +164,6 @@ void Worldgraph::gen_diagram(long seed, float radius)
 		t.center = cell.center;
 		t.amp = 0.f;
 		t.relief = SEABED;
-		t.biome = SEA;
 		t.site = VACANT;
 
 		for (const auto &neighbor : cell.neighbors) {
@@ -803,51 +798,6 @@ void Worldgraph::erode_mountains(void)
 	}
 }
 
-void Worldgraph::gen_biomes(long seed, const Image *tempmap, const Image *rainmap)
-{
-	std::mt19937 gen(seed);
-	const glm::vec2 scale_temp = {
-		float(tempmap->width) / area.max.x,
-		float(tempmap->height) / area.max.y
-	};
-	const glm::vec2 scale_rain = {
-		float(rainmap->width) / area.max.x,
-		float(rainmap->height) / area.max.y
-	};
-
-	for (struct tile &t : tiles) {
-		float warmth = tempmap->sample(scale_temp.x*t.center.x, scale_temp.y*t.center.y, CHANNEL_RED) / 255.f;
-		float rain = rainmap->sample(scale_rain.x*t.center.x, scale_rain.y*t.center.y, CHANNEL_RED) / 255.f;
-		enum TEMPERATURE temper = (warmth > 0.5f) ? TEMPERATE : COLD;
-		//enum TEMPERATURE temper = pick_temperature(warmth);
-		enum VEGETATION veg;
-		if (rain < 0.25f) {
-			veg = ARID;
-		} else {
-			float p = glm::smoothstep(0.25f, 0.6f, rain);
-			std::bernoulli_distribution d(p);
-			veg = d(gen) ? HUMID : DRY;
-		}
-		t.biome = pick_biome(t.relief, temper, veg);
-		if (t.biome == DESERT && t.relief == LOWLAND && t.river == true) {
-			t.biome = FLOODPLAIN;
-		}
-		// alpine biomes
-		if (t.relief == UPLAND) {
-			for (const auto &neighbor : t.neighbors) {
-				if (neighbor->relief == HIGHLAND) {
-					if (veg == DRY) {
-						t.biome = PINE_GRASSLAND;
-					} else if (veg == HUMID) {
-						t.biome = PINE_FOREST;
-					}
-					break;
-				}
-			}
-		}
-	}
-}
-
 void Worldgraph::gen_sites(long seed, const struct worldparams *params)
 {
 	// add candidate tiles that can have a site on them
@@ -858,15 +808,7 @@ void Worldgraph::gen_sites(long seed, const struct worldparams *params)
 		visited[&t] = false;
 		depth[&t] = 0;
 		if (t.land == true && t.frontier == false && t.relief != HIGHLAND) {
-			switch (t.biome) {
-			case STEPPE :
-			case PINE_GRASSLAND :
-			case BROADLEAF_GRASSLAND :
-			case SAVANNA :
-			case SHRUBLAND :
-			case FLOODPLAIN :
-				candidates.push_back(&t);
-			}
+			candidates.push_back(&t);
 		}
 	}
 
@@ -878,22 +820,6 @@ void Worldgraph::gen_sites(long seed, const struct worldparams *params)
 
 	// third priority to villages
 	spawn_villages(candidates, visited, depth, seed);
-
-	// reject sites based on chance if they're in harsh biomes
-	std::mt19937 gen(seed);
-	for (auto root : candidates) {
-		if (root->site != VACANT && root->biome == STEPPE) {
-			if (root->site == TOWN) {
-				root->site = VACANT;
-			} else {
-				float p = root->site == RESOURCE ? 0.25f : 0.75f;
-				std::bernoulli_distribution d(p);
-				if (d(gen) == false) {
-					root->site = VACANT;
-				}
-			}
-		}
-	}
 }
 
 static void prune_branches(struct branch *root)
@@ -1035,42 +961,6 @@ static void stream_postorder(struct basin *tree)
 	}
 }
 
-static enum BIOME pick_biome(enum RELIEF relief, enum TEMPERATURE temper, enum VEGETATION veg)
-{
-	if (relief == SEABED) { return SEA; } // pretty obvious
-
-	// mountain biomes
-	if (relief == HIGHLAND) {
-		if (temper == WARM && veg == ARID) {
-			return BADLANDS;
-		} else {
-			return GLACIER;
-		}
-	}
-
-	if (temper == COLD) {
-		switch (veg) {
-		case ARID: return STEPPE;
-		case DRY: return PINE_GRASSLAND;
-		case HUMID: return PINE_FOREST;
-		};
-	} else if (temper == TEMPERATE) {
-		switch (veg) {
-		case ARID: return STEPPE;
-		case DRY: return BROADLEAF_GRASSLAND;
-		case HUMID: return BROADLEAF_FOREST;
-		};
-	} else if (temper == WARM) {
-		switch (veg) {
-		case ARID: return DESERT;
-		case DRY: return SAVANNA;
-		case HUMID: return SHRUBLAND;
-		};
-	}
-
-	return GLACIER; // the impossible happened
-}
-
 static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius)
 {
 	// use breadth first search to mark tiles within a certain radius around a site as visited so other sites won't spawn near them
@@ -1178,9 +1068,7 @@ static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered
 			}
 			if (valid) {
 				float p = root->relief == LOWLAND ? 0.1f : 0.025f;
-				if (root->biome == FLOODPLAIN) {
-					p *= 2.f;
-				}
+				p *= 2.f;
 				std::bernoulli_distribution d(p);
 				if (d(gen) == true) {
 					root->site = RESOURCE;
