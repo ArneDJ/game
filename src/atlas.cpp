@@ -2,12 +2,17 @@
 #include <vector>
 #include <random>
 #include <queue>
+#include <map>
+#include <unordered_map>
 #include <algorithm>
 #include <list>
 #include <chrono>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include "extern/cereal/types/vector.hpp"
+#include "extern/cereal/types/memory.hpp"
 
 #include "core/logger.h"
 #include "core/geom.h"
@@ -82,6 +87,7 @@ auto start = std::chrono::steady_clock::now();
 		}
 	}
 
+	/*
 	std::random_device rd;
 	std::mt19937 gen(seed);
 	#pragma omp parallel for
@@ -102,6 +108,7 @@ auto start = std::chrono::steady_clock::now();
 			}
 		}
 	}
+	*/
 
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {

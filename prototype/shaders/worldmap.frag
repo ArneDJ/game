@@ -16,8 +16,10 @@ void main(void)
 {
 	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 	float rain = texture(RAINMAP, fragment.texcoord).r;
-	vec4 color = texture(RELIEFMAP, fragment.texcoord);
+	float relief = texture(RELIEFMAP, fragment.texcoord).r;
 	fcolor = texture(RIVERMAP, fragment.texcoord);
+	fcolor = vec4(mix(vec3(height), fcolor.rgb, 0.1), 1.0);
+	fcolor = vec4(mix(vec3(relief), fcolor.rgb, 0.9), 1.0);
 	//fcolor = vec4(mix(vec3(height), vec3(color.r), 0.1), 1.0);
 	//fcolor = vec4(vec3(rain), 1.0);
 }

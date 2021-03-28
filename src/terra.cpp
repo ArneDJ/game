@@ -6,6 +6,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "extern/cereal/types/unordered_map.hpp"
+#include "extern/cereal/types/vector.hpp"
+#include "extern/cereal/types/memory.hpp"
+#include "extern/cereal/archives/json.hpp"
+
 #include "core/image.h"
 #include "module.h"
 #include "terra.h"

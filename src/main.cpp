@@ -22,6 +22,11 @@
 #include "extern/recast/ChunkyTriMesh.h"
 #include "extern/recast/DetourCrowd.h"
 
+#include "extern/cereal/types/unordered_map.hpp"
+#include "extern/cereal/types/vector.hpp"
+#include "extern/cereal/types/memory.hpp"
+#include "extern/cereal/archives/json.hpp"
+
 #include "extern/ozz/animation/runtime/animation.h"
 #include "extern/ozz/animation/runtime/local_to_model_job.h"
 #include "extern/ozz/animation/runtime/sampling_job.h"
@@ -287,7 +292,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	seed = 1337;
+	//seed = 1337;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(seed));
 

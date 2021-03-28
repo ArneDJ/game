@@ -1,7 +1,3 @@
-#pragma once
-#include "cereal/types/vector.hpp"
-#include "cereal/types/memory.hpp"
-
 struct tile;
 struct corner;
 struct border;
@@ -119,7 +115,6 @@ public:
 	std::vector<struct tile> tiles;
 	std::vector<struct corner> corners;
 	std::vector<struct border> borders;
-	//std::list<struct holding> holdings;
 public:
 	Worldgraph(const struct rectangle bounds);
 	~Worldgraph(void);
