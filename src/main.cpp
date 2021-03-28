@@ -69,6 +69,7 @@
 #include "atlas.h"
 #include "worldmap.h"
 #include "save.h"
+#include "army.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state {
@@ -122,9 +123,11 @@ private:
 	// temporary assets
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
+	GLTF::Model *cone;
 	Texture *relief;
 	Texture *rivers;
 	glm::vec3 endpoint;
+	Army *piece;
 private:
 	void init(void);
 	void init_settings(void);
@@ -220,11 +223,18 @@ void Game::init(void)
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	physicsman.add_heightfield(atlas->get_heightmap(), atlas->scale);
+
+	glm::vec2 startpos = { 2010.f, 2010.f };
+	piece = new Army { startpos, 20.f };
+	printf("piece position: %f, %f, %f", piece->position.x, piece->position.y, piece->position.z);
 }
 
 void Game::teardown(void)
 {
+	delete piece;
+
 	delete dragon;
+	delete cone;
 	delete duck;
 
 	delete worldmap;
@@ -254,6 +264,7 @@ void Game::load_assets(void)
 {
 	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
+	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
 }
 
 void Game::update_campaign(void)
@@ -278,9 +289,20 @@ void Game::update_campaign(void)
 		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
 		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
 		if (result.hit) {
+			const glm::vec2 location = { piece->position.x, piece->position.z };
 			endpoint = result.point;
+			std::vector<glm::vec3> pathways;
+			navigation.find_path(glm::vec3(atlas->navmesh_to_worldscale.x*location.x, 0.f, atlas->navmesh_to_worldscale.y*location.y), atlas->navmesh_to_worldscale.x*glm::vec3(endpoint.x, 0.f, endpoint.z), pathways);
+			float rescale = 1.f / atlas->navmesh_to_worldscale.x;
+			std::list<glm::vec2> waypoints;
+			for (const auto &p : pathways) {
+				waypoints.push_back(rescale*glm::vec2(p.x, p.z));
+			}
+			piece->set_path(waypoints);
 		}
 	}
+
+	piece->update(timer.delta);
 
 	//physicsman.update(timer.delta);
 
@@ -292,6 +314,7 @@ void Game::update_campaign(void)
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+		ImGui::Text("piece position: %f, %f, %f", piece->position.x, piece->position.y, piece->position.z);
 		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
 		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
 		ImGui::End();
@@ -361,6 +384,12 @@ void Game::run_campaign(void)
 	relief->reload(atlas->get_relief());
 	rivers->reload(atlas->get_biomes());
 
+	//piece->position.x = 2010.f;
+	//piece->position.z = 2010.f;
+	piece->reset(glm::vec2(2010.f, 2010.f));
+	struct ray_result result = physicsman.cast_ray(glm::vec3(piece->position.x, atlas->scale.y, piece->position.z), glm::vec3(piece->position.x, 0.f, piece->position.z));
+	piece->position.y = result.point.y;
+
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
 
@@ -372,6 +401,9 @@ void Game::run_campaign(void)
 		debug_shader.uniform_mat4("VP", camera.VP);
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2048.f, 160.f, 2048.f)));
 		dragon->display();
+		
+		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), endpoint));
+		cone->display();
 
 		if (debugmode) {
 			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
@@ -382,10 +414,10 @@ void Game::run_campaign(void)
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
 
-		glm::vec3 duck_t = { 2010.f, 200.f, 2010.f };
-		glm::vec3 origin = { duck_t.x, atlas->scale.y, duck_t.z };
-		glm::vec3 end = { duck_t.x, 0.f, duck_t.z };
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), endpoint));
+		glm::vec3 origin = { piece->position.x, atlas->scale.y, piece->position.z };
+		glm::vec3 end = { piece->position.x, 0.f, piece->position.z };
+		result = physicsman.cast_ray(origin, end);
+		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point));
 		duck->display();
 
 		relief->bind(GL_TEXTURE2);

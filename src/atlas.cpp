@@ -25,7 +25,7 @@
 #include "worldgraph.h"
 #include "atlas.h"
 
-static const glm::vec2 CAMPAIGN_NAVMESH_SCALE = {2048.F, 2048.F};
+static const glm::vec2 CAMPAIGN_NAVMESH_SCALE = {4096.F, 4096.F};
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
@@ -39,6 +39,8 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 
 	relief = new Image { 2048, 2048, COLORSPACE_GRAYSCALE };
 	biomes = new Image { 2048, 2048, COLORSPACE_RGB };
+
+	navmesh_to_worldscale = CAMPAIGN_NAVMESH_SCALE / glm::vec2(scale.x, scale.z);
 }
 
 Atlas::~Atlas(void)

@@ -30,3 +30,8 @@ glm::vec2 segment_midpoint(const glm::vec2 &a, const glm::vec2 &b)
 {
 	return glm::vec2(0.5f * (a.x + b.x), 0.5f * (a.y + b.y));
 }
+
+bool point_in_circle(const glm::vec2 &point, const glm::vec2 &origin, float radius)
+{
+	return ((point.x - origin.x) * (point.x - origin.x)) + ((point.y - origin.y) * (point.y - origin.y)) <= (radius * radius);
+}
