@@ -12,11 +12,14 @@ public:
 	const glm::vec3 scale = {4096.F, 200.F, 4096.F};
 	long seed;
 	Worldgraph *worldgraph;
+	std::vector<float> vertex_soup;
+	std::vector<int> index_soup;
 public:
 	Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres);
 	~Atlas(void);
 	void generate(long seedling, const struct worldparams *params);
 	void create_maps(void);
+	void create_land_navigation(void);
 	const FloatImage* get_heightmap(void) const;
 	const Image* get_rainmap(void) const;
 	const Image* get_tempmap(void) const;

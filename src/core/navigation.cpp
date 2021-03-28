@@ -130,17 +130,29 @@ Navigation::Navigation(void)
 	cfg.detailSampleDist = DETAIL_SAMPLE_DIST < 0.9f ? 0 : cfg.cs * DETAIL_SAMPLE_DIST;
 	cfg.detailSampleMaxError = CELL_HEIGHT * DETAIL_SAMPLE_MAX_ERROR;
 
-	context = new rcContext{false};
-	navquery = new dtNavMeshQuery;
-	chunky_mesh = new rcChunkyTriMesh;
+	context = new rcContext { false };
 }
 
 Navigation::~Navigation()
 {
-	remove_all_tiles();
+	cleanup();
 
-	dtFreeNavMesh(navmesh);
-	dtFreeNavMeshQuery(navquery);
+	if (context) { 
+		delete context; 
+		context = nullptr;
+	}
+}
+
+void Navigation::cleanup(void)
+{
+	if (navmesh) {
+		dtFreeNavMesh(navmesh);
+		navmesh = nullptr;
+	}
+	if (navquery) {
+		dtFreeNavMeshQuery(navquery);
+		navquery = nullptr;
+	}
 
 	if (verts) {
 		delete [] verts;
@@ -151,12 +163,17 @@ Navigation::~Navigation()
 		tris = 0;
 	}
 
-	if (context) { delete context; }
-	if (chunky_mesh) { delete chunky_mesh; }
+	if (chunky_mesh) { 
+		delete chunky_mesh; 
+		chunky_mesh = nullptr;
+	}
 }
 
 bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
 {
+	navquery = new dtNavMeshQuery;
+	chunky_mesh = new rcChunkyTriMesh;
+
 	// populate verts and tris:
 	verts = new float[vertices.size()];
 	for (int n = 0; n < vertices.size(); ++n) {

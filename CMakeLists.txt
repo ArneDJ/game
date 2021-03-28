@@ -51,3 +51,6 @@ target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libozz_geometry.a
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libRecast.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libDetour.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libDetourCrowd.a)
+
+# link CDT lib
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libCDT.a)

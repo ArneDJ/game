@@ -28,6 +28,7 @@ public:
 	Navigation(void);
 	~Navigation(void);
 	
+	void cleanup(void);
 	bool build(std::vector<float> &vertices, std::vector<int> &indices);
 	
 	void find_path(glm::vec3 startpos, glm::vec3 endpos, std::vector<glm::vec3> &pathways);

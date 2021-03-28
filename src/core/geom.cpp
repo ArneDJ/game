@@ -25,3 +25,8 @@ int orient(float x0, float y0, float x1, float y1, float x2, float y2)
 {
 	return (int(x1) - int(x0))*(int(y2) - int(y0)) - (int(y1) - int(y0))*(int(x2) - int(x0));
 }
+
+glm::vec2 segment_midpoint(const glm::vec2 &a, const glm::vec2 &b)
+{
+	return glm::vec2(0.5f * (a.x + b.x), 0.5f * (a.y + b.y));
+}

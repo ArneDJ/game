@@ -312,9 +312,16 @@ void Game::new_campaign(void)
 	atlas->generate(seed, &modular.params);
 
 	atlas->create_maps();
+	atlas->create_land_navigation();
 
 	if (saveable) {
 		saver.save(savedir + "game.save", atlas);
+	}
+	
+	navigation.build(atlas->vertex_soup, atlas->index_soup);
+
+	if (debugmode) {
+		debugger.add_navmesh(navigation.navmesh);
 	}
 
 	run_campaign();
@@ -329,6 +336,13 @@ void Game::load_campaign(void)
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
 	atlas->create_maps();
+	atlas->create_land_navigation();
+
+	navigation.build(atlas->vertex_soup, atlas->index_soup);
+
+	if (debugmode) {
+		debugger.add_navmesh(navigation.navmesh);
+	}
 
 	run_campaign();
 }
@@ -359,6 +373,11 @@ void Game::run_campaign(void)
 		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2048.f, 160.f, 2048.f)));
 		dragon->display();
 
+		if (debugmode) {
+			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
+			debugger.render_navmeshes();
+		}
+
 		object_shader.use();
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
@@ -383,6 +402,11 @@ void Game::run_campaign(void)
 		windowman.swap();
 		timer.end();
 	}
+
+	if (debugmode) {
+		debugger.delete_navmeshes();
+	}
+	navigation.cleanup();
 }
 
 void Game::run(void)

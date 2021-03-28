@@ -14,6 +14,8 @@
 #include "extern/cereal/types/vector.hpp"
 #include "extern/cereal/types/memory.hpp"
 
+#include "extern/cdt/CDT.h"
+
 #include "core/logger.h"
 #include "core/geom.h"
 #include "core/image.h"
@@ -22,6 +24,8 @@
 #include "terra.h"
 #include "worldgraph.h"
 #include "atlas.h"
+
+static const glm::vec2 CAMPAIGN_NAVMESH_SCALE = {2048.F, 2048.F};
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
@@ -261,6 +265,215 @@ void Atlas::gen_holds(void)
 	for (auto &t : worldgraph->tiles) {
 		if (holding_tiles.find(t.index) == holding_tiles.end()) {
 			t.site = VACANT;
+		}
+	}
+}
+	
+void Atlas::create_land_navigation(void)
+{
+	vertex_soup.clear();
+	index_soup.clear();
+
+	struct customedge {
+		std::pair<size_t, size_t> vertices;
+	};
+
+	const glm::vec2 realscale = {
+		CAMPAIGN_NAVMESH_SCALE.x / worldgraph->area.max.x,
+		CAMPAIGN_NAVMESH_SCALE.y / worldgraph->area.max.y,
+	};
+
+	using Triangulation = CDT::Triangulation<float>;
+	Triangulation cdt = Triangulation(CDT::FindingClosestPoint::ClosestRandom, 10);
+
+	std::vector<glm::vec2> points;
+	std::vector<struct customedge> edges;
+
+	// add polygon points for  triangulation
+	std::unordered_map<uint32_t, size_t> umap;
+	std::unordered_map<uint32_t, bool> marked;
+	size_t index = 0;
+	for (const auto &c : worldgraph->corners) {
+		marked[c.index] = false;
+		if (c.coast == true && c.river == false) {
+			points.push_back(c.position);
+			umap[c.index] = index++;
+			marked[c.index] = true;
+		} else if (c.frontier == true) {
+			bool land = false;
+			for (const auto &t : c.touches) {
+				if (t->land) { land = true; }
+			}
+			if (land == true && c.wall == false) {
+				points.push_back(c.position);
+				umap[c.index] = index++;
+				marked[c.index] = true;
+			}
+		} else if (c.wall == true) {
+			points.push_back(c.position);
+			umap[c.index] = index++;
+			marked[c.index] = true;
+		}
+	}
+	// add special case corners
+	for (const auto &c : worldgraph->corners) {
+		bool walkable = false;
+		if (c.wall) {
+			for (const auto &t : c.touches) {
+				if (t->relief == LOWLAND || t->relief == HIGHLAND) {
+					walkable = true;
+				}
+			}
+		}
+		if (marked[c.index] == false && c.frontier == true && c.wall == true && walkable == true) {
+			points.push_back(c.position);
+			umap[c.index] = index++;
+			marked[c.index] = true;
+		}
+	}
+
+	// make river polygons
+	std::map<std::pair<uint32_t, uint32_t>, size_t> tilevertex;
+	for (const auto &t : worldgraph->tiles) {
+		for (const auto &c : t.corners) {
+			if (c->river) {
+				glm::vec2 vertex = segment_midpoint(t.center, c->position);
+				points.push_back(vertex);
+				tilevertex[std::minmax(t.index, c->index)] = index++;
+			}
+		}
+	}
+	for (const auto &b : worldgraph->borders) {
+		if (b.river) {
+			size_t left_t0 = tilevertex[std::minmax(b.t0->index, b.c0->index)];
+			size_t right_t0 = tilevertex[std::minmax(b.t0->index, b.c1->index)];
+			size_t left_t1 = tilevertex[std::minmax(b.t1->index, b.c0->index)];
+			size_t right_t1 = tilevertex[std::minmax(b.t1->index, b.c1->index)];
+			struct customedge edge;
+			edge.vertices = std::make_pair(left_t0, right_t0);
+			edges.push_back(edge);
+			edge.vertices = std::make_pair(left_t1, right_t1);
+			edges.push_back(edge);
+		}
+	}
+
+	std::unordered_map<uint32_t, bool> marked_edges;
+	std::unordered_map<uint32_t, size_t> edge_vertices;
+
+	// add rivers
+	for (const auto &b : worldgraph->borders) {
+		bool half_river = b.c0->river ^ b.c1->river;
+		marked_edges[b.index] = half_river;
+		if (half_river) {
+			glm::vec2 vertex = segment_midpoint(b.c0->position, b.c1->position);
+			points.push_back(vertex);
+			edge_vertices[b.index] = index++;
+		} else if (b.river == false && b.c0->river && b.c1->river) {
+			glm::vec2 vertex = segment_midpoint(b.c0->position, b.c1->position);
+			points.push_back(vertex);
+			edge_vertices[b.index] = index++;
+			marked_edges[b.index] = true;
+		}
+	}
+	for (const auto &t : worldgraph->tiles) {
+		if (t.land) {
+			for (const auto &b : t.borders) {
+				if (marked_edges[b->index] == true) {
+					if (b->c0->river) {
+						size_t left = tilevertex[std::minmax(t.index, b->c0->index)];
+						size_t right = edge_vertices[b->index];
+						struct customedge edge;
+						edge.vertices = std::make_pair(left, right);
+						edges.push_back(edge);
+					}
+					if (b->c1->river) {
+						size_t left = tilevertex[std::minmax(t.index, b->c1->index)];
+						size_t right = edge_vertices[b->index];
+						struct customedge edge;
+						edge.vertices = std::make_pair(left, right);
+						edges.push_back(edge);
+					}
+				}
+			}
+		}
+	}
+	for (const auto &b : worldgraph->borders) {
+		if (b.coast) {
+			bool half_river = b.c0->river ^ b.c1->river;
+			if (half_river) {
+				uint32_t index = (b.c0->river == false) ? b.c0->index : b.c1->index; 
+				size_t left = umap[index];
+				size_t right = edge_vertices[b.index];
+				struct customedge edge;
+				edge.vertices = std::make_pair(left, right);
+				edges.push_back(edge);
+			}
+		}
+	}
+
+	// add coast and mountain edges
+	for (const auto &b : worldgraph->borders) {
+		size_t left = umap[b.c0->index];
+		size_t right = umap[b.c1->index];
+		if (marked[b.c0->index] == true && marked[b.c1->index] == true) {
+			if (b.coast == true) {
+				struct customedge edge;
+				edge.vertices = std::make_pair(left, right);
+				edges.push_back(edge);
+			} else if (b.wall == true) {
+				if (b.t0->relief == HIGHLAND ^ b.t1->relief  == HIGHLAND) {
+					struct customedge edge;
+					edge.vertices = std::make_pair(left, right);
+					edges.push_back(edge);
+				}
+			} else if (b.frontier == true) {
+				if (b.t0->land == true && b.t1->land == true) {
+					struct customedge edge;
+					edge.vertices = std::make_pair(left, right);
+					edges.push_back(edge);
+				}
+			}
+		}
+	}
+
+	// deluanay triangulation
+	cdt.insertVertices(
+		points.begin(),
+		points.end(),
+		[](const glm::vec2& p){ return p[0]; },
+		[](const glm::vec2& p){ return p[1]; }
+	);
+	cdt.insertEdges(
+		edges.begin(),
+		edges.end(),
+		[](const customedge& e){ return e.vertices.first; },
+		[](const customedge& e){ return e.vertices.second; }
+	);
+	cdt.eraseOuterTrianglesAndHoles();
+
+	for (int i = 0; i < cdt.vertices.size(); i++) {
+		const auto pos = cdt.vertices[i].pos;
+		vertex_soup.push_back(realscale.x*pos.x);
+		vertex_soup.push_back(0.f);
+		vertex_soup.push_back(realscale.y*pos.y);
+
+	}
+	for (const auto &triangle : cdt.triangles) {
+		glm::vec2 vertices[3];
+		for (int i = 0; i < 3; i++) {
+			size_t index = triangle.vertices[i];
+			const auto pos = cdt.vertices[index].pos;
+			vertices[i].x = pos.x;
+			vertices[i].y = pos.y;
+		}
+		if (clockwise(vertices[0], vertices[1], vertices[2])) {
+			index_soup.push_back(triangle.vertices[0]);
+			index_soup.push_back(triangle.vertices[1]);
+			index_soup.push_back(triangle.vertices[2]);
+		} else {
+			index_soup.push_back(triangle.vertices[0]);
+			index_soup.push_back(triangle.vertices[2]);
+			index_soup.push_back(triangle.vertices[1]);
 		}
 	}
 }
