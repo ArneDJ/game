@@ -28,8 +28,10 @@ public:
 	Navigation(void);
 	~Navigation(void);
 	
+	bool alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys);
 	void cleanup(void);
 	bool build(std::vector<float> &vertices, std::vector<int> &indices);
+	void load_tilemesh(int x, int y, const std::vector<uint8_t> &data);
 	
 	void find_path(glm::vec3 startpos, glm::vec3 endpos, std::vector<glm::vec3> &pathways);
 	struct polyresult point_on_navmesh(glm::vec3 point);

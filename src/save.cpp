@@ -13,16 +13,22 @@
 #include "extern/cereal/types/memory.hpp"
 #include "extern/cereal/archives/binary.hpp"
 
+#include "extern/recast/Recast.h"
+#include "extern/recast/DetourNavMesh.h"
+#include "extern/recast/DetourNavMeshQuery.h"
+#include "extern/recast/ChunkyTriMesh.h"
+
 #include "core/logger.h"
 #include "core/geom.h"
 #include "core/image.h"
 #include "core/voronoi.h"
+#include "core/navigation.h"
 #include "terra.h"
 #include "worldgraph.h"
 #include "atlas.h"
 #include "save.h"
 	
-void Saver::save(const std::string &filepath, const Atlas *atlas)
+void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav)
 {
 	const FloatImage *heightmap = atlas->get_heightmap();
 	topology.width = heightmap->width;
@@ -53,6 +59,30 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 
 	const Worldgraph *worldgraph = atlas->worldgraph;
 
+	// save the navigation data
+	navmesh_land.tilemeshes.clear();
+
+	const dtNavMesh *navmesh = landnav->navmesh;
+	if (navmesh) {
+		const dtNavMeshParams *navparams = navmesh->getParams();
+		navmesh_land.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
+		navmesh_land.tilewidth = navparams->tileWidth;
+		navmesh_land.tileheight = navparams->tileHeight;
+		navmesh_land.maxtiles = navparams->maxTiles;
+		navmesh_land.maxpolys = navparams->maxPolys;
+		for (int i = 0; i < navmesh->getMaxTiles(); i++) {
+			const dtMeshTile *tile = navmesh->getTile(i);
+			if (!tile) { continue; }
+			if (!tile->header) { continue; }
+			const dtMeshHeader *tileheader = tile->header;
+			struct nav_tilemesh_record navrecord;
+			navrecord.x = tileheader->x;
+			navrecord.y = tileheader->y;
+			navrecord.data.insert(navrecord.data.end(), tile->data, tile->data  + tile->dataSize);
+			navmesh_land.tilemeshes.push_back(navrecord);
+		}
+	}
+
 	std::ofstream stream(filepath, std::ios::binary);
 
 	if (stream.is_open()) {
@@ -64,14 +94,15 @@ void Saver::save(const std::string &filepath, const Atlas *atlas)
 			cereal::make_nvp("seed", atlas->seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
-			cereal::make_nvp("borders", worldgraph->borders)
+			cereal::make_nvp("borders", worldgraph->borders),
+			cereal::make_nvp("landnav", navmesh_land)
 		);
 	} else {
 		write_log(LogType::ERROR, "Save error: save file " + filepath + "could not be saved");
 	}
 }
 
-void Saver::load(const std::string &filepath, Atlas *atlas)
+void Saver::load(const std::string &filepath, Atlas *atlas, Navigation *landnav)
 {
 	Worldgraph *worldgraph = atlas->worldgraph;
 
@@ -86,7 +117,8 @@ void Saver::load(const std::string &filepath, Atlas *atlas)
 			cereal::make_nvp("seed", atlas->seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
-			cereal::make_nvp("borders", worldgraph->borders)
+			cereal::make_nvp("borders", worldgraph->borders),
+			cereal::make_nvp("landnav", navmesh_land)
 		);
 	} else {
 		write_log(LogType::ERROR, "Save error: save file " + filepath + " could not be loaded");
@@ -98,6 +130,11 @@ void Saver::load(const std::string &filepath, Atlas *atlas)
 	atlas->load_rainmap(rain.width, rain.height, rain.data);
 
 	atlas->load_tempmap(temperature.width, temperature.height, temperature.data);
+	
+	landnav->alloc(navmesh_land.origin, navmesh_land.tilewidth, navmesh_land.tileheight, navmesh_land.maxtiles, navmesh_land.maxpolys);
+	for (const auto &tilemesh : navmesh_land.tilemeshes) {
+		landnav->load_tilemesh(tilemesh.x, tilemesh.y, tilemesh.data);
+	}
 
 	worldgraph->reload_references();
 }

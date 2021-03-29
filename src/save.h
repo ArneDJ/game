@@ -7,9 +7,9 @@ struct image_record {
 	std::vector<uint8_t> data;
 
 	template <class Archive>
-	void serialize(Archive &ar)
+	void serialize(Archive &archive)
 	{
-		ar(CEREAL_NVP(width), CEREAL_NVP(height), CEREAL_NVP(channels), CEREAL_NVP(size), CEREAL_NVP(data));
+		archive(CEREAL_NVP(width), CEREAL_NVP(height), CEREAL_NVP(channels), CEREAL_NVP(size), CEREAL_NVP(data));
 	}
 };
 
@@ -21,18 +21,47 @@ struct floatimage_record {
 	std::vector<float> data;
 
 	template <class Archive>
-	void serialize(Archive &ar)
+	void serialize(Archive &archive)
 	{
-		ar(CEREAL_NVP(width), CEREAL_NVP(height), CEREAL_NVP(channels), CEREAL_NVP(size), CEREAL_NVP(data));
+		archive(CEREAL_NVP(width), CEREAL_NVP(height), CEREAL_NVP(channels), CEREAL_NVP(size), CEREAL_NVP(data));
+	}
+};
+
+// store navigation data
+struct nav_tilemesh_record {
+	int x;
+	int y;
+	std::vector<uint8_t> data;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(x, y, data);
+	}
+};
+
+struct navmesh_record {
+	glm::vec3 origin; 
+	float tilewidth; 
+	float tileheight; 
+	int maxtiles; 
+	int maxpolys;
+	std::vector<struct nav_tilemesh_record> tilemeshes;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(origin.x, origin.y, origin.z, tilewidth, tileheight, maxtiles, maxpolys, tilemeshes);
 	}
 };
 
 class Saver {
 public:
-	void save(const std::string &filepath, const Atlas *atlas);
-	void load(const std::string &filepath, Atlas *atlas);
+	void save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav);
+	void load(const std::string &filepath, Atlas *atlas, Navigation *landnav);
 private:
 	struct floatimage_record topology;
 	struct image_record temperature;
 	struct image_record rain;
+	struct navmesh_record navmesh_land;
 };

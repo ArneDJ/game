@@ -28,7 +28,7 @@ class Navbuilder {
 public:
 	Navbuilder(void)
 	{
-		context = new rcContext{false};
+		context = new rcContext { false };
 	}
 	~Navbuilder(void)
 	{
@@ -113,13 +113,13 @@ Navigation::Navigation(void)
 	cfg.cs = CELL_SIZE;
 	cfg.ch = CELL_HEIGHT;
 	cfg.walkableSlopeAngle = 60.f;
-	cfg.walkableHeight = (int)ceilf(2.f / cfg.ch);
-	cfg.walkableClimb = (int)floorf(0.9f / cfg.ch);
-	cfg.walkableRadius = (int)ceilf(0.6f / cfg.cs);
-	cfg.maxEdgeLen = (int)(12.f / 0.35f);
+	cfg.walkableHeight = int(ceilf(2.f / cfg.ch));
+	cfg.walkableClimb = int(floorf(0.9f / cfg.ch));
+	cfg.walkableRadius = int(ceilf(0.6f / cfg.cs));
+	cfg.maxEdgeLen = int(12.f / 0.35f);
 	cfg.maxSimplificationError = 1.3f;
-	cfg.minRegionArea = (int)rcSqr(8);  // Note: area = size*size
-	cfg.mergeRegionArea = (int)rcSqr(20); // Note: area = size*size
+	cfg.minRegionArea = int(rcSqr(8));  // Note: area = size*size
+	cfg.mergeRegionArea = int(rcSqr(20)); // Note: area = size*size
 	cfg.maxVertsPerPoly = 6;
 
 	cfg.tileSize = TILE_SIZE;
@@ -167,6 +167,39 @@ void Navigation::cleanup(void)
 		delete chunky_mesh; 
 		chunky_mesh = nullptr;
 	}
+}
+
+bool Navigation::alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys)
+{
+	navquery = new dtNavMeshQuery;
+	chunky_mesh = new rcChunkyTriMesh;
+
+	navmesh = dtAllocNavMesh();
+	if (!navmesh) {
+		write_log(LogType::ERROR, "Build tiled navigation: could not allocate navmesh");
+		return false;
+	}
+
+	dtNavMeshParams params;
+	rcVcopy(params.orig, glm::value_ptr(origin));
+	params.tileWidth = tilewidth;
+	params.tileHeight = tileheight;
+	params.maxTiles = maxtiles;
+	params.maxPolys = maxpolys;
+	
+	dtStatus status = navmesh->init(&params);
+	if (dtStatusFailed(status)) {
+		write_log(LogType::ERROR, "Build tiled navigation: could not init navmesh");
+		return false;
+	}
+	
+	status = navquery->init(navmesh, 2048);
+	if (dtStatusFailed(status)) {
+		write_log(LogType::ERROR, "Build tiled navigation: could not init Detour navmesh query");
+		return false;
+	}
+
+	return true;
 }
 
 bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
@@ -235,7 +268,7 @@ bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
 		write_log(LogType::ERROR, "Build tiled navigation: could not init Detour navmesh query");
 		return false;
 	}
-	
+
 	build_all_tiles();
 
 	if (verts) {
@@ -250,6 +283,18 @@ bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
 	return true;
 }
 
+void Navigation::load_tilemesh(int x, int y, const std::vector<uint8_t> &data)
+{
+	// Remove any previous data (navmesh owns and deletes the data).
+	navmesh->removeTile(navmesh->getTileRefAt(x, y, 0), 0, 0);
+	// make a copy of the data so the tilemesh can owns it
+	uint8_t *cpy = new uint8_t[data.size()];
+	std::copy(data.begin(), data.end(), cpy);
+	// Let the navmesh own the data.
+	dtStatus status = navmesh->addTile(cpy, data.size(), DT_TILE_FREE_DATA, 0, 0);
+	if (dtStatusFailed(status)) { dtFree(cpy); }
+}
+	
 void Navigation::build_all_tiles(void)
 {
 	const float *bmin = BOUNDS_MIN;
@@ -259,7 +304,7 @@ void Navigation::build_all_tiles(void)
 	const int ts = TILE_SIZE;
 	const int tw = (gw + ts-1) / ts;
 	const int th = (gh + ts-1) / ts;
-	const float tcs = TILE_SIZE*cfg.cs;
+	const float tcs = TILE_SIZE * cfg.cs;
 	
 	std::vector<std::thread> threads;
 	

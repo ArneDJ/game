@@ -328,7 +328,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	//seed = 1337;
+	seed = 1337;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(seed));
 
@@ -337,12 +337,12 @@ void Game::new_campaign(void)
 	atlas->create_maps();
 	atlas->create_land_navigation();
 
-	if (saveable) {
-		saver.save(savedir + "game.save", atlas);
-	}
-	
 	navigation.build(atlas->vertex_soup, atlas->index_soup);
 
+	if (saveable) {
+		saver.save(savedir + "game.save", atlas, &navigation);
+	}
+	
 	if (debugmode) {
 		debugger.add_navmesh(navigation.navmesh);
 	}
@@ -353,15 +353,13 @@ void Game::new_campaign(void)
 void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
-	saver.load(savedir + "game.save", atlas);
+	saver.load(savedir + "game.save", atlas, &navigation);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
 	atlas->create_maps();
 	atlas->create_land_navigation();
-
-	navigation.build(atlas->vertex_soup, atlas->index_soup);
 
 	if (debugmode) {
 		debugger.add_navmesh(navigation.navmesh);
@@ -384,8 +382,6 @@ void Game::run_campaign(void)
 	relief->reload(atlas->get_relief());
 	rivers->reload(atlas->get_biomes());
 
-	//piece->position.x = 2010.f;
-	//piece->position.z = 2010.f;
 	piece->reset(glm::vec2(2010.f, 2010.f));
 	struct ray_result result = physicsman.cast_ray(glm::vec3(piece->position.x, atlas->scale.y, piece->position.z), glm::vec3(piece->position.x, 0.f, piece->position.z));
 	piece->position.y = result.point.y;
