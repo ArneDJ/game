@@ -154,14 +154,8 @@ void Navigation::cleanup(void)
 		navquery = nullptr;
 	}
 
-	if (verts) {
-		delete [] verts;
-		verts = 0;
-	}
-	if (tris) {
-		delete [] tris;
-		tris = 0;
-	}
+	verts.clear();
+	tris.clear();
 
 	if (chunky_mesh) { 
 		delete chunky_mesh; 
@@ -208,23 +202,15 @@ bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
 	chunky_mesh = new rcChunkyTriMesh;
 
 	// populate verts and tris:
-	verts = new float[vertices.size()];
-	for (int n = 0; n < vertices.size(); ++n) {
-		verts[n] = vertices[n];
-	}
-	tris = new int[indices.size()];
-	for (int n = 0; n < indices.size(); ++n) {
-		tris[n] = indices[n];
-	}
-	nverts = vertices.size();
-	ntris = indices.size()/3;
+	verts.insert(verts.begin(), vertices.begin(), vertices.end());
+	tris.insert(tris.begin(), indices.begin(), indices.end());
 
-	rcCreateChunkyTriMesh(verts, tris, ntris, 256, chunky_mesh);
+	rcCreateChunkyTriMesh(verts.data(), tris.data(), tris.size()/3, 256, chunky_mesh);
 
 	int gw = 0, gh = 0;
 	float bmin[3];
 	float bmax[3];
-	rcCalcBounds(verts, vertices.size()/3, bmin, bmax);
+	rcCalcBounds(verts.data(), vertices.size()/3, bmin, bmax);
 	rcCalcGridSize(bmin, bmax, cfg.cs, &gw, &gh);
 	BOUNDS_MIN[0] = bmin[0];
 	BOUNDS_MIN[1] = bmin[1];
@@ -271,14 +257,8 @@ bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
 
 	build_all_tiles();
 
-	if (verts) {
-		delete [] verts;
-		verts = 0;
-	}
-	if (tris) {
-		delete [] tris;
-		tris = 0;
-	}
+	verts.clear();
+	tris.clear();
 
 	return true;
 }
@@ -310,7 +290,7 @@ void Navigation::build_all_tiles(void)
 	
 	// Start the build process.
 	for (int y = 0; y < th; ++y) {
-		threads.push_back(std::thread(add_tile_mesh_rows, y, tw, tcs, bmin, bmax, verts, nverts, chunky_mesh, &cfg, navmesh));
+		threads.push_back(std::thread(add_tile_mesh_rows, y, tw, tcs, bmin, bmax, verts.data(), verts.size(), chunky_mesh, &cfg, navmesh));
 	}
 
 	for (std::thread &th : threads) {

@@ -51,10 +51,8 @@ private:
 	float BOUNDS_MIN[3];
 	float BOUNDS_MAX[3];
 
-	float *verts = nullptr;
-	int nverts;
-	int *tris = nullptr;
-	int ntris;
+	std::vector<float> verts;
+	std::vector<int> tris;
 	
 	rcChunkyTriMesh *chunky_mesh = nullptr;
 private:

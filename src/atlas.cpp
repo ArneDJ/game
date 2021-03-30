@@ -25,8 +25,6 @@
 #include "worldgraph.h"
 #include "atlas.h"
 
-static const glm::vec2 CAMPAIGN_NAVMESH_SCALE = {4096.F, 4096.F};
-
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
 	terragen = new Terragen { heightres, rainres, tempres };
@@ -39,8 +37,6 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 
 	relief = new Image { 2048, 2048, COLORSPACE_GRAYSCALE };
 	biomes = new Image { 2048, 2048, COLORSPACE_RGB };
-
-	navmesh_to_worldscale = CAMPAIGN_NAVMESH_SCALE / glm::vec2(scale.x, scale.z);
 }
 
 Atlas::~Atlas(void)
@@ -280,11 +276,6 @@ void Atlas::create_land_navigation(void)
 		std::pair<size_t, size_t> vertices;
 	};
 
-	const glm::vec2 realscale = {
-		CAMPAIGN_NAVMESH_SCALE.x / worldgraph->area.max.x,
-		CAMPAIGN_NAVMESH_SCALE.y / worldgraph->area.max.y,
-	};
-
 	using Triangulation = CDT::Triangulation<float>;
 	Triangulation cdt = Triangulation(CDT::FindingClosestPoint::ClosestRandom, 10);
 
@@ -455,9 +446,9 @@ void Atlas::create_land_navigation(void)
 
 	for (int i = 0; i < cdt.vertices.size(); i++) {
 		const auto pos = cdt.vertices[i].pos;
-		vertex_soup.push_back(realscale.x*pos.x);
+		vertex_soup.push_back(pos.x);
 		vertex_soup.push_back(0.f);
-		vertex_soup.push_back(realscale.y*pos.y);
+		vertex_soup.push_back(pos.y);
 
 	}
 	for (const auto &triangle : cdt.triangles) {

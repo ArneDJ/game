@@ -212,21 +212,6 @@ void Game::init(void)
 		saveable = false;
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
-
-	atlas = new Atlas { 2048, 512, 512 };
-
-	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap(), atlas->get_rainmap() };
-
-	relief = new Texture { atlas->get_relief() };
-	relief->change_wrapping(GL_CLAMP_TO_EDGE);
-	rivers = new Texture { atlas->get_biomes() };
-	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
-
-	physicsman.add_heightfield(atlas->get_heightmap(), atlas->scale);
-
-	glm::vec2 startpos = { 2010.f, 2010.f };
-	piece = new Army { startpos, 20.f };
-	printf("piece position: %f, %f, %f", piece->position.x, piece->position.y, piece->position.z);
 }
 
 void Game::teardown(void)
@@ -265,6 +250,20 @@ void Game::load_assets(void)
 	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
 	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
+
+	atlas = new Atlas { 2048, 512, 512 };
+
+	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap(), atlas->get_rainmap() };
+
+	relief = new Texture { atlas->get_relief() };
+	relief->change_wrapping(GL_CLAMP_TO_EDGE);
+	rivers = new Texture { atlas->get_biomes() };
+	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
+
+	physicsman.add_heightfield(atlas->get_heightmap(), atlas->scale);
+
+	glm::vec2 startpos = { 2010.f, 2010.f };
+	piece = new Army { startpos, 20.f };
 }
 
 void Game::update_campaign(void)
@@ -292,11 +291,10 @@ void Game::update_campaign(void)
 			const glm::vec2 location = { piece->position.x, piece->position.z };
 			endpoint = result.point;
 			std::vector<glm::vec3> pathways;
-			navigation.find_path(glm::vec3(atlas->navmesh_to_worldscale.x*location.x, 0.f, atlas->navmesh_to_worldscale.y*location.y), atlas->navmesh_to_worldscale.x*glm::vec3(endpoint.x, 0.f, endpoint.z), pathways);
-			float rescale = 1.f / atlas->navmesh_to_worldscale.x;
+			navigation.find_path(glm::vec3(location.x, 0.f, location.y), glm::vec3(endpoint.x, 0.f, endpoint.z), pathways);
 			std::list<glm::vec2> waypoints;
 			for (const auto &p : pathways) {
-				waypoints.push_back(rescale*glm::vec2(p.x, p.z));
+				waypoints.push_back(glm::vec2(p.x, p.z));
 			}
 			piece->set_path(waypoints);
 		}
@@ -328,7 +326,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	seed = 1337;
+	//seed = 1337;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(seed));
 
@@ -359,7 +357,6 @@ void Game::load_campaign(void)
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
 	atlas->create_maps();
-	atlas->create_land_navigation();
 
 	if (debugmode) {
 		debugger.add_navmesh(navigation.navmesh);

@@ -14,7 +14,6 @@ public:
 	Worldgraph *worldgraph;
 	std::vector<float> vertex_soup;
 	std::vector<int> index_soup;
-	glm::vec2 navmesh_to_worldscale;
 public:
 	Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres);
 	~Atlas(void);
