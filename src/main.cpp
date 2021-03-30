@@ -64,12 +64,14 @@
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
-#include "terra.h"
+#include "terragen.h"
 #include "worldgraph.h"
 #include "atlas.h"
 #include "worldmap.h"
 #include "save.h"
 #include "army.h"
+#include "landscape.h"
+#include "terrain.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state {
@@ -114,10 +116,13 @@ private:
 	// campaign data
 	Atlas *atlas;
 	long seed;
+	// battle data
+	Landscape *landscape;
 	// graphics
 	RenderManager renderman;
 	Skybox skybox;
 	Worldmap *worldmap;
+	Terrain *terrain;
 	Shader object_shader;
 	Shader debug_shader;
 	// temporary assets
@@ -131,7 +136,10 @@ private:
 private:
 	void init(void);
 	void init_settings(void);
+	void init_battle(void);
 	void load_assets(void);
+	void run_battle(void);
+	void update_battle(void);
 	void init_campaign(void);
 	void new_campaign(void);
 	void load_campaign(void);
@@ -224,7 +232,11 @@ void Game::teardown(void)
 	delete cone;
 	delete duck;
 
+	delete landscape;
+
 	delete worldmap;
+
+	delete terrain;
 
 	delete atlas;
 
@@ -253,12 +265,78 @@ void Game::load_assets(void)
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
 	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
 }
+	
+void Game::update_battle(void)
+{
+	inputman.update();
+	if (inputman.exit_request()) {
+		state = GS_EXIT;
+	}
+
+	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
+	camera.target(rel_mousecoords);
+
+	float modifier = 20.f * timer.delta;
+	if (inputman.key_down(SDLK_w)) { camera.move_forward(modifier); }
+	if (inputman.key_down(SDLK_s)) { camera.move_backward(modifier); }
+	if (inputman.key_down(SDLK_d)) { camera.move_right(modifier); }
+	if (inputman.key_down(SDLK_a)) { camera.move_left(modifier); }
+
+	camera.update();
+
+	if (debugmode) {
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL2_NewFrame(windowman.window);
+		ImGui::NewFrame();
+		ImGui::Begin("Battle Debug Mode");
+		ImGui::SetWindowSize(ImVec2(400, 200));
+		ImGui::Text("seed: %d", seed);
+		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
+		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
+		ImGui::End();
+	}
+
+	inputman.update_keymap();
+}
+
+void Game::run_battle(void)
+{
+	landscape->generate(seed, glm::vec2(0.f, 0.f));
+	terrain->reload(landscape->heightmap);
+
+	while (state == GS_BATTLE) {
+		timer.begin();
+
+		update_battle();
+
+		renderman.prepare_to_render();
+
+		terrain->display(&camera);
+		skybox.display(&camera);
+
+		if (debugmode) {
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		}
+
+		windowman.swap();
+		timer.end();
+	}
+}
+
+void Game::init_battle(void)
+{
+	landscape = new Landscape { 2048 };
+}
 
 void Game::init_campaign(void)
 {
 	atlas = new Atlas { 2048, 512, 512 };
 
 	worldmap = new Worldmap { atlas->SCALE, atlas->get_heightmap(), atlas->get_rainmap() };
+
+	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), atlas->get_heightmap() };
 
 	relief = new Texture { atlas->get_relief() };
 	relief->change_wrapping(GL_CLAMP_TO_EDGE);
@@ -322,6 +400,7 @@ void Game::update_campaign(void)
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
 		ImGui::Text("piece position: %f, %f, %f", piece->position.x, piece->position.y, piece->position.z);
+		if (ImGui::Button("Battle scene")) { state = GS_BATTLE; }
 		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
 		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
 		ImGui::End();
@@ -433,6 +512,10 @@ void Game::run_campaign(void)
 
 		windowman.swap();
 		timer.end();
+
+		if (state == GS_BATTLE) {
+			run_battle();
+		}
 	}
 
 	cleanup_campaign();
@@ -445,6 +528,7 @@ void Game::run(void)
 	init();
 	load_assets();
 	init_campaign();
+	init_battle();
 
 	while (state == GS_TITLE) {
 		inputman.update();

@@ -23,7 +23,7 @@
 #include "core/image.h"
 #include "core/voronoi.h"
 #include "core/navigation.h"
-#include "terra.h"
+#include "terragen.h"
 #include "worldgraph.h"
 #include "atlas.h"
 #include "save.h"

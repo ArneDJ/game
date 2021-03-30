@@ -22,7 +22,7 @@
 #include "core/geom.h"
 #include "core/image.h"
 #include "module.h"
-#include "terra.h"
+#include "terragen.h"
 #include "worldgraph.h"
 
 enum TEMPERATURE { COLD, TEMPERATE, WARM };

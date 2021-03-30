@@ -21,7 +21,7 @@
 #include "core/image.h"
 #include "core/voronoi.h"
 #include "module.h"
-#include "terra.h"
+#include "terragen.h"
 #include "worldgraph.h"
 #include "atlas.h"
 
