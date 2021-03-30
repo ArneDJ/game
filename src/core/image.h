@@ -14,6 +14,8 @@ enum colorspace_type : uint8_t {
 	COLORSPACE_RGBA = 4
 };
 
+class FloatImage;
+
 class Image {
 public:
 	uint16_t width = 0;
@@ -41,6 +43,7 @@ public:
 	void draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, uint8_t color);
 	void draw_filled_circle(int x0, int y0, int radius, uint8_t chan, uint8_t color);
 	void draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t chan, uint8_t color);
+	void create_normalmap(const FloatImage *displacement, float strength);
 private:
 	bool malloced = false;
 private:

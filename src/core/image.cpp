@@ -14,8 +14,11 @@
 #include "../extern/fastgaussianblur/fast_gaussian_blur.h"
 #include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
 
+#include "logger.h"
 #include "geom.h"
 #include "image.h"
+
+static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *image);
 
 static inline int min3(int a, int b, int c)
 {
@@ -255,6 +258,29 @@ void Image::draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t 
 	}
 }
 
+void Image::create_normalmap(const FloatImage *displacement, float strength)
+{
+	if (channels != COLORSPACE_RGB) {
+		write_log(LogType::ERROR, "Normal map creation error: image is not RGB");
+		return;
+	}
+
+	if (width != displacement->width || height != displacement->height) {
+		write_log(LogType::ERROR, "Normal map creation error: displacement image is not same resolution as normalmap image");
+		return;
+	}
+
+	// TODO multithread
+	for (int x = 0; x < displacement->width; x++) {
+		for (int y = 0; y < displacement->height; y++) {
+			const glm::vec3 normal = filter_normal(x, y, strength, displacement);
+			plot(x, y, CHANNEL_RED, 255 * normal.x);
+			plot(x, y, CHANNEL_GREEN, 255 * normal.y);
+			plot(x, y, CHANNEL_BLUE, 255 * normal.z);
+		}
+	}
+}
+
 FloatImage::FloatImage(uint16_t w, uint16_t h, uint8_t chan)
 {
 	width = w;
@@ -328,4 +354,30 @@ void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const
 			}
 		}
 	}
+}
+
+static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *image)
+{
+	float T = image->sample(x, y + 1, CHANNEL_RED);
+	float TR = image->sample(x + 1, y + 1, CHANNEL_RED);
+	float TL = image->sample(x - 1, y + 1, CHANNEL_RED);
+	float B = image->sample(x, y - 1, CHANNEL_RED);
+	float BR = image->sample(x + 1, y - 1, CHANNEL_RED);
+	float BL = image->sample(x - 1, y - 1, CHANNEL_RED);
+	float R = image->sample(x + 1, y, CHANNEL_RED);
+	float L = image->sample(x - 1, y, CHANNEL_RED);
+
+	// sobel filter
+	const float X = (TR + 2.f * R + BR) - (TL + 2.f * L + BL);
+	const float Z = (BL + 2.f * B + BR) - (TL + 2.f * T + TR);
+	const float Y = 1.f / strength;
+
+	glm::vec3 normal(-X, Y, Z);
+	normal = glm::normalize(normal);
+	// convert to positive values to store in a texture
+	normal.x = (normal.x + 1.f) / 2.f;
+	normal.y = (normal.y + 1.f) / 2.f;
+	normal.z = (normal.z + 1.f) / 2.f;
+
+	return normal;
 }

@@ -108,6 +108,7 @@ private:
 	PhysicsManager physicsman;
 	Timer timer;
 	Camera camera;
+	Camera battlecam;
 	Navigation navigation;
 	Debugger debugger;
 	// random seed generator
@@ -274,15 +275,15 @@ void Game::update_battle(void)
 	}
 
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
-	camera.target(rel_mousecoords);
+	battlecam.target(rel_mousecoords);
 
 	float modifier = 20.f * timer.delta;
-	if (inputman.key_down(SDLK_w)) { camera.move_forward(modifier); }
-	if (inputman.key_down(SDLK_s)) { camera.move_backward(modifier); }
-	if (inputman.key_down(SDLK_d)) { camera.move_right(modifier); }
-	if (inputman.key_down(SDLK_a)) { camera.move_left(modifier); }
+	if (inputman.key_down(SDLK_w)) { battlecam.move_forward(modifier); }
+	if (inputman.key_down(SDLK_s)) { battlecam.move_backward(modifier); }
+	if (inputman.key_down(SDLK_d)) { battlecam.move_right(modifier); }
+	if (inputman.key_down(SDLK_a)) { battlecam.move_left(modifier); }
 
-	camera.update();
+	battlecam.update();
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -292,7 +293,7 @@ void Game::update_battle(void)
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		ImGui::Text("seed: %d", seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
-		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
+		ImGui::Text("cam position: %f, %f, %f", battlecam.position.x, battlecam.position.y, battlecam.position.z);
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
 		ImGui::End();
 	}
@@ -302,7 +303,17 @@ void Game::update_battle(void)
 
 void Game::run_battle(void)
 {
-	landscape->generate(seed, glm::vec2(0.f, 0.f));
+	battlecam.position = { 4608.f, 200.f, 4608.f };
+	battlecam.lookat(glm::vec3(0.f, 0.f, 0.f));
+
+	glm::vec2 offset = 2197.26F * translate_3D_to_2D(piece->position);
+	//glm::vec2 offset = { floorf(imagespace.x), floorf(imagespace.y) };
+
+	auto start = std::chrono::steady_clock::now();
+	landscape->generate(seed, offset);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "landscape elapsed time: " << elapsed_seconds.count() << "s\n";
 	terrain->reload(landscape->heightmap);
 
 	while (state == GS_BATTLE) {
@@ -312,8 +323,8 @@ void Game::run_battle(void)
 
 		renderman.prepare_to_render();
 
-		terrain->display(&camera);
-		skybox.display(&camera);
+		terrain->display(&battlecam);
+		skybox.display(&battlecam);
 
 		if (debugmode) {
 			ImGui::Render();
@@ -327,7 +338,12 @@ void Game::run_battle(void)
 
 void Game::init_battle(void)
 {
+	battlecam.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
+	battlecam.project();
+
 	landscape = new Landscape { 2048 };
+	
+	terrain = new Terrain { glm::vec3(9216.F, 512.F, 9216.F), landscape->heightmap };
 }
 
 void Game::init_campaign(void)
@@ -335,8 +351,6 @@ void Game::init_campaign(void)
 	atlas = new Atlas { 2048, 512, 512 };
 
 	worldmap = new Worldmap { atlas->SCALE, atlas->get_heightmap(), atlas->get_rainmap() };
-
-	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), atlas->get_heightmap() };
 
 	relief = new Texture { atlas->get_relief() };
 	relief->change_wrapping(GL_CLAMP_TO_EDGE);
