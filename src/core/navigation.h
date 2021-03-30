@@ -27,27 +27,24 @@ class Navigation
 public:
 	Navigation(void);
 	~Navigation(void);
-	
+	const dtNavMesh* get_navmesh(void) const { return navmesh; };	
 	bool alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys);
 	void cleanup(void);
 	bool build(std::vector<float> &vertices, std::vector<int> &indices);
 	void load_tilemesh(int x, int y, const std::vector<uint8_t> &data);
 	
-	void find_path(glm::vec3 startpos, glm::vec3 endpos, std::vector<glm::vec3> &pathways);
-	struct polyresult point_on_navmesh(glm::vec3 point);
-public:
+	void find_2D_path(const glm::vec2 &startpos, const glm::vec2 &endpos, std::list<glm::vec2> &pathways) const;
+	void find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos, std::vector<glm::vec3> &pathways) const;
+	struct polyresult point_on_navmesh(const glm::vec3 &point) const;
+private:
 	dtNavMesh *navmesh = nullptr;
  	dtNavMeshQuery *navquery = nullptr;
 private:
 	rcConfig cfg;	
-	
 	int max_tiles;
 	int max_polys_per_tile;
-	
 	int tile_tri_count;
-
 	rcContext *context = nullptr;
-
 	float BOUNDS_MIN[3];
 	float BOUNDS_MAX[3];
 

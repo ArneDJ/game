@@ -132,10 +132,12 @@ private:
 	void init(void);
 	void init_settings(void);
 	void load_assets(void);
+	void init_campaign(void);
 	void new_campaign(void);
 	void load_campaign(void);
 	void run_campaign(void);
 	void update_campaign(void);
+	void cleanup_campaign(void);
 	void teardown(void);
 };
 	
@@ -250,20 +252,31 @@ void Game::load_assets(void)
 	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
 	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
+}
 
+void Game::init_campaign(void)
+{
 	atlas = new Atlas { 2048, 512, 512 };
 
-	worldmap = new Worldmap { atlas->scale, atlas->get_heightmap(), atlas->get_rainmap() };
+	worldmap = new Worldmap { atlas->SCALE, atlas->get_heightmap(), atlas->get_rainmap() };
 
 	relief = new Texture { atlas->get_relief() };
 	relief->change_wrapping(GL_CLAMP_TO_EDGE);
 	rivers = new Texture { atlas->get_biomes() };
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	physicsman.add_heightfield(atlas->get_heightmap(), atlas->scale);
+	physicsman.add_heightfield(atlas->get_heightmap(), atlas->SCALE);
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	piece = new Army { startpos, 20.f };
+}
+
+void Game::cleanup_campaign(void)
+{
+	if (debugmode) {
+		debugger.delete_navmeshes();
+	}
+	navigation.cleanup();
 }
 
 void Game::update_campaign(void)
@@ -288,14 +301,9 @@ void Game::update_campaign(void)
 		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
 		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
 		if (result.hit) {
-			const glm::vec2 location = { piece->position.x, piece->position.z };
 			endpoint = result.point;
-			std::vector<glm::vec3> pathways;
-			navigation.find_path(glm::vec3(location.x, 0.f, location.y), glm::vec3(endpoint.x, 0.f, endpoint.z), pathways);
 			std::list<glm::vec2> waypoints;
-			for (const auto &p : pathways) {
-				waypoints.push_back(glm::vec2(p.x, p.z));
-			}
+			navigation.find_2D_path(translate_3D_to_2D(piece->position), translate_3D_to_2D(endpoint), waypoints);
 			piece->set_path(waypoints);
 		}
 	}
@@ -310,6 +318,7 @@ void Game::update_campaign(void)
 		ImGui::NewFrame();
 		ImGui::Begin("Campaign Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
+		ImGui::Text("seed: %d", seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
 		ImGui::Text("piece position: %f, %f, %f", piece->position.x, piece->position.y, piece->position.z);
@@ -338,11 +347,11 @@ void Game::new_campaign(void)
 	navigation.build(atlas->vertex_soup, atlas->index_soup);
 
 	if (saveable) {
-		saver.save(savedir + "game.save", atlas, &navigation);
+		saver.save(savedir + "game.save", atlas, &navigation, seed);
 	}
 	
 	if (debugmode) {
-		debugger.add_navmesh(navigation.navmesh);
+		debugger.add_navmesh(navigation.get_navmesh());
 	}
 
 	run_campaign();
@@ -351,7 +360,7 @@ void Game::new_campaign(void)
 void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
-	saver.load(savedir + "game.save", atlas, &navigation);
+	saver.load(savedir + "game.save", atlas, &navigation, seed);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
@@ -359,7 +368,7 @@ void Game::load_campaign(void)
 	atlas->create_maps();
 
 	if (debugmode) {
-		debugger.add_navmesh(navigation.navmesh);
+		debugger.add_navmesh(navigation.get_navmesh());
 	}
 
 	run_campaign();
@@ -380,8 +389,6 @@ void Game::run_campaign(void)
 	rivers->reload(atlas->get_biomes());
 
 	piece->reset(glm::vec2(2010.f, 2010.f));
-	struct ray_result result = physicsman.cast_ray(glm::vec3(piece->position.x, atlas->scale.y, piece->position.z), glm::vec3(piece->position.x, 0.f, piece->position.z));
-	piece->position.y = result.point.y;
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -407,9 +414,9 @@ void Game::run_campaign(void)
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
 
-		glm::vec3 origin = { piece->position.x, atlas->scale.y, piece->position.z };
+		glm::vec3 origin = { piece->position.x, atlas->SCALE.y, piece->position.z };
 		glm::vec3 end = { piece->position.x, 0.f, piece->position.z };
-		result = physicsman.cast_ray(origin, end);
+		struct ray_result result = physicsman.cast_ray(origin, end);
 		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point));
 		duck->display();
 
@@ -428,10 +435,7 @@ void Game::run_campaign(void)
 		timer.end();
 	}
 
-	if (debugmode) {
-		debugger.delete_navmeshes();
-	}
-	navigation.cleanup();
+	cleanup_campaign();
 }
 
 void Game::run(void)
@@ -440,6 +444,7 @@ void Game::run(void)
 
 	init();
 	load_assets();
+	init_campaign();
 
 	while (state == GS_TITLE) {
 		inputman.update();

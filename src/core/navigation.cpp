@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdio>
 #include <vector>
+#include <list>
 #include <cstring>
 #include <thread>
 #include <mutex>
@@ -316,7 +317,59 @@ void Navigation::remove_all_tiles(void)
 	}
 }
 
-void Navigation::find_path(glm::vec3 startpos, glm::vec3 endpos, std::vector<glm::vec3> &pathways)
+void Navigation::find_2D_path(const glm::vec2 &startpos, const glm::vec2 &endpos, std::list<glm::vec2> &pathways) const
+{
+	const glm::vec3 start = { startpos.x, 0.f, startpos.y };
+	const glm::vec3 end = { endpos.x, 0.f, endpos.y };
+
+	dtQueryFilter filter;
+	filter.setIncludeFlags(0xFFFF);
+	filter.setExcludeFlags(0);
+	filter.setAreaCost(SAMPLE_POLYAREA_GROUND, 1.f);
+
+	// find the start polygon
+	dtPolyRef start_poly;
+	float nearest_start[3];
+	dtStatus status = navquery->findNearestPoly(glm::value_ptr(start), BOX_EXTENTS, &filter, &start_poly, nearest_start);
+	if ((status & DT_FAILURE) || (status & DT_STATUS_DETAIL_MASK)) {
+		return; 
+	}
+
+	// find the end polygon
+	dtPolyRef end_poly;
+	float nearest_end[3];
+	status = navquery->findNearestPoly(glm::value_ptr(end), BOX_EXTENTS, &filter, &end_poly, nearest_end);
+	if ((status & DT_FAILURE) || (status & DT_STATUS_DETAIL_MASK)) { 
+		return; 
+	}
+
+	dtPolyRef poly_path[MAX_PATHPOLY];
+	int path_count = 0;
+	status = navquery->findPath(start_poly, end_poly, nearest_start, nearest_end, &filter, poly_path, &path_count, MAX_PATHPOLY);
+	if ((status & DT_FAILURE) || (status & DT_STATUS_DETAIL_MASK)) { 
+		return; 
+	}
+	if (path_count == 0) { 
+		return; 
+	}
+
+	int vert_count = 0;
+	float pathdata[MAX_PATHVERT*3];
+	status = navquery->findStraightPath(nearest_start, nearest_end, poly_path, path_count, pathdata, NULL, NULL, &vert_count, MAX_PATHVERT);
+	if ((status & DT_FAILURE) || (status & DT_STATUS_DETAIL_MASK)) { 
+		return; 
+	}
+	if (vert_count < 1) { 
+		return; 
+	}
+
+	for (int i = 0; i < vert_count*3; i += 3) {
+		glm::vec2 pos = { pathdata[i], pathdata[i+2] };
+		pathways.push_back(pos);
+	}
+}
+
+void Navigation::find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos, std::vector<glm::vec3> &pathways) const
 {
 	dtQueryFilter filter;
 	filter.setIncludeFlags(0xFFFF);
@@ -369,7 +422,7 @@ void Navigation::find_path(glm::vec3 startpos, glm::vec3 endpos, std::vector<glm
 	}
 }
 
-struct polyresult Navigation::point_on_navmesh(glm::vec3 point)
+struct polyresult Navigation::point_on_navmesh(const glm::vec3 &point) const
 {
 	struct polyresult result;
 	result.found = false;

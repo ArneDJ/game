@@ -57,8 +57,8 @@ struct navmesh_record {
 
 class Saver {
 public:
-	void save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav);
-	void load(const std::string &filepath, Atlas *atlas, Navigation *landnav);
+	void save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav, const long seed);
+	void load(const std::string &filepath, Atlas *atlas, Navigation *landnav, long &seed);
 private:
 	struct floatimage_record topology;
 	struct image_record temperature;

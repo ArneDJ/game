@@ -31,7 +31,7 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 
 	struct rectangle area = {
 		glm::vec2(0.F, 0.F),
-		glm::vec2(scale.x, scale.z)
+		glm::vec2(SCALE.x, SCALE.z)
 	};
 	worldgraph = new Worldgraph { area };
 
@@ -52,12 +52,11 @@ void Atlas::generate(long seedling, const struct worldparams *params)
 	holdings.clear();
 	holding_tiles.clear();
 
-	seed = seedling;
 	// first generate the world heightmap, rain and temperature data
-	terragen->generate(seed, params);
+	terragen->generate(seedling, params);
 
 	// then generate the world graph data (mountains, seas, rivers, etc)
-	worldgraph->generate(seed, params, terragen);
+	worldgraph->generate(seedling, params, terragen);
 
 	// generate holds based on generated world data
 	gen_holds();
@@ -68,8 +67,8 @@ void Atlas::create_maps(void)
 auto start = std::chrono::steady_clock::now();
 	// create relief texture
 	const glm::vec2 mapscale = {
-		float(relief->width) / scale.x,
-		float(relief->height) / scale.z
+		float(relief->width) / SCALE.x,
+		float(relief->height) / SCALE.z
 	};
 
 	relief->clear();

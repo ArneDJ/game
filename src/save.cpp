@@ -28,7 +28,7 @@
 #include "atlas.h"
 #include "save.h"
 	
-void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav)
+void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav, const long seed)
 {
 	const FloatImage *heightmap = atlas->get_heightmap();
 	topology.width = heightmap->width;
@@ -59,10 +59,10 @@ void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigati
 
 	const Worldgraph *worldgraph = atlas->worldgraph;
 
-	// save the navigation data
+	// save the campaign navigation data
 	navmesh_land.tilemeshes.clear();
 
-	const dtNavMesh *navmesh = landnav->navmesh;
+	const dtNavMesh *navmesh = landnav->get_navmesh();
 	if (navmesh) {
 		const dtNavMeshParams *navparams = navmesh->getParams();
 		navmesh_land.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
@@ -91,7 +91,7 @@ void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigati
 			cereal::make_nvp("topology", topology), 
 			cereal::make_nvp("rain", rain), 
 			cereal::make_nvp("temperature", temperature),
-			cereal::make_nvp("seed", atlas->seed),
+			cereal::make_nvp("seed", seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders),
@@ -102,7 +102,7 @@ void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigati
 	}
 }
 
-void Saver::load(const std::string &filepath, Atlas *atlas, Navigation *landnav)
+void Saver::load(const std::string &filepath, Atlas *atlas, Navigation *landnav, long &seed)
 {
 	Worldgraph *worldgraph = atlas->worldgraph;
 
@@ -114,7 +114,7 @@ void Saver::load(const std::string &filepath, Atlas *atlas, Navigation *landnav)
 			cereal::make_nvp("topology", topology), 
 			cereal::make_nvp("rain", rain), 
 			cereal::make_nvp("temperature", temperature),
-			cereal::make_nvp("seed", atlas->seed),
+			cereal::make_nvp("seed", seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders),
@@ -131,6 +131,7 @@ void Saver::load(const std::string &filepath, Atlas *atlas, Navigation *landnav)
 
 	atlas->load_tempmap(temperature.width, temperature.height, temperature.data);
 	
+	// load campaign the navigation data
 	landnav->alloc(navmesh_land.origin, navmesh_land.tilewidth, navmesh_land.tileheight, navmesh_land.maxtiles, navmesh_land.maxpolys);
 	for (const auto &tilemesh : navmesh_land.tilemeshes) {
 		landnav->load_tilemesh(tilemesh.x, tilemesh.y, tilemesh.data);
