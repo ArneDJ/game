@@ -303,7 +303,7 @@ void Game::update_battle(void)
 
 void Game::run_battle(void)
 {
-	battlecam.position = { 4608.f, 200.f, 4608.f };
+	battlecam.position = { 3072.f, 200.f, 3072.f };
 	battlecam.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	glm::vec2 offset = 2197.26F * translate_3D_to_2D(piece->position);
@@ -343,7 +343,7 @@ void Game::init_battle(void)
 
 	landscape = new Landscape { 2048 };
 	
-	terrain = new Terrain { glm::vec3(9216.F, 512.F, 9216.F), landscape->heightmap };
+	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), landscape->heightmap };
 }
 
 void Game::init_campaign(void)
@@ -428,7 +428,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	//seed = 1337;
+	seed = 1337;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(seed));
 

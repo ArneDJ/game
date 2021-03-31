@@ -356,6 +356,56 @@ void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const
 	}
 }
 
+void FloatImage::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan)
+{
+	const int nsteps = 32;
+	const int stepsize = width / nsteps;
+
+	#pragma omp parallel for
+	for (int step_x = 0; step_x < width; step_x += stepsize) {
+		int w = step_x + stepsize;
+		int h = height;
+		for (int i = 0; i < h; i++) {
+			for (int j = step_x; j < w; j++) {
+				float x = sample_freq.x * (j + sample_offset.x);
+				float y = sample_freq.y * (i + sample_offset.y);
+				fastnoise->GradientPerturbFractal(x, y);
+				plot(j, i, chan, fastnoise->GetNoise(x, y));
+			}
+		}
+	}
+
+	// find min and max
+	float min = std::numeric_limits<float>::max();
+	float max = std::numeric_limits<float>::min();
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			float value = sample(x, y, chan);
+			min = std::min(min, value);
+			max = std::max(max, value);
+		}
+	}
+
+	float scale = max - min;
+	if (scale == 0.f) {
+		return;
+	}
+
+	// now normalize the values
+	#pragma omp parallel for
+	for (int step_x = 0; step_x < width; step_x += stepsize) {
+		int w = step_x + stepsize;
+		int h = height;
+		for (int i = 0; i < h; i++) {
+			for (int j = step_x; j < w; j++) {
+				float value = sample(j, i, chan);
+				value = glm::clamp((value - min) / scale, 0.f, 1.f);
+				plot(j, i, chan, value);
+			}
+		}
+	}
+}
+
 static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *image)
 {
 	float T = image->sample(x, y + 1, CHANNEL_RED);
