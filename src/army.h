@@ -53,6 +53,7 @@ public:
 		}
 	}
 	glm::vec2 at(void) { return location; }
+	glm::vec2 velo(void) { return velocity; }
 	void teleport(const glm::vec2 &pos)
 	{
 		nodes.clear();
@@ -91,6 +92,11 @@ public:
 		glm::vec2 location = pathfinder->at();
 		position.x = location.x;
 		position.z = location.y;
+
+		glm::vec2 dir = glm::normalize(pathfinder->velo());
+		float angle = atan2(dir.x, dir.y);
+		glm::mat4 R = glm::rotate(glm::mat4(1.f), angle, glm::vec3(0.f, 1.f, 0.f));
+		rotation = glm::quat(R);
 	}
 	void set_y_offset(float offset) { position.y = offset; }
 	void reset(const glm::vec2 &pos) 

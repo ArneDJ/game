@@ -309,16 +309,11 @@ void Game::run_battle(void)
 	glm::vec2 position = translate_3D_to_2D(piece->position);
 	const FloatImage *heightmap = atlas->get_heightmap();
 	uint32_t offset= floor(0.5f * position.y) * heightmap->width + floorf(0.5f * position.x);
-	printf("offset %d\n", offset);
 	float amp = heightmap->sample(floorf(0.5f*position.x), floorf(0.5f*position.y), CHANNEL_RED);
 	amp = glm::smoothstep(modular.params.graph.lowland, modular.params.graph.highland, amp);
 	amp = glm::clamp(amp, 0.1f, 1.f);
 
-	auto start = std::chrono::steady_clock::now();
 	landscape->generate(seed, offset, amp);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "landscape elapsed time: " << elapsed_seconds.count() << "s\n";
 	terrain->reload(landscape->heightmap, landscape->normalmap);
 
 	while (state == GS_BATTLE) {
@@ -433,7 +428,7 @@ void Game::new_campaign(void)
 	// generate a new seed
 	std::mt19937 gen(rd());
 	seed = dis(gen);
-	seed = 1337;
+	//seed = 1337;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(seed));
 
@@ -515,7 +510,7 @@ void Game::run_campaign(void)
 		glm::vec3 origin = { piece->position.x, atlas->SCALE.y, piece->position.z };
 		glm::vec3 end = { piece->position.x, 0.f, piece->position.z };
 		struct ray_result result = physicsman.cast_ray(origin, end);
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point));
+		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point) * glm::mat4(piece->rotation));
 		duck->display();
 
 		relief->bind(GL_TEXTURE2);
