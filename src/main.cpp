@@ -308,12 +308,14 @@ void Game::run_battle(void)
 
 	glm::vec2 position = translate_3D_to_2D(piece->position);
 	const FloatImage *heightmap = atlas->get_heightmap();
+	uint32_t offset= floor(0.5f * position.y) * heightmap->width + floorf(0.5f * position.x);
+	printf("offset %d\n", offset);
 	float amp = heightmap->sample(floorf(0.5f*position.x), floorf(0.5f*position.y), CHANNEL_RED);
 	amp = glm::smoothstep(modular.params.graph.lowland, modular.params.graph.highland, amp);
 	amp = glm::clamp(amp, 0.1f, 1.f);
 
 	auto start = std::chrono::steady_clock::now();
-	landscape->generate(seed, 0, amp);
+	landscape->generate(seed, offset, amp);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "landscape elapsed time: " << elapsed_seconds.count() << "s\n";
