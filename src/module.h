@@ -7,7 +7,6 @@ struct heightparams {
 	float lacunarity = 2.5f;
 	// heightmap sampling methods
 	glm::vec2 sampling_scale = { 1.f, 1.f };
-	glm::vec2 sampling_offset = { 0.f, 0.f };
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -17,9 +16,7 @@ struct heightparams {
 			CEREAL_NVP(perturbamp),
 			CEREAL_NVP(octaves), CEREAL_NVP(lacunarity), 
 			cereal::make_nvp("sampling_scale_x", sampling_scale.x), 
-			cereal::make_nvp("sampling_scale_y", sampling_scale.y),
-			cereal::make_nvp("sampling_offset_x", sampling_offset.x), 
-			cereal::make_nvp("sampling_offset_y", sampling_offset.y) 
+			cereal::make_nvp("sampling_scale_y", sampling_scale.y)
 		);
 	}
 };

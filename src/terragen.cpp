@@ -56,7 +56,7 @@ void Terragen::gen_heightmap(long seed, const struct worldparams *params)
 	fastnoise.SetFractalLacunarity(params->height.lacunarity);
 	fastnoise.SetGradientPerturbAmp(params->height.perturbamp);
 
-	heightmap->noise(&fastnoise, params->height.sampling_scale, params->height.sampling_offset, CHANNEL_RED);
+	heightmap->noise(&fastnoise, params->height.sampling_scale, CHANNEL_RED);
 }
 
 void Terragen::gen_tempmap(long seed, const struct worldparams *params)

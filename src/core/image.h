@@ -36,7 +36,7 @@ public:
 	// save to file
 	void write(const std::string &filepath) const;
 	// fill image with random noise at the specified channel
-	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
+	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
 	// line drawing
 	void draw_line(int x0, int y0, int x1, int y1, uint8_t chan, uint8_t color);
 	// triangle rasterize
@@ -67,6 +67,7 @@ public:
 	// wipe image clean but do not free memory
 	void clear(void);
 	// fill image with random noise at the specified channel
-	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
-	void cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan);
+	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
+	void cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
+	void create_normalmap(const FloatImage *displacement, float strength);
 };

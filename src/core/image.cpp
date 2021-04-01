@@ -109,7 +109,7 @@ void Image::blur(float sigma)
 	delete [] blurred;
 }
 	
-void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan)
+void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)
 {
 	const int nsteps = 32;
 	const int stepsize = width / nsteps;
@@ -120,8 +120,8 @@ void Image::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm:
 		int h = height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
-				float x = sample_freq.x * (j + sample_offset.x);
-				float y = sample_freq.y * (i + sample_offset.y);
+				float x = sample_freq.x * j;
+				float y = sample_freq.y * i;
 				fastnoise->GradientPerturbFractal(x, y);
 				float value = 0.5f * (fastnoise->GetNoise(x, y) + 1.f);
 				plot(j, i, chan, 255 * glm::clamp(value, 0.f, 1.f));
@@ -264,13 +264,16 @@ void Image::create_normalmap(const FloatImage *displacement, float strength)
 		write_log(LogType::ERROR, "Normal map creation error: image is not RGB");
 		return;
 	}
-
+	if (displacement->channels != COLORSPACE_GRAYSCALE) {
+		write_log(LogType::ERROR, "Normal map creation error: displacement image is not grayscale");
+		return;
+	}
 	if (width != displacement->width || height != displacement->height) {
 		write_log(LogType::ERROR, "Normal map creation error: displacement image is not same resolution as normalmap image");
 		return;
 	}
 
-	// TODO multithread
+	#pragma omp parallel for
 	for (int x = 0; x < displacement->width; x++) {
 		for (int y = 0; y < displacement->height; y++) {
 			const glm::vec3 normal = filter_normal(x, y, strength, displacement);
@@ -335,7 +338,7 @@ void FloatImage::clear(void)
 	std::memset(data, 0, size * sizeof(float));
 }
 
-void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan)
+void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)
 {
 	const int nsteps = 32;
 	const int stepsize = width / nsteps;
@@ -346,8 +349,8 @@ void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const
 		int h = height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
-				float x = sample_freq.x * (j + sample_offset.x);
-				float y = sample_freq.y * (i + sample_offset.y);
+				float x = sample_freq.x * j;
+				float y = sample_freq.y * i;
 				fastnoise->GradientPerturbFractal(x, y);
 				float value = 0.5f * (fastnoise->GetNoise(x, y) + 1.f);
 				plot(j, i, chan, glm::clamp(value, 0.f, 1.f));
@@ -356,7 +359,7 @@ void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const
 	}
 }
 
-void FloatImage::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, const glm::vec2 &sample_offset, uint8_t chan)
+void FloatImage::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)
 {
 	const int nsteps = 32;
 	const int stepsize = width / nsteps;
@@ -367,8 +370,8 @@ void FloatImage::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, c
 		int h = height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
-				float x = sample_freq.x * (j + sample_offset.x);
-				float y = sample_freq.y * (i + sample_offset.y);
+				float x = sample_freq.x * j;
+				float y = sample_freq.y * i;
 				fastnoise->GradientPerturbFractal(x, y);
 				plot(j, i, chan, fastnoise->GetNoise(x, y));
 			}

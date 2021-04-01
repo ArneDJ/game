@@ -306,11 +306,13 @@ void Game::run_battle(void)
 	battlecam.position = { 3072.f, 200.f, 3072.f };
 	battlecam.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	glm::vec2 offset = 2197.26F * translate_3D_to_2D(piece->position);
-	//glm::vec2 offset = { floorf(imagespace.x), floorf(imagespace.y) };
+	glm::vec2 position = translate_3D_to_2D(piece->position);
+	const FloatImage *heightmap = atlas->get_heightmap();
+	float amp = heightmap->sample(floorf(0.5f*position.x), floorf(0.5f*position.y), CHANNEL_RED);
+	amp = glm::smoothstep(modular.params.graph.lowland, modular.params.graph.highland, amp);
 
 	auto start = std::chrono::steady_clock::now();
-	landscape->generate(seed, offset);
+	landscape->generate(seed, amp);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "landscape elapsed time: " << elapsed_seconds.count() << "s\n";
