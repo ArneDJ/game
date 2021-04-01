@@ -14,8 +14,8 @@ void main(void)
 {
 	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 	vec3 normal = texture(NORMALMAP, fragment.texcoord).rgb;
-	//normal = (normal * 2.0) - 1.0;
-	//normal = normalize(normal);
+	normal = (normal * 2.0) - 1.0;
+	normal = normalize(normal);
 
 	vec3 color = vec3(0.5, 0.5, 0.5);
 
@@ -27,5 +27,5 @@ void main(void)
 	vec3 scatteredlight = lightcolor * diffuse;
 	color = mix(min(color * scatteredlight, vec3(1.0)), color, 0.5);
 
-	fcolor = vec4(normal, 1.0);
+	fcolor = vec4(color, 1.0);
 }

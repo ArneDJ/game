@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <chrono>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -21,14 +20,12 @@
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap)
+Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
 	glm::vec2 max = { mapscale.x + 5.f, mapscale.z + 5.f };
 	patches = new Mesh { TERRAIN_PATCH_RES, min, max };
-
-	normalmap = new Image { heightmap->width, heightmap->height, COLORSPACE_RGB };
 
 	relief = new Texture { heightmap };
 	// special wrapping mode so edges of the map are at height 0
@@ -48,21 +45,15 @@ Terrain::~Terrain(void)
 {
 	delete patches;
 
-	delete normalmap;
 	delete normals;
 	
 	delete relief;
 }
 
-void Terrain::reload(const FloatImage *heightmap)
+void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 {
 	relief->reload(heightmap);
 
-	auto start = std::chrono::steady_clock::now();
-	normalmap->create_normalmap(heightmap, 32.f);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "normalmap elapsed time: " << elapsed_seconds.count() << "s\n";
 	normals->reload(normalmap);
 }
 

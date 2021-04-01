@@ -60,6 +60,7 @@ public:
 public:
 	FloatImage(uint16_t w, uint16_t h, uint8_t chan);
 	~FloatImage(void);
+	void copy(const FloatImage *original);
 	float sample(uint16_t x, uint16_t y, uint8_t chan) const;
 	void plot(uint16_t x, uint16_t y, uint8_t chan, float color);
 	// gaussian blur

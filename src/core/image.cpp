@@ -303,6 +303,15 @@ FloatImage::~FloatImage(void)
 	}
 }
 
+void FloatImage::copy(const FloatImage *original)
+{
+	if (original->size != size) {
+		write_log(LogType::ERROR, "Float image copy error: size does not match");
+	}
+	
+	std::memcpy(data, original->data, original->size * sizeof(float));
+}
+
 float FloatImage::sample(uint16_t x, uint16_t y, uint8_t chan) const
 {
 	if (chan >= channels) { return 0.f; }

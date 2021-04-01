@@ -310,13 +310,14 @@ void Game::run_battle(void)
 	const FloatImage *heightmap = atlas->get_heightmap();
 	float amp = heightmap->sample(floorf(0.5f*position.x), floorf(0.5f*position.y), CHANNEL_RED);
 	amp = glm::smoothstep(modular.params.graph.lowland, modular.params.graph.highland, amp);
+	amp = glm::clamp(amp, 0.1f, 1.f);
 
 	auto start = std::chrono::steady_clock::now();
-	landscape->generate(seed, amp);
+	landscape->generate(seed, 0, amp);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "landscape elapsed time: " << elapsed_seconds.count() << "s\n";
-	terrain->reload(landscape->heightmap);
+	terrain->reload(landscape->heightmap, landscape->normalmap);
 
 	while (state == GS_BATTLE) {
 		timer.begin();
@@ -345,7 +346,7 @@ void Game::init_battle(void)
 
 	landscape = new Landscape { 2048 };
 	
-	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), landscape->heightmap };
+	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), landscape->heightmap, landscape->normalmap };
 }
 
 void Game::init_campaign(void)
