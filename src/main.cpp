@@ -111,9 +111,6 @@ private:
 	Camera battlecam;
 	Navigation navigation;
 	Debugger debugger;
-	// random seed generator
-	std::random_device rd;
-	std::uniform_int_distribution<long> dis;
 	// campaign data
 	Atlas *atlas;
 	long seed;
@@ -133,7 +130,7 @@ private:
 	Texture *relief;
 	Texture *rivers;
 	glm::vec3 endpoint;
-	Army *piece;
+	Army *player;
 private:
 	void init(void);
 	void init_settings(void);
@@ -197,8 +194,6 @@ void Game::init(void)
 	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	camera.project();
 
-	skybox.init(modular.atmos.skytop, modular.atmos.skybottom);
-
 	if (debugmode) {
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
@@ -223,11 +218,17 @@ void Game::init(void)
 		saveable = false;
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
+
+	skybox.init(modular.atmos.skytop, modular.atmos.skybottom);
+
+	init_campaign();
+
+	init_battle();
 }
 
 void Game::teardown(void)
 {
-	delete piece;
+	delete player;
 
 	delete dragon;
 	delete cone;
@@ -306,7 +307,7 @@ void Game::run_battle(void)
 	battlecam.position = { 3072.f, 200.f, 3072.f };
 	battlecam.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	glm::vec2 position = translate_3D_to_2D(piece->position);
+	glm::vec2 position = translate_3D_to_2D(player->position);
 	const FloatImage *heightmap = atlas->get_heightmap();
 	uint32_t offset= floor(0.5f * position.y) * heightmap->width + floorf(0.5f * position.x);
 	float amp = heightmap->sample(floorf(0.5f*position.x), floorf(0.5f*position.y), CHANNEL_RED);
@@ -314,7 +315,7 @@ void Game::run_battle(void)
 	amp = glm::clamp(amp, 0.1f, 1.f);
 
 	landscape->generate(seed, offset, amp);
-	terrain->reload(landscape->heightmap, landscape->normalmap);
+	terrain->reload(landscape->get_heightmap(), landscape->get_normalmap());
 
 	while (state == GS_BATTLE) {
 		timer.begin();
@@ -343,7 +344,7 @@ void Game::init_battle(void)
 
 	landscape = new Landscape { 2048 };
 	
-	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), landscape->heightmap, landscape->normalmap };
+	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), landscape->get_heightmap(), landscape->get_normalmap() };
 }
 
 void Game::init_campaign(void)
@@ -360,7 +361,7 @@ void Game::init_campaign(void)
 	physicsman.add_heightfield(atlas->get_heightmap(), atlas->SCALE);
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
-	piece = new Army { startpos, 20.f };
+	player = new Army { startpos, 20.f };
 }
 
 void Game::cleanup_campaign(void)
@@ -395,12 +396,12 @@ void Game::update_campaign(void)
 		if (result.hit) {
 			endpoint = result.point;
 			std::list<glm::vec2> waypoints;
-			navigation.find_2D_path(translate_3D_to_2D(piece->position), translate_3D_to_2D(endpoint), waypoints);
-			piece->set_path(waypoints);
+			navigation.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(endpoint), waypoints);
+			player->set_path(waypoints);
 		}
 	}
 
-	piece->update(timer.delta);
+	player->update(timer.delta);
 
 	//physicsman.update(timer.delta);
 
@@ -413,7 +414,7 @@ void Game::update_campaign(void)
 		ImGui::Text("seed: %d", seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
-		ImGui::Text("piece position: %f, %f, %f", piece->position.x, piece->position.y, piece->position.z);
+		ImGui::Text("player position: %f, %f, %f", player->position.x, player->position.y, player->position.z);
 		if (ImGui::Button("Battle scene")) { state = GS_BATTLE; }
 		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
 		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
@@ -426,6 +427,8 @@ void Game::update_campaign(void)
 void Game::new_campaign(void)
 {
 	// generate a new seed
+	std::random_device rd;
+	std::uniform_int_distribution<long> dis;
 	std::mt19937 gen(rd());
 	seed = dis(gen);
 	//seed = 1337;
@@ -481,7 +484,7 @@ void Game::run_campaign(void)
 	relief->reload(atlas->get_relief());
 	rivers->reload(atlas->get_biomes());
 
-	piece->reset(glm::vec2(2010.f, 2010.f));
+	player->teleport(glm::vec2(2010.f, 2010.f));
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -507,10 +510,10 @@ void Game::run_campaign(void)
 		object_shader.uniform_mat4("VP", camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
 
-		glm::vec3 origin = { piece->position.x, atlas->SCALE.y, piece->position.z };
-		glm::vec3 end = { piece->position.x, 0.f, piece->position.z };
+		glm::vec3 origin = { player->position.x, atlas->SCALE.y, player->position.z };
+		glm::vec3 end = { player->position.x, 0.f, player->position.z };
 		struct ray_result result = physicsman.cast_ray(origin, end);
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point) * glm::mat4(piece->rotation));
+		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point) * glm::mat4(player->rotation));
 		duck->display();
 
 		relief->bind(GL_TEXTURE2);
@@ -541,8 +544,6 @@ void Game::run(void)
 
 	init();
 	load_assets();
-	init_campaign();
-	init_battle();
 
 	while (state == GS_TITLE) {
 		inputman.update();

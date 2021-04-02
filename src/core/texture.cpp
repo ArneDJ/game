@@ -73,7 +73,6 @@ Texture::Texture(const FloatImage *image)
 	handle = 0;
 	format = 0;
 
-	// TODO compare visual difference of GL_R16F and GL_R32F
 	GLenum internalformat = 0;
 	switch (image->channels) {
 	case 1: 

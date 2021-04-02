@@ -69,6 +69,16 @@ void Landscape::generate(long seed, uint32_t offset, float amplitude)
 	normalmap->create_normalmap(heightmap, 32.f);
 }
 
+const FloatImage* Landscape::get_heightmap(void) const
+{
+	return heightmap;
+}
+
+const Image* Landscape::get_normalmap(void) const
+{
+	return normalmap;
+}
+
 void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 {
 	// random noise config
