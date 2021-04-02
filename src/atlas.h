@@ -9,7 +9,7 @@ struct holding {
 
 class Atlas {
 public:
-	const glm::vec3 SCALE = {4096.F, 200.F, 4096.F};
+	const glm::vec3 SCALE = { 4096.F, 200.F, 4096.F };
 	Worldgraph *worldgraph;
 	std::vector<float> vertex_soup;
 	std::vector<int> index_soup;

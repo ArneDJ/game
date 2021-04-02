@@ -117,10 +117,12 @@ private:
 	long seed;
 	Entity marker;
 	// battle data
+	btRigidBody *battle_surface;
 	Landscape *landscape;
 	// graphics
 	RenderGroup *campaign_ordinary;
 	RenderGroup *campaign_creatures;
+	RenderGroup *battle_ordinary;
 	RenderManager renderman;
 	Skybox skybox;
 	Worldmap *worldmap;
@@ -131,6 +133,10 @@ private:
 	GLTF::Model *duck;
 	GLTF::Model *dragon;
 	GLTF::Model *cone;
+	GLTF::Model *sphere;
+	GLTF::Model *cube;
+	GLTF::Model *cylinder;
+	GLTF::Model *capsule;
 	Texture *relief;
 	Texture *rivers;
 	//glm::vec3 endpoint;
@@ -234,11 +240,16 @@ void Game::teardown(void)
 {
 	delete campaign_ordinary;
 	delete campaign_creatures;
+	delete battle_ordinary;
 
 	delete player;
 
 	delete dragon;
 	delete cone;
+	delete sphere;
+	delete cube;
+	delete cylinder;
+	delete capsule;
 	delete duck;
 
 	delete landscape;
@@ -264,6 +275,7 @@ void Game::teardown(void)
 	//renderman.teardown();
 
 	delete campaign_surface;
+	delete battle_surface;
 	physicsman.clear();
 
 	windowman.teardown();
@@ -274,6 +286,10 @@ void Game::load_assets(void)
 	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
 	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
 	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
+	sphere = new GLTF::Model { "modules/native/media/models/sphere.glb", "" };
+	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
+	cylinder = new GLTF::Model { "modules/native/media/models/cylinder.glb", "" };
+	capsule = new GLTF::Model { "modules/native/media/models/capsule.glb", "" };
 }
 	
 void Game::update_battle(void)
@@ -308,6 +324,8 @@ void Game::update_battle(void)
 	}
 
 	inputman.update_keymap();
+	
+	physicsman.update(timer.delta);
 }
 
 void Game::run_battle(void)
@@ -324,13 +342,48 @@ void Game::run_battle(void)
 
 	landscape->generate(seed, offset, amp);
 	terrain->reload(landscape->get_heightmap(), landscape->get_normalmap());
+	
+	physicsman.insert_body(battle_surface);
+
+	// testing entities
+	btCollisionShape *sphere_shape = physicsman.add_sphere(1.f);
+	btCollisionShape *cube_shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
+	btCollisionShape *cylinder_shape = physicsman.add_cylinder(glm::vec3(1.f, 2.f, 1.f));
+	btCollisionShape *capsule_shape = physicsman.add_capsule(1.f, 2.f);
+	DynamicObject sphereobject = { glm::vec3(3072.f, 210.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), sphere_shape };
+	DynamicObject cubeobject = { glm::vec3(3072.f, 215.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cube_shape };
+	DynamicObject cylinderobject = { glm::vec3(3072.f, 220.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cylinder_shape };
+	DynamicObject capsuleobject = { glm::vec3(3072.f, 225.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), capsule_shape };
+	physicsman.insert_body(sphereobject.body);
+	physicsman.insert_body(cubeobject.body);
+	physicsman.insert_body(cylinderobject.body);
+	physicsman.insert_body(capsuleobject.body);
+
+	std::vector<const Entity*> ents;
+	ents.push_back(&sphereobject);
+	battle_ordinary->add_object(sphere, ents);
+	ents.clear();
+	ents.push_back(&cubeobject);
+	battle_ordinary->add_object(cube, ents);
+	ents.clear();
+	ents.push_back(&cylinderobject);
+	battle_ordinary->add_object(cylinder, ents);
+	ents.clear();
+	ents.push_back(&capsuleobject);
+	battle_ordinary->add_object(capsule, ents);
 
 	while (state == GS_BATTLE) {
 		timer.begin();
 
 		update_battle();
+		sphereobject.update();
+		cubeobject.update();
+		cylinderobject.update();
+		capsuleobject.update();
 
 		renderman.prepare_to_render();
+		
+		battle_ordinary->display(&battlecam);
 
 		terrain->display(&battlecam);
 		skybox.display(&battlecam);
@@ -343,6 +396,14 @@ void Game::run_battle(void)
 		windowman.swap();
 		timer.end();
 	}
+	
+	battle_ordinary->clear();
+	physicsman.remove_body(sphereobject.body);
+	physicsman.remove_body(cubeobject.body);
+	physicsman.remove_body(battle_surface);
+	physicsman.remove_body(cylinderobject.body);
+	physicsman.remove_body(capsuleobject.body);
+	// TODO shapes need to be deleted
 }
 
 void Game::init_battle(void)
@@ -352,7 +413,9 @@ void Game::init_battle(void)
 
 	landscape = new Landscape { 2048 };
 	
-	terrain = new Terrain { glm::vec3(6144.F, 512.F, 6144.F), landscape->get_heightmap(), landscape->get_normalmap() };
+	terrain = new Terrain { landscape->SCALE, landscape->get_heightmap(), landscape->get_normalmap() };
+
+	battle_surface = physicsman.add_heightfield(landscape->get_heightmap(), landscape->SCALE);
 }
 
 void Game::init_campaign(void)
@@ -370,6 +433,7 @@ void Game::init_campaign(void)
 
 	campaign_ordinary = new RenderGroup { &debug_shader };
 	campaign_creatures = new RenderGroup { &object_shader };
+	battle_ordinary = new RenderGroup { &debug_shader };
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	player = new Army { startpos, 20.f };
@@ -417,8 +481,6 @@ void Game::update_campaign(void)
 	}
 
 	player->update(timer.delta);
-
-	//physicsman.update(timer.delta);
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
