@@ -178,7 +178,7 @@ void PhysicsManager::add_ground_plane(const glm::vec3 &position)
 	world->addRigidBody(body);
 }
 	
-void PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &scale)
+btRigidBody* PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &scale)
 {
 	btHeightfieldTerrainShape *shape = new btHeightfieldTerrainShape(image->width, image->height, image->data, 1.f, 0.f, 1.f, 1, PHY_FLOAT, false);
 
@@ -206,8 +206,9 @@ void PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &s
 
 	body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
 
+	return body;
 	//add the body to the dynamics world
-	insert_body(body);
+	//insert_body(body);
 }
 
 void PhysicsManager::insert_body(btRigidBody *body)

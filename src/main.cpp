@@ -112,11 +112,15 @@ private:
 	Navigation navigation;
 	Debugger debugger;
 	// campaign data
+	btRigidBody *campaign_surface;
 	Atlas *atlas;
 	long seed;
+	Entity marker;
 	// battle data
 	Landscape *landscape;
 	// graphics
+	RenderGroup *campaign_ordinary;
+	RenderGroup *campaign_creatures;
 	RenderManager renderman;
 	Skybox skybox;
 	Worldmap *worldmap;
@@ -129,7 +133,7 @@ private:
 	GLTF::Model *cone;
 	Texture *relief;
 	Texture *rivers;
-	glm::vec3 endpoint;
+	//glm::vec3 endpoint;
 	Army *player;
 private:
 	void init(void);
@@ -228,6 +232,9 @@ void Game::init(void)
 
 void Game::teardown(void)
 {
+	delete campaign_ordinary;
+	delete campaign_creatures;
+
 	delete player;
 
 	delete dragon;
@@ -256,6 +263,7 @@ void Game::teardown(void)
 	skybox.teardown();
 	//renderman.teardown();
 
+	delete campaign_surface;
 	physicsman.clear();
 
 	windowman.teardown();
@@ -358,7 +366,10 @@ void Game::init_campaign(void)
 	rivers = new Texture { atlas->get_biomes() };
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	physicsman.add_heightfield(atlas->get_heightmap(), atlas->SCALE);
+	campaign_surface = physicsman.add_heightfield(atlas->get_heightmap(), atlas->SCALE);
+
+	campaign_ordinary = new RenderGroup { &debug_shader };
+	campaign_creatures = new RenderGroup { &object_shader };
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	player = new Army { startpos, 20.f };
@@ -366,9 +377,13 @@ void Game::init_campaign(void)
 
 void Game::cleanup_campaign(void)
 {
+	campaign_ordinary->clear();
+	campaign_creatures->clear();
+
 	if (debugmode) {
 		debugger.delete_navmeshes();
 	}
+	physicsman.remove_body(campaign_surface);
 	navigation.cleanup();
 }
 
@@ -394,9 +409,9 @@ void Game::update_campaign(void)
 		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
 		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
 		if (result.hit) {
-			endpoint = result.point;
+			marker.position = result.point;
 			std::list<glm::vec2> waypoints;
-			navigation.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(endpoint), waypoints);
+			navigation.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
 			player->set_path(waypoints);
 		}
 	}
@@ -422,6 +437,11 @@ void Game::update_campaign(void)
 	}
 
 	inputman.update_keymap();
+
+	glm::vec3 origin = { player->position.x, atlas->SCALE.y, player->position.z };
+	glm::vec3 end = { player->position.x, 0.f, player->position.z };
+	struct ray_result result = physicsman.cast_ray(origin, end);
+	player->set_y_offset(result.point.y);
 }
 	
 void Game::new_campaign(void)
@@ -446,10 +466,6 @@ void Game::new_campaign(void)
 		saver.save(savedir + "game.save", atlas, &navigation, seed);
 	}
 	
-	if (debugmode) {
-		debugger.add_navmesh(navigation.get_navmesh());
-	}
-
 	run_campaign();
 }
 	
@@ -463,10 +479,6 @@ void Game::load_campaign(void)
 
 	atlas->create_maps();
 
-	if (debugmode) {
-		debugger.add_navmesh(navigation.get_navmesh());
-	}
-
 	run_campaign();
 }
 
@@ -474,12 +486,26 @@ void Game::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
 
+	std::vector<const Entity*> ents;
+	ents.push_back(player);
+	campaign_creatures->add_object(duck, ents);
+
+	Entity dragon_ent = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	ents.clear();
+	ents.push_back(&marker);
+	campaign_ordinary->add_object(cone, ents);
+	ents.clear();
+	ents.push_back(&dragon_ent);
+	campaign_ordinary->add_object(dragon, ents);
+
 	camera.position = { 2048.f, 200.f, 2048.f };
 	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	endpoint = { 2010.f, 200.f, 2010.f };
+	marker.position = { 2010.f, 200.f, 2010.f };
 
 	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
+
+	physicsman.insert_body(campaign_surface);
 
 	relief->reload(atlas->get_relief());
 	rivers->reload(atlas->get_biomes());
@@ -493,28 +519,9 @@ void Game::run_campaign(void)
 
 		renderman.prepare_to_render();
 
-		debug_shader.use();
-		debug_shader.uniform_mat4("VP", camera.VP);
-		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), glm::vec3(2048.f, 160.f, 2048.f)));
-		dragon->display();
-		
-		debug_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), endpoint));
-		cone->display();
+		campaign_ordinary->display(&camera);
 
-		if (debugmode) {
-			debug_shader.uniform_mat4("MODEL", glm::mat4(1.f));
-			debugger.render_navmeshes();
-		}
-
-		object_shader.use();
-		object_shader.uniform_mat4("VP", camera.VP);
-		object_shader.uniform_bool("INSTANCED", false);
-
-		glm::vec3 origin = { player->position.x, atlas->SCALE.y, player->position.z };
-		glm::vec3 end = { player->position.x, 0.f, player->position.z };
-		struct ray_result result = physicsman.cast_ray(origin, end);
-		object_shader.uniform_mat4("MODEL", glm::translate(glm::mat4(1.f), result.point) * glm::mat4(player->rotation));
-		duck->display();
+		campaign_creatures->display(&camera);
 
 		relief->bind(GL_TEXTURE2);
 		rivers->bind(GL_TEXTURE3);
@@ -531,7 +538,9 @@ void Game::run_campaign(void)
 		timer.end();
 
 		if (state == GS_BATTLE) {
+			physicsman.remove_body(campaign_surface);
 			run_battle();
+			physicsman.insert_body(campaign_surface);
 		}
 	}
 
