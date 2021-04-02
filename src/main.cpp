@@ -349,19 +349,21 @@ void Game::run_battle(void)
 	btCollisionShape *sphere_shape = physicsman.add_sphere(1.f);
 	btCollisionShape *cube_shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
 	btCollisionShape *cylinder_shape = physicsman.add_cylinder(glm::vec3(1.f, 2.f, 1.f));
-	btCollisionShape *capsule_shape = physicsman.add_capsule(1.f, 2.f);
-	DynamicObject sphereobject = { glm::vec3(3072.f, 210.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), sphere_shape };
+	btCollisionShape *capsule_shape = physicsman.add_capsule(0.5f, 1.f);
 	DynamicObject cubeobject = { glm::vec3(3072.f, 215.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cube_shape };
 	DynamicObject cylinderobject = { glm::vec3(3072.f, 220.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cylinder_shape };
 	DynamicObject capsuleobject = { glm::vec3(3072.f, 225.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), capsule_shape };
-	physicsman.insert_body(sphereobject.body);
 	physicsman.insert_body(cubeobject.body);
 	physicsman.insert_body(cylinderobject.body);
 	physicsman.insert_body(capsuleobject.body);
 
 	std::vector<const Entity*> ents;
+
+	DynamicObject sphereobject = { glm::vec3(3072.f, 210.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), sphere_shape };
+	physicsman.insert_body(sphereobject.body);
 	ents.push_back(&sphereobject);
 	battle_ordinary->add_object(sphere, ents);
+
 	ents.clear();
 	ents.push_back(&cubeobject);
 	battle_ordinary->add_object(cube, ents);
@@ -385,7 +387,7 @@ void Game::run_battle(void)
 		
 		battle_ordinary->display(&battlecam);
 
-		terrain->display(&battlecam);
+		terrain->display(&battlecam, modular.atmos.skybottom, 0.0005f);
 		skybox.display(&battlecam);
 
 		if (debugmode) {
@@ -585,8 +587,8 @@ void Game::run_campaign(void)
 
 		campaign_creatures->display(&camera);
 
-		relief->bind(GL_TEXTURE2);
-		rivers->bind(GL_TEXTURE3);
+		relief->bind(GL_TEXTURE3);
+		rivers->bind(GL_TEXTURE4);
 		worldmap->display(&camera);
 
 		skybox.display(&camera);

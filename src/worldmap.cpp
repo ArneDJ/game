@@ -34,6 +34,10 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	// special wrapping mode so edges of the map are at height 0
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
+	normalmap = new Image { heightmap->width, heightmap->height, COLORSPACE_RGB };
+	normals = new Texture { normalmap };
+	normals->change_wrapping(GL_CLAMP_TO_EDGE);
+
 	land.compile("shaders/worldmap.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/worldmap.tesc", GL_TESS_CONTROL_SHADER);
 	land.compile("shaders/worldmap.tese", GL_TESS_EVALUATION_SHADER);
@@ -47,12 +51,17 @@ Worldmap::~Worldmap(void)
 	
 	delete topology;
 	delete rain;
+
+	delete normals;
+	delete normalmap;
 }
 
 void Worldmap::reload(const FloatImage *heightmap, const Image *rainmap)
 {
 	topology->reload(heightmap);
 	rain->reload(rainmap);
+	normalmap->create_normalmap(heightmap, 32.f);
+	normals->reload(normalmap);
 }
 
 void Worldmap::display(const Camera *camera)
@@ -63,7 +72,8 @@ void Worldmap::display(const Camera *camera)
 	land.uniform_vec3("MAP_SCALE", scale);
 
 	topology->bind(GL_TEXTURE0);
-	rain->bind(GL_TEXTURE1);
+	normals->bind(GL_TEXTURE1);
+	rain->bind(GL_TEXTURE2);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();

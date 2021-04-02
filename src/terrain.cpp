@@ -57,12 +57,14 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 	normals->reload(normalmap);
 }
 
-void Terrain::display(const Camera *camera)
+void Terrain::display(const Camera *camera, const glm::vec3 &fogcolor, float fogfactor)
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
 	land.uniform_vec3("CAM_POS", camera->position);
 	land.uniform_vec3("MAP_SCALE", scale);
+	land.uniform_vec3("FOG_COLOR", fogcolor);
+	land.uniform_float("FOG_FACTOR", fogfactor);
 
 	relief->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
