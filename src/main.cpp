@@ -100,23 +100,21 @@ private:
 	Module modular;
 	enum game_state state;
 	struct game_settings settings;
-	std::string savedir;
-	bool saveable;
 	Saver saver;
 	WindowManager windowman;
 	InputManager inputman;
 	PhysicsManager physicsman;
 	Timer timer;
-	Camera camera;
-	Camera battlecam;
-	Navigation navigation;
 	Debugger debugger;
 	// campaign data
+	Navigation navigation;
+	Camera camera;
 	btRigidBody *campaign_surface;
 	Atlas *atlas;
 	long seed;
 	Entity marker;
 	// battle data
+	Camera battlecam;
 	btRigidBody *battle_surface;
 	Landscape *landscape;
 	// graphics
@@ -139,22 +137,23 @@ private:
 	GLTF::Model *capsule;
 	Texture *relief;
 	Texture *rivers;
-	//glm::vec3 endpoint;
 	Army *player;
 private:
 	void init(void);
 	void init_settings(void);
-	void init_battle(void);
-	void load_assets(void);
+	void load_module(void);
+	void reserve_battle(void);
 	void run_battle(void);
 	void update_battle(void);
-	void init_campaign(void);
+	void reserve_campaign(void);
 	void new_campaign(void);
 	void load_campaign(void);
 	void run_campaign(void);
 	void update_campaign(void);
 	void cleanup_campaign(void);
 	void teardown(void);
+	void teardown_campaign(void);
+	void teardown_battle(void);
 };
 	
 void Game::init_settings(void)
@@ -177,9 +176,6 @@ void Game::init(void)
 	// load settings
 	init_settings();
 
-	// load module data
-	modular.load("native");
-
 	if (!windowman.init(settings.window_width, settings.window_height)) {
 		exit(EXIT_FAILURE);
 	}
@@ -191,18 +187,6 @@ void Game::init(void)
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
 	renderman.init();
-
-	// load shaders
-	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
-	debug_shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
-	debug_shader.link();
-
-	object_shader.compile("shaders/object.vert", GL_VERTEX_SHADER);
-	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
-	object_shader.link();
-
-	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
-	camera.project();
 
 	if (debugmode) {
 		// Setup Dear ImGui context
@@ -221,28 +205,48 @@ void Game::init(void)
 	// find the save directory on the system
 	char *savepath = SDL_GetPrefPath("archeon", "saves");
 	if (savepath) {
-		saveable = true;
-		savedir = savepath;
+		saver.change_directory(savepath);
 		SDL_free(savepath);
 	} else {
-		saveable = false;
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
+}
+	
+void Game::load_module(void)
+{
+	modular.load("native");
+
+	// load shaders
+	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
+	debug_shader.compile("shaders/debug.frag", GL_FRAGMENT_SHADER);
+	debug_shader.link();
+
+	object_shader.compile("shaders/object.vert", GL_VERTEX_SHADER);
+	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
+	object_shader.link();
 
 	skybox.init(modular.atmos.skytop, modular.atmos.skybottom);
 
-	init_campaign();
+	reserve_campaign();
 
-	init_battle();
+	reserve_battle();
+
+	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
+	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
+	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
+	sphere = new GLTF::Model { "modules/native/media/models/sphere.glb", "" };
+	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
+	cylinder = new GLTF::Model { "modules/native/media/models/cylinder.glb", "" };
+	capsule = new GLTF::Model { "modules/native/media/models/capsule.glb", "" };
+	
+	physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
 }
 
 void Game::teardown(void)
 {
-	delete campaign_ordinary;
-	delete campaign_creatures;
-	delete battle_ordinary;
+	teardown_campaign();
 
-	delete player;
+	teardown_battle();
 
 	delete dragon;
 	delete cone;
@@ -251,17 +255,6 @@ void Game::teardown(void)
 	delete cylinder;
 	delete capsule;
 	delete duck;
-
-	delete landscape;
-
-	delete worldmap;
-
-	delete terrain;
-
-	delete atlas;
-
-	delete relief;
-	delete rivers;
 
 	if (debugmode) {
 		debugger.teardown();
@@ -274,22 +267,37 @@ void Game::teardown(void)
 	skybox.teardown();
 	//renderman.teardown();
 
-	delete campaign_surface;
-	delete battle_surface;
 	physicsman.clear();
 
 	windowman.teardown();
 }
-	
-void Game::load_assets(void)
+
+void Game::teardown_campaign(void)
 {
-	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
-	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
-	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
-	sphere = new GLTF::Model { "modules/native/media/models/sphere.glb", "" };
-	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
-	cylinder = new GLTF::Model { "modules/native/media/models/cylinder.glb", "" };
-	capsule = new GLTF::Model { "modules/native/media/models/capsule.glb", "" };
+	delete campaign_ordinary;
+	delete campaign_creatures;
+
+	delete player;
+
+	delete worldmap;
+
+	delete atlas;
+
+	delete relief;
+	delete rivers;
+
+	delete campaign_surface;
+}
+
+void Game::teardown_battle(void)
+{
+	delete battle_ordinary;
+
+	delete landscape;
+
+	delete terrain;
+
+	delete battle_surface;
 }
 	
 void Game::update_battle(void)
@@ -342,6 +350,7 @@ void Game::run_battle(void)
 
 	landscape->generate(seed, offset, amp);
 	terrain->reload(landscape->get_heightmap(), landscape->get_normalmap());
+	terrain->change_atmosphere(modular.atmos.skybottom, 0.0005f);
 	
 	physicsman.insert_body(battle_surface);
 
@@ -387,7 +396,7 @@ void Game::run_battle(void)
 		
 		battle_ordinary->display(&battlecam);
 
-		terrain->display(&battlecam, modular.atmos.skybottom, 0.0005f);
+		terrain->display(&battlecam);
 		skybox.display(&battlecam);
 
 		if (debugmode) {
@@ -408,7 +417,7 @@ void Game::run_battle(void)
 	// TODO shapes need to be deleted
 }
 
-void Game::init_battle(void)
+void Game::reserve_battle(void)
 {
 	battlecam.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battlecam.project();
@@ -420,8 +429,11 @@ void Game::init_battle(void)
 	battle_surface = physicsman.add_heightfield(landscape->get_heightmap(), landscape->SCALE);
 }
 
-void Game::init_campaign(void)
+void Game::reserve_campaign(void)
 {
+	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
+	camera.project();
+
 	atlas = new Atlas { 2048, 512, 512 };
 
 	worldmap = new Worldmap { atlas->SCALE, atlas->get_heightmap(), atlas->get_rainmap() };
@@ -526,9 +538,7 @@ void Game::new_campaign(void)
 
 	navigation.build(atlas->vertex_soup, atlas->index_soup);
 
-	if (saveable) {
-		saver.save(savedir + "game.save", atlas, &navigation, seed);
-	}
+	saver.save("game.save", atlas, &navigation, seed);
 	
 	run_campaign();
 }
@@ -536,7 +546,7 @@ void Game::new_campaign(void)
 void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
-	saver.load(savedir + "game.save", atlas, &navigation, seed);
+	saver.load("game.save", atlas, &navigation, seed);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
@@ -616,7 +626,7 @@ void Game::run(void)
 	state = GS_TITLE;
 
 	init();
-	load_assets();
+	load_module();
 
 	while (state == GS_TITLE) {
 		inputman.update();
@@ -624,25 +634,29 @@ void Game::run(void)
 			state = GS_EXIT;
 		}
 
-		// Start the Dear ImGui frame
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(windowman.window);
-		ImGui::NewFrame();
-		ImGui::Begin("Main Menu Debug Mode");
-		ImGui::SetWindowSize(ImVec2(400, 200));
-		if (ImGui::Button("New World")) {
-			state = GS_NEW_CAMPAIGN;
+		if (debugmode) {
+			// Start the Dear ImGui frame
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplSDL2_NewFrame(windowman.window);
+			ImGui::NewFrame();
+			ImGui::Begin("Main Menu Debug Mode");
+			ImGui::SetWindowSize(ImVec2(400, 200));
+			if (ImGui::Button("New World")) {
+				state = GS_NEW_CAMPAIGN;
+			}
+			if (ImGui::Button("Load World")) {
+				state = GS_LOAD_CAMPAIGN;
+			}
+			if (ImGui::Button("Exit")) { state = GS_EXIT; }
+			ImGui::End();
 		}
-		if (ImGui::Button("Load World")) {
-			state = GS_LOAD_CAMPAIGN;
-		}
-		if (ImGui::Button("Exit")) { state = GS_EXIT; }
-		ImGui::End();
 		
 		renderman.prepare_to_render();
 
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		if (debugmode) {
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		}
 
 		windowman.swap();
 

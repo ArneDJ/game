@@ -49,6 +49,12 @@ Terrain::~Terrain(void)
 	
 	delete relief;
 }
+	
+void Terrain::change_atmosphere(const glm::vec3 &fogclr, float fogfctr)
+{
+	fogcolor = fogclr;
+	fogfactor = fogfctr;
+}
 
 void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 {
@@ -57,7 +63,7 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 	normals->reload(normalmap);
 }
 
-void Terrain::display(const Camera *camera, const glm::vec3 &fogcolor, float fogfactor)
+void Terrain::display(const Camera *camera)
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);

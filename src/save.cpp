@@ -28,8 +28,15 @@
 #include "atlas.h"
 #include "save.h"
 	
-void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigation *landnav, const long seed)
+void Saver::change_directory(const std::string &dir) 
+{ 
+	directory = dir; 
+}
+
+void Saver::save(const std::string &filename, const Atlas *atlas, const Navigation *landnav, const long seed)
 {
+	const std::string filepath = directory + filename;
+
 	const FloatImage *heightmap = atlas->get_heightmap();
 	topology.width = heightmap->width;
 	topology.height = heightmap->height;
@@ -102,8 +109,10 @@ void Saver::save(const std::string &filepath, const Atlas *atlas, const Navigati
 	}
 }
 
-void Saver::load(const std::string &filepath, Atlas *atlas, Navigation *landnav, long &seed)
+void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav, long &seed)
 {
+	const std::string filepath = directory + filename;
+
 	Worldgraph *worldgraph = atlas->worldgraph;
 
 	std::ifstream stream(filepath, std::ios::binary);

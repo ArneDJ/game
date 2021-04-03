@@ -171,8 +171,10 @@ void PhysicsManager::add_ground_plane(const glm::vec3 &position)
 	transform.setIdentity();
 	transform.setOrigin(vec3_to_bt(position));
 
+	btDefaultMotionState *motionstate = new btDefaultMotionState(transform);
+
 	btVector3 inertia(0, 0, 0);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, nullptr, shape, inertia);
+	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, motionstate, shape, inertia);
 	btRigidBody *body = new btRigidBody(rbInfo);
 
 	world->addRigidBody(body);
