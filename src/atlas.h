@@ -35,7 +35,12 @@ private:
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
 	//void name_holds(void);
 	//Mosaicfield mosaicfield;
+	FloatImage *container;
+	FloatImage *detail;
+	Image *mask;
 private:
 	void gen_holds(void);
+	void finalize_heightmap(long seed);
+	void smoothe_heightmap(void);
 };
 

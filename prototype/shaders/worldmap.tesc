@@ -7,7 +7,7 @@ uniform vec3 CAM_POS;
 float lod(float dist)
 {
 	float tessfactor = smoothstep(300.0, 400.0, dist);
-	return mix(4.0, 8.0, 1.0-tessfactor);
+	return mix(16.0, 32.0, 1.0-tessfactor);
 }
 
 // add half vector

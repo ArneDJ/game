@@ -25,6 +25,13 @@
 #include "worldgraph.h"
 #include "atlas.h"
 
+static const uint8_t SEABED_SMOOTH = 255;
+static const uint8_t LOWLAND_SMOOTH = 200;
+static const uint8_t UPLAND_SMOOTH = 180;
+static const uint8_t HIGHLAND_SMOOTH = 0;
+static const float MAP_BLUR_STRENGTH = 5.F;
+static const float MAP_SMOOTH_TRANSITION = 5.F;
+
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
 	terragen = new Terragen { heightres, rainres, tempres };
@@ -37,6 +44,11 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 
 	relief = new Image { 2048, 2048, COLORSPACE_GRAYSCALE };
 	biomes = new Image { 2048, 2048, COLORSPACE_RGB };
+
+	container = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
+	detail = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
+
+	mask = new Image { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
 }
 
 Atlas::~Atlas(void)
@@ -45,6 +57,9 @@ Atlas::~Atlas(void)
 	delete worldgraph;
 	delete relief;
 	delete biomes;
+	delete container;
+	delete detail;
+	delete mask;
 }
 
 void Atlas::generate(long seedling, const struct worldparams *params)
@@ -60,6 +75,171 @@ void Atlas::generate(long seedling, const struct worldparams *params)
 
 	// generate holds based on generated world data
 	gen_holds();
+
+auto start = std::chrono::steady_clock::now();
+	finalize_heightmap(seedling);
+auto end = std::chrono::steady_clock::now();
+std::chrono::duration<double> elapsed_seconds = end-start;
+std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
+}
+	
+// TODO check if terragen should do this
+void Atlas::finalize_heightmap(long seed)
+{
+	smoothe_heightmap();
+
+	/*
+	const glm::vec2 mapscale = {
+		float(mask->width) / SCALE.x,
+		float(mask->height) / SCALE.z
+	};
+
+
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == HIGHLAND) {
+			uint8_t color = 255;
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+			}
+		}
+	}
+
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		bool candidate = false;
+		if (t.land == true && t.frontier == true) {
+			candidate = true;
+		} else if (t.relief == UPLAND) {
+			for (const auto &neighbor : t.neighbors) {
+				if (neighbor->relief == HIGHLAND) {
+					candidate = true;
+					break;
+				}
+			}
+		}
+		if (candidate) {
+			uint8_t color = 255;
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+			}
+		}
+	}
+
+	mask->blur(10.f);
+
+	#pragma omp parallel for
+	for (int i = 0; i < terragen->heightmap->width; i++) {
+		for (int j = 0; j < terragen->heightmap->height; j++) {
+			uint8_t color = mask->sample(i, j, CHANNEL_RED);
+			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
+			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(0.9f * h, 1.f * h, color / 255.f));
+		}
+	}
+	
+	mask->clear();
+	 // peaks
+	FastNoise cellnoise;
+	cellnoise.SetSeed(seed);
+	cellnoise.SetNoiseType(FastNoise::Cellular);
+	cellnoise.SetCellularDistanceFunction(FastNoise::Euclidean);
+	cellnoise.SetFrequency(0.06f);
+	cellnoise.SetCellularReturnType(FastNoise::Distance2);
+	cellnoise.SetGradientPerturbAmp(10.f);
+	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
+
+	FastNoise billow;
+	billow.SetSeed(seed);
+	billow.SetNoiseType(FastNoise::SimplexFractal);
+	billow.SetFractalType(FastNoise::Billow);
+	billow.SetFrequency(0.002f);
+	billow.SetFractalOctaves(6);
+	billow.SetFractalLacunarity(2.5f);
+	billow.SetGradientPerturbAmp(50.f);
+	detail->noise(&billow, glm::vec2(1.f, 1.f), CHANNEL_RED);
+
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == HIGHLAND) {
+			uint8_t color = 255;
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+			}
+		}
+	}
+	
+	mask->blur(2.f);
+
+	#pragma omp parallel for
+	for (int i = 0; i < terragen->heightmap->width; i++) {
+		for (int j = 0; j < terragen->heightmap->height; j++) {
+			uint8_t color = mask->sample(i, j, CHANNEL_RED);
+			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
+			float m = container->sample(i, j, CHANNEL_RED);
+			float d = detail->sample(i, j, CHANNEL_RED);
+			m = 0.2f * glm::mix(d, m, 0.3f);
+			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(h, h + m, color / 255.f));
+		}
+	}
+	mask->clear();
+	*/
+}
+
+void Atlas::smoothe_heightmap(void)
+{
+	const glm::vec2 mapscale = {
+		float(mask->width) / SCALE.x,
+		float(mask->height) / SCALE.z
+	};
+
+	container->copy(terragen->heightmap);
+	container->blur(MAP_BLUR_STRENGTH);
+
+	// create the mask that influences the blur mix
+	// higher values means more blur
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		uint8_t color = 0;
+		switch (t.relief) {
+		case SEABED: color = SEABED_SMOOTH; break;
+		case LOWLAND: color = LOWLAND_SMOOTH; break;
+		case UPLAND: color = UPLAND_SMOOTH; break;
+		case HIGHLAND: color = HIGHLAND_SMOOTH; break;
+		}
+		if (color > 0) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+			}
+		}
+	}
+
+	mask->blur(MAP_SMOOTH_TRANSITION);
+
+	// now mix the original map with the blurred version based on the mask
+	#pragma omp parallel for
+	for (int i = 0; i < terragen->heightmap->width; i++) {
+		for (int j = 0; j < terragen->heightmap->height; j++) {
+			uint8_t color = mask->sample(i, j, CHANNEL_RED);
+			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
+			float b = container->sample(i, j, CHANNEL_RED);
+			h = glm::mix(h, b, color / 255.f);
+			terragen->heightmap->plot(i, j, CHANNEL_RED, h);
+		}
+	}
+
+	mask->clear();
 }
 	
 void Atlas::create_maps(void)
@@ -128,7 +308,6 @@ auto start = std::chrono::steady_clock::now();
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
-
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const

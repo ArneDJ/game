@@ -107,7 +107,7 @@ private:
 	Timer timer;
 	Debugger debugger;
 	// campaign data
-	Navigation navigation;
+	Navigation campaign_landnav;
 	Camera camera;
 	btRigidBody *campaign_surface;
 	Atlas *atlas;
@@ -462,7 +462,7 @@ void Game::cleanup_campaign(void)
 		debugger.delete_navmeshes();
 	}
 	physicsman.remove_body(campaign_surface);
-	navigation.cleanup();
+	campaign_landnav.cleanup();
 }
 
 void Game::update_campaign(void)
@@ -489,7 +489,7 @@ void Game::update_campaign(void)
 		if (result.hit) {
 			marker.position = result.point;
 			std::list<glm::vec2> waypoints;
-			navigation.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
+			//campaign_landnav.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
 			player->set_path(waypoints);
 		}
 	}
@@ -534,11 +534,11 @@ void Game::new_campaign(void)
 	atlas->generate(seed, &modular.params);
 
 	atlas->create_maps();
-	atlas->create_land_navigation();
+	//atlas->create_land_navigation();
 
-	navigation.build(atlas->vertex_soup, atlas->index_soup);
+	//campaign_landnav.build(atlas->vertex_soup, atlas->index_soup);
 
-	saver.save("game.save", atlas, &navigation, seed);
+	//saver.save("game.save", atlas, &campaign_landnav, seed);
 	
 	run_campaign();
 }
@@ -546,7 +546,7 @@ void Game::new_campaign(void)
 void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
-	saver.load("game.save", atlas, &navigation, seed);
+	saver.load("game.save", atlas, &campaign_landnav, seed);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
