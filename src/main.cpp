@@ -66,6 +66,7 @@
 #include "module.h"
 #include "terragen.h"
 #include "worldgraph.h"
+#include "mapfield.h"
 #include "atlas.h"
 #include "worldmap.h"
 #include "save.h"
@@ -342,11 +343,14 @@ void Game::run_battle(void)
 	battlecam.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	glm::vec2 position = translate_3D_to_2D(player->position);
+	const struct tile *tily = atlas->tile_at_position(position);
+	uint32_t offset = 0;
+	float amp = 0.f;
+	if (tily) {
+		amp = tily->amp;
+		offset = tily->index;
+	}
 	const FloatImage *heightmap = atlas->get_heightmap();
-	uint32_t offset= floor(0.5f * position.y) * heightmap->width + floorf(0.5f * position.x);
-	float amp = heightmap->sample(floorf(0.5f*position.x), floorf(0.5f*position.y), CHANNEL_RED);
-	amp = glm::smoothstep(modular.params.graph.lowland, modular.params.graph.highland, amp);
-	amp = glm::clamp(amp, 0.1f, 1.f);
 
 	landscape->generate(seed, offset, amp);
 	terrain->reload(landscape->get_heightmap(), landscape->get_normalmap());

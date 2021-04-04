@@ -28,6 +28,9 @@ struct landgen_parameters {
 	float sediment_blur;
 };
 
+static const float MIN_AMPLITUDE = 0.1F;
+static const float MAX_AMPLITUDE = 1.F;
+
 static const float MIN_MOUNTAIN_FREQ = 0.003F;
 static const float MAX_MOUNTAIN_FREQ = 0.01F;
 static const float MIN_MOUNTAIN_PERTURB = 20.F;
@@ -81,6 +84,8 @@ const Image* Landscape::get_normalmap(void) const
 
 void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 {
+	amplitude = glm::clamp(amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
+
 	// random noise config
 	struct landgen_parameters params = random_landgen_parameters(seed, offset);
 

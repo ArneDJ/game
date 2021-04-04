@@ -27,6 +27,7 @@ public:
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
 	void load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 	void load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
+	const struct tile* tile_at_position(const glm::vec2 &position);
 private:
 	Terragen *terragen;
 	Image *relief;
@@ -34,7 +35,7 @@ private:
 	std::vector<struct holding> holdings;
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
 	//void name_holds(void);
-	//Mosaicfield mosaicfield;
+	Mapfield mapfield;
 	FloatImage *container;
 	FloatImage *detail;
 	Image *mask;
@@ -43,5 +44,6 @@ private:
 	void smoothe_heightmap(void);
 	void plateau_heightmap(void);
 	void detail_heightmap(long seed);
+	void gen_mapfield(void);
 };
 

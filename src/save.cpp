@@ -25,6 +25,7 @@
 #include "core/navigation.h"
 #include "terragen.h"
 #include "worldgraph.h"
+#include "mapfield.h"
 #include "atlas.h"
 #include "save.h"
 	

@@ -23,6 +23,7 @@
 #include "module.h"
 #include "terragen.h"
 #include "worldgraph.h"
+#include "mapfield.h"
 #include "atlas.h"
 
 static const uint8_t SEABED_SMOOTH = 255;
@@ -85,6 +86,9 @@ auto start = std::chrono::steady_clock::now();
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
+
+	// create the spatial hash field data for the tiles
+	gen_mapfield();
 }
 
 void Atlas::smoothe_heightmap(void)
@@ -204,7 +208,7 @@ void Atlas::detail_heightmap(long seed)
 	cellnoise.SetNoiseType(FastNoise::Cellular);
 	cellnoise.SetCellularDistanceFunction(FastNoise::Euclidean);
 	cellnoise.SetFrequency(0.06f);
-	cellnoise.SetCellularReturnType(FastNoise::Distance);
+	cellnoise.SetCellularReturnType(FastNoise::Distance2Mul);
 	cellnoise.SetGradientPerturbAmp(10.f);
 	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
@@ -342,6 +346,17 @@ const Image* Atlas::get_biomes(void) const
 	return biomes;
 }
 	
+const struct tile* Atlas::tile_at_position(const glm::vec2 &position)
+{
+	auto result = mapfield.index_in_field(position);
+	
+	if (result.found) {
+		return &worldgraph->tiles[result.index];
+	} else {
+		return nullptr;
+	}
+}
+	
 void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data)
 {
 	if (width == terragen->heightmap->width && height == terragen->heightmap->height && data.size() == terragen->heightmap->size) {
@@ -367,6 +382,41 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 	} else {
 		write_log(LogType::ERROR, "World error: could not load temperature map");
 	}
+}
+
+void Atlas::gen_mapfield(void)
+{
+	std::vector<glm::vec2> vertdata;
+	std::vector<struct mosaictriangle> mosaics;
+	std::unordered_map<uint32_t, uint32_t> umap;
+	uint32_t index = 0;
+	for (const auto &c : worldgraph->corners) {
+		vertdata.push_back(c.position);
+		umap[c.index] = index;
+		index++;
+	}
+	for (const auto &t : worldgraph->tiles) {
+		vertdata.push_back(t.center);
+		uint32_t a = index;
+		index++;
+		for (const auto &bord : t.borders) {
+			uint32_t b = umap[bord->c0->index];
+			uint32_t c = umap[bord->c1->index];
+			struct mosaictriangle tri;
+			tri.index = t.index;
+			tri.a = a;
+			tri.b = b;
+			tri.c = c;
+			mosaics.push_back(tri);
+		}
+	}
+
+	struct rectangle area = {
+		.min = glm::vec2(0.F, 0.F),
+		.max = glm::vec2(SCALE.x, SCALE.z)
+	};
+
+	mapfield.generate(vertdata, mosaics, area);
 }
 
 void Atlas::gen_holds(void)
