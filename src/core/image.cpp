@@ -387,6 +387,14 @@ void FloatImage::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, u
 		}
 	}
 
+	normalize(chan);
+}
+
+void FloatImage::normalize(uint8_t chan)
+{
+	const int nsteps = 32;
+	const int stepsize = width / nsteps;
+
 	// find min and max
 	float min = std::numeric_limits<float>::max();
 	float max = std::numeric_limits<float>::min();
@@ -399,6 +407,7 @@ void FloatImage::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, u
 	}
 
 	float scale = max - min;
+
 	if (scale == 0.f) {
 		return;
 	}

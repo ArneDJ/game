@@ -83,12 +83,11 @@ auto start = std::chrono::steady_clock::now();
 	smoothe_heightmap();
 	plateau_heightmap();
 	detail_heightmap(seedling);
+
+	//terragen->heightmap->normalize(CHANNEL_RED);
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
-
-	// create the spatial hash field data for the tiles
-	gen_mapfield();
 }
 
 void Atlas::smoothe_heightmap(void)
@@ -255,6 +254,9 @@ void Atlas::detail_heightmap(long seed)
 	
 void Atlas::create_maps(void)
 {
+	// create the spatial hash field data for the tiles
+	gen_mapfield();
+
 auto start = std::chrono::steady_clock::now();
 	// create relief texture
 	const glm::vec2 mapscale = {
