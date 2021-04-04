@@ -489,7 +489,7 @@ void Game::update_campaign(void)
 		if (result.hit) {
 			marker.position = result.point;
 			std::list<glm::vec2> waypoints;
-			//campaign_landnav.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
+			campaign_landnav.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
 			player->set_path(waypoints);
 		}
 	}
@@ -534,11 +534,11 @@ void Game::new_campaign(void)
 	atlas->generate(seed, &modular.params);
 
 	atlas->create_maps();
-	//atlas->create_land_navigation();
+	atlas->create_land_navigation();
 
-	//campaign_landnav.build(atlas->vertex_soup, atlas->index_soup);
+	campaign_landnav.build(atlas->vertex_soup, atlas->index_soup);
 
-	//saver.save("game.save", atlas, &campaign_landnav, seed);
+	saver.save("game.save", atlas, &campaign_landnav, seed);
 	
 	run_campaign();
 }

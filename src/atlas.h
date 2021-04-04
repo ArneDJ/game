@@ -40,7 +40,8 @@ private:
 	Image *mask;
 private:
 	void gen_holds(void);
-	void finalize_heightmap(long seed);
 	void smoothe_heightmap(void);
+	void plateau_heightmap(void);
+	void detail_heightmap(long seed);
 };
 
