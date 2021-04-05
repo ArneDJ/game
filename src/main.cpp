@@ -61,7 +61,7 @@
 #include "core/animation.h"
 #include "core/navigation.h"
 #include "core/voronoi.h"
-#include "core/resource.h"
+#include "core/media.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
@@ -132,19 +132,12 @@ private:
 	struct Campaign campaign;
 	struct Battle battle;
 	// graphics
-	ResourceManager resourceman;
+	MediaManager mediaman;
 	RenderManager renderman;
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
 	// temporary assets
-	GLTF::Model *duck;
-	GLTF::Model *dragon;
-	GLTF::Model *cone;
-	GLTF::Model *sphere;
-	GLTF::Model *cube;
-	GLTF::Model *cylinder;
-	GLTF::Model *capsule;
 	Texture *rivers;
 private:
 	void init(void);
@@ -222,7 +215,11 @@ void Game::init(void)
 	
 void Game::load_module(void)
 {
-	modular.load("native");
+	std::string modulename = "native";
+
+	modular.load(modulename);
+
+	mediaman.change_path(modular.path);
 
 	// load shaders
 	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
@@ -239,14 +236,6 @@ void Game::load_module(void)
 
 	reserve_battle();
 
-	duck = new GLTF::Model { "modules/native/media/models/duck.glb", "modules/native/media/textures/duck.dds" };
-	dragon = new GLTF::Model { "modules/native/media/models/dragon.glb", "" };
-	cone = new GLTF::Model { "modules/native/media/models/cone.glb", "" };
-	sphere = new GLTF::Model { "modules/native/media/models/sphere.glb", "" };
-	cube = new GLTF::Model { "modules/native/media/models/cube.glb", "" };
-	cylinder = new GLTF::Model { "modules/native/media/models/cylinder.glb", "" };
-	capsule = new GLTF::Model { "modules/native/media/models/capsule.glb", "" };
-	
 	physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
 }
 
@@ -256,15 +245,7 @@ void Game::teardown(void)
 
 	teardown_battle();
 
-	resourceman.teardown();
-
-	delete dragon;
-	delete cone;
-	delete sphere;
-	delete cube;
-	delete cylinder;
-	delete capsule;
-	delete duck;
+	mediaman.teardown();
 
 	if (debugmode) {
 		debugger.teardown();
@@ -369,7 +350,7 @@ void Game::run_battle(void)
 	// testing entities
 	btCollisionShape *sphere_shape = physicsman.add_sphere(1.f);
 	btCollisionShape *cube_shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
-	btCollisionShape *cylinder_shape = physicsman.add_cylinder(glm::vec3(1.f, 2.f, 1.f));
+	btCollisionShape *cylinder_shape = physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f));
 	btCollisionShape *capsule_shape = physicsman.add_capsule(0.5f, 1.f);
 	DynamicObject cubeobject = { glm::vec3(3072.f, 215.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cube_shape };
 	DynamicObject cylinderobject = { glm::vec3(3072.f, 220.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cylinder_shape };
@@ -383,17 +364,17 @@ void Game::run_battle(void)
 	DynamicObject sphereobject = { glm::vec3(3072.f, 210.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), sphere_shape };
 	physicsman.insert_body(sphereobject.body);
 	ents.push_back(&sphereobject);
-	battle.ordinary->add_object(sphere, ents);
+	battle.ordinary->add_object(mediaman.load_model("sphere.glb"), ents);
 
 	ents.clear();
 	ents.push_back(&cubeobject);
-	battle.ordinary->add_object(cube, ents);
+	battle.ordinary->add_object(mediaman.load_model("cube.glb"), ents);
 	ents.clear();
 	ents.push_back(&cylinderobject);
-	battle.ordinary->add_object(cylinder, ents);
+	battle.ordinary->add_object(mediaman.load_model("cylinder.glb"), ents);
 	ents.clear();
 	ents.push_back(&capsuleobject);
-	battle.ordinary->add_object(capsule, ents);
+	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
 
 	while (state == GS_BATTLE) {
 		timer.begin();
@@ -438,8 +419,8 @@ void Game::reserve_battle(void)
 	
 	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap() };
 	std::vector<const Texture*> materials;
-	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/stone.dds"));
-	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/sand.dds"));
+	materials.push_back(mediaman.load_texture("ground/stone.dds"));
+	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	battle.terrain->load_materials(materials);
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
@@ -454,8 +435,8 @@ void Game::reserve_campaign(void)
 
 	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_rainmap() };
 	std::vector<const Texture*> materials;
-	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/stone.dds"));
-	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/sand.dds"));
+	materials.push_back(mediaman.load_texture("ground/stone.dds"));
+	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	campaign.worldmap->load_materials(materials);
 
 	rivers = new Texture { campaign.atlas->get_biomes() };
@@ -580,15 +561,15 @@ void Game::run_campaign(void)
 
 	std::vector<const Entity*> ents;
 	ents.push_back(campaign.player);
-	campaign.creatures->add_object(duck, ents);
+	campaign.creatures->add_object(mediaman.load_model("duck.glb"), ents);
 
-	Entity dragon_ent = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	Entity dragon = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
 	ents.clear();
 	ents.push_back(&campaign.marker);
-	campaign.ordinary->add_object(cone, ents);
+	campaign.ordinary->add_object(mediaman.load_model("cone.glb"), ents);
 	ents.clear();
-	ents.push_back(&dragon_ent);
-	campaign.ordinary->add_object(dragon, ents);
+	ents.push_back(&dragon);
+	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));

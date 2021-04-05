@@ -35,7 +35,7 @@ static glm::mat4 local_node_transform(const struct node *n);
 static struct collision_trimesh load_collision_trimesh(const cgltf_mesh *mesh);
 static struct collision_hull load_collision_hull(const cgltf_mesh *mesh);
 
-Model::Model(const std::string &filepath, const std::string &diffusepath)
+Model::Model(const std::string &filepath)
 {
 	cgltf_options options;
 	memset(&options, 0, sizeof(cgltf_options));
@@ -59,8 +59,6 @@ Model::Model(const std::string &filepath, const std::string &diffusepath)
 	}
 		
 	cgltf_free(data);
-
-	if (diffusepath.size() > 0) { diffuse.load(diffusepath); }
 }
 
 Model::~Model(void)
@@ -68,6 +66,12 @@ Model::~Model(void)
 	for (int i = 0; i < meshes.size(); i++) {
 		delete meshes[i];
 	}
+}
+
+void Model::load_materials(const std::vector<const Texture*> textures)
+{
+	materials.clear();
+	materials.insert(materials.begin(), textures.begin(), textures.end());
 }
 
 void Model::load_data(const std::string &fpath, const cgltf_data *data)
@@ -121,7 +125,10 @@ void Model::load_data(const std::string &fpath, const cgltf_data *data)
 
 void Model::display(void) const
 {
-	diffuse.bind(GL_TEXTURE0);
+	for (int i = 0; i < materials.size(); i++) {
+		materials[i]->bind(GL_TEXTURE0 + i);
+	}
+
 	for (auto mesh : meshes) {
 		mesh->draw();
 	}
@@ -129,7 +136,9 @@ void Model::display(void) const
 
 void Model::display_instanced(GLsizei count) const
 {
-	diffuse.bind(GL_TEXTURE0);
+	for (int i = 0; i < materials.size(); i++) {
+		materials[i]->bind(GL_TEXTURE0 + i);
+	}
 
 	for (auto mesh : meshes) {
 		mesh->draw_instanced(count);
