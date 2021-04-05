@@ -127,11 +127,10 @@ public:
 	// the world generation settings
 	struct worldparams params;
 	struct atmosphere atmos;
-public:
-	void load(const std::string &modname);
-private:
 	std::string path;
 	std::string name;
+public:
+	void load(const std::string &modname);
 private:
 	void load_world_parameters(const std::string &filepath);
 	void load_atmosphere(const std::string &filepath);

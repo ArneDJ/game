@@ -44,3 +44,10 @@ private:
 	GLenum usage = GL_STATIC_DRAW;
 };
 
+class TextureCache {
+public:
+	const Texture* add(const std::string &filepath);
+	void clear(void);
+private:
+	std::map<std::string, Texture*> textures; // TODO hash string
+};

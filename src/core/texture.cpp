@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <map>
 #include <GL/glew.h>
 #include <GL/gl.h> 
 
@@ -282,4 +283,30 @@ static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return texture;
+}
+
+void TextureCache::clear(void)
+{
+	for (auto it = textures.begin(); it != textures.end(); it++) {
+		puts("deleting");
+		std::cout << it->first << std::endl;
+		Texture *texture = it->second;
+		delete texture;
+	}
+}
+
+const Texture* TextureCache::add(const std::string &filepath)
+{
+	auto mit = textures.find(filepath);
+
+	// texture not found in map
+	// load new one
+	if (mit == textures.end()) {
+		Texture *texture = new Texture { filepath };
+		textures.insert(make_pair(filepath, texture));
+
+		return texture;
+	}
+
+	return mit->second;
 }

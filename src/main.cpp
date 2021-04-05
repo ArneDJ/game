@@ -61,6 +61,7 @@
 #include "core/animation.h"
 #include "core/navigation.h"
 #include "core/voronoi.h"
+#include "core/resource.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
@@ -131,6 +132,7 @@ private:
 	struct Campaign campaign;
 	struct Battle battle;
 	// graphics
+	ResourceManager resourceman;
 	RenderManager renderman;
 	Skybox skybox;
 	Shader object_shader;
@@ -161,7 +163,7 @@ private:
 	void teardown_campaign(void);
 	void teardown_battle(void);
 };
-	
+
 void Game::init_settings(void)
 {
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
@@ -253,6 +255,8 @@ void Game::teardown(void)
 	teardown_campaign();
 
 	teardown_battle();
+
+	resourceman.teardown();
 
 	delete dragon;
 	delete cone;
@@ -433,6 +437,10 @@ void Game::reserve_battle(void)
 	battle.landscape = new Landscape { 2048 };
 	
 	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap() };
+	std::vector<const Texture*> materials;
+	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/stone.dds"));
+	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/sand.dds"));
+	battle.terrain->load_materials(materials);
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 }
@@ -445,6 +453,10 @@ void Game::reserve_campaign(void)
 	campaign.atlas = new Atlas { 2048, 512, 512 };
 
 	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_rainmap() };
+	std::vector<const Texture*> materials;
+	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/stone.dds"));
+	materials.push_back(ResourceManager::load_texture(modular.path + "media/textures/ground/sand.dds"));
+	campaign.worldmap->load_materials(materials);
 
 	rivers = new Texture { campaign.atlas->get_biomes() };
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
@@ -632,7 +644,7 @@ void Game::run(void)
 
 	init();
 	load_module();
-
+	
 	while (state == GS_TITLE) {
 		inputman.update();
 		if (inputman.exit_request()) {

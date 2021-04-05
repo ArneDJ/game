@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <map>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -41,6 +42,12 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	land.link();
 }
 
+void Terrain::load_materials(const std::vector<const Texture*> textures)
+{
+	materials.clear();
+	materials.insert(materials.begin(), textures.begin(), textures.end());
+}
+
 Terrain::~Terrain(void)
 {
 	delete patches;
@@ -74,6 +81,11 @@ void Terrain::display(const Camera *camera)
 
 	relief->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
+
+	for (int i = 0; i < materials.size(); i++) {
+		materials[i]->bind(GL_TEXTURE2 + i);
+	}
+
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();

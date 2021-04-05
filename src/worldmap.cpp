@@ -1,5 +1,6 @@
 #include <vector>
 #include <string>
+#include <map>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -44,6 +45,12 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	land.compile("shaders/worldmap.frag", GL_FRAGMENT_SHADER);
 	land.link();
 }
+	
+void Worldmap::load_materials(const std::vector<const Texture*> textures)
+{
+	materials.clear();
+	materials.insert(materials.begin(), textures.begin(), textures.end());
+}
 
 Worldmap::~Worldmap(void)
 {
@@ -70,7 +77,7 @@ void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr)
 	fogfactor = fogfctr;
 }
 
-void Worldmap::display(const Camera *camera)
+void Worldmap::display(const Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -82,6 +89,11 @@ void Worldmap::display(const Camera *camera)
 	topology->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
 	rain->bind(GL_TEXTURE2);
+
+	for (int i = 0; i < materials.size(); i++) {
+		materials[i]->bind(GL_TEXTURE3 + i);
+	}
+
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();
