@@ -64,12 +64,20 @@ void Worldmap::reload(const FloatImage *heightmap, const Image *rainmap)
 	normals->reload(normalmap);
 }
 
+void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr)
+{
+	fogcolor = fogclr;
+	fogfactor = fogfctr;
+}
+
 void Worldmap::display(const Camera *camera)
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
 	land.uniform_vec3("CAM_POS", camera->position);
 	land.uniform_vec3("MAP_SCALE", scale);
+	land.uniform_vec3("FOG_COLOR", fogcolor);
+	land.uniform_float("FOG_FACTOR", fogfactor);
 
 	topology->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);

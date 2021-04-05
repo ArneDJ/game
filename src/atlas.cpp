@@ -43,7 +43,6 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 	};
 	worldgraph = new Worldgraph { area };
 
-	relief = new Image { 2048, 2048, COLORSPACE_GRAYSCALE };
 	biomes = new Image { 2048, 2048, COLORSPACE_RGB };
 
 	container = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
@@ -57,7 +56,6 @@ Atlas::~Atlas(void)
 	delete terragen;
 	delete worldgraph;
 
-	delete relief;
 	delete biomes;
 
 	delete container;
@@ -252,7 +250,7 @@ void Atlas::detail_heightmap(long seed)
 	mask->clear();
 }
 	
-void Atlas::create_maps(void)
+void Atlas::create_mapdata(void)
 {
 	// create the spatial hash field data for the tiles
 	gen_mapfield();
@@ -260,52 +258,11 @@ void Atlas::create_maps(void)
 auto start = std::chrono::steady_clock::now();
 	// create relief texture
 	const glm::vec2 mapscale = {
-		float(relief->width) / SCALE.x,
-		float(relief->height) / SCALE.z
+		float(biomes->width) / SCALE.x,
+		float(biomes->height) / SCALE.z
 	};
 
-	relief->clear();
 	biomes->clear();
-
-	#pragma omp parallel for
-	for (const auto &t : worldgraph->tiles) {
-		uint8_t color = 0;
-		switch (t.relief) {
-		case SEABED: color = 10; break;
-		case LOWLAND: color = 128; break;
-		case UPLAND: color = 160; break;
-		case HIGHLAND: color = 250; break;
-		}
-		glm::vec2 a = mapscale * t.center;
-		for (const auto &bord : t.borders) {
-			glm::vec2 b = mapscale * bord->c0->position;
-			glm::vec2 c = mapscale * bord->c1->position;
-			relief->draw_triangle(a, b, c, CHANNEL_RED, color);
-		}
-	}
-
-	/*
-	std::random_device rd;
-	std::mt19937 gen(seed);
-	#pragma omp parallel for
-	for (const auto &hold : holdings) {
-		glm::vec3 rgb = {1.f, 1.f, 1.f};
-		std::uniform_real_distribution<float> distrib(0.f, 1.f);
-		rgb.x = distrib(gen);
-		rgb.y = distrib(gen);
-		rgb.z = distrib(gen);
-		for (const auto &land : hold.lands) {
-			glm::vec2 a = mapscale * land->center;
-			for (const auto &bord : land->borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				biomes->draw_triangle(a, b, c, CHANNEL_RED, 255 * rgb.x);
-				biomes->draw_triangle(a, b, c, CHANNEL_GREEN, 255 * rgb.y);
-				biomes->draw_triangle(a, b, c, CHANNEL_BLUE, 255 * rgb.z);
-			}
-		}
-	}
-	*/
 
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
@@ -336,11 +293,6 @@ const Image* Atlas::get_rainmap(void) const
 const Image* Atlas::get_tempmap(void) const
 {
 	return terragen->tempmap;
-}
-	
-const Image* Atlas::get_relief(void) const
-{
-	return relief;
 }
 	
 const Image* Atlas::get_biomes(void) const

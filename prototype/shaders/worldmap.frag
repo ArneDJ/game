@@ -10,24 +10,30 @@ out vec4 fcolor;
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 1) uniform sampler2D NORMALMAP;
 layout(binding = 2) uniform sampler2D RAINMAP;
-layout(binding = 3) uniform sampler2D RELIEFMAP;
 layout(binding = 4) uniform sampler2D RIVERMAP;
+
+uniform vec3 CAM_POS;
+uniform vec3 FOG_COLOR;
+uniform float FOG_FACTOR;
+
+vec3 fog(vec3 color, float dist)
+{
+	float amount = 1.0 - exp(-dist * FOG_FACTOR);
+	return mix(color, FOG_COLOR, amount );
+}
 
 void main(void)
 {
 	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 	float rain = texture(RAINMAP, fragment.texcoord).r;
-	float relief = texture(RELIEFMAP, fragment.texcoord).r;
-	fcolor = texture(RIVERMAP, fragment.texcoord);
-	fcolor = vec4(mix(vec3(height), fcolor.rgb, 0.1), 1.0);
-	fcolor = vec4(mix(vec3(relief), fcolor.rgb, 0.9), 1.0);
-	//fcolor = vec4(mix(vec3(height), vec3(color.r), 0.1), 1.0);
-	//fcolor = vec4(vec3(rain), 1.0);
+	vec3 rivercolor = texture(RIVERMAP, fragment.texcoord).rgb;
+
 	vec3 normal = texture(NORMALMAP, fragment.texcoord).rgb;
 	normal = (normal * 2.0) - 1.0;
 	normal = normalize(normal);
 
 	vec3 color = vec3(0.5, 0.5, 0.5);
+	color = mix(rivercolor, color, 0.9);
 
 	// terrain lighting
 	const vec3 lightdirection = vec3(0.5, 0.93, 0.1);
@@ -37,5 +43,7 @@ void main(void)
 	vec3 scatteredlight = lightcolor * diffuse;
 	color = mix(min(color * scatteredlight, vec3(1.0)), color, 0.5);
 
-	fcolor.rgb = mix(color, fcolor.rgb, 0.5);
+	color = fog(color, distance(CAM_POS, fragment.position));
+
+	fcolor = vec4(color, 1.0);
 }

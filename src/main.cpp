@@ -92,6 +92,27 @@ struct game_settings {
 	float look_sensitivity;
 };
 
+struct Campaign {
+	long seed;
+	Navigation landnav;
+	Camera camera;
+	btRigidBody *surface;
+	Atlas *atlas;
+	Entity marker;
+	Worldmap *worldmap;
+	Army *player;
+	RenderGroup *ordinary;
+	RenderGroup *creatures;
+};
+
+struct Battle {
+	Camera camera;
+	RenderGroup *ordinary;
+	Terrain *terrain;
+	btRigidBody *surface;
+	Landscape *landscape;
+};
+
 class Game {
 public:
 	void run(void);
@@ -107,25 +128,11 @@ private:
 	PhysicsManager physicsman;
 	Timer timer;
 	Debugger debugger;
-	// campaign data
-	Navigation campaign_landnav;
-	Camera camera;
-	btRigidBody *campaign_surface;
-	Atlas *atlas;
-	long seed;
-	Entity marker;
-	// battle data
-	Camera battlecam;
-	btRigidBody *battle_surface;
-	Landscape *landscape;
+	struct Campaign campaign;
+	struct Battle battle;
 	// graphics
-	RenderGroup *campaign_ordinary;
-	RenderGroup *campaign_creatures;
-	RenderGroup *battle_ordinary;
 	RenderManager renderman;
 	Skybox skybox;
-	Worldmap *worldmap;
-	Terrain *terrain;
 	Shader object_shader;
 	Shader debug_shader;
 	// temporary assets
@@ -136,9 +143,7 @@ private:
 	GLTF::Model *cube;
 	GLTF::Model *cylinder;
 	GLTF::Model *capsule;
-	Texture *relief;
 	Texture *rivers;
-	Army *player;
 private:
 	void init(void);
 	void init_settings(void);
@@ -275,30 +280,29 @@ void Game::teardown(void)
 
 void Game::teardown_campaign(void)
 {
-	delete campaign_ordinary;
-	delete campaign_creatures;
+	delete campaign.ordinary;
+	delete campaign.creatures;
 
-	delete player;
+	delete campaign.player;
 
-	delete worldmap;
+	delete campaign.worldmap;
 
-	delete atlas;
+	delete campaign.atlas;
 
-	delete relief;
 	delete rivers;
 
-	delete campaign_surface;
+	delete campaign.surface;
 }
 
 void Game::teardown_battle(void)
 {
-	delete battle_ordinary;
+	delete battle.ordinary;
 
-	delete landscape;
+	delete battle.landscape;
 
-	delete terrain;
+	delete battle.terrain;
 
-	delete battle_surface;
+	delete battle.surface;
 }
 	
 void Game::update_battle(void)
@@ -309,15 +313,15 @@ void Game::update_battle(void)
 	}
 
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
-	battlecam.target(rel_mousecoords);
+	battle.camera.target(rel_mousecoords);
 
 	float modifier = 20.f * timer.delta;
-	if (inputman.key_down(SDLK_w)) { battlecam.move_forward(modifier); }
-	if (inputman.key_down(SDLK_s)) { battlecam.move_backward(modifier); }
-	if (inputman.key_down(SDLK_d)) { battlecam.move_right(modifier); }
-	if (inputman.key_down(SDLK_a)) { battlecam.move_left(modifier); }
+	if (inputman.key_down(SDLK_w)) { battle.camera.move_forward(modifier); }
+	if (inputman.key_down(SDLK_s)) { battle.camera.move_backward(modifier); }
+	if (inputman.key_down(SDLK_d)) { battle.camera.move_right(modifier); }
+	if (inputman.key_down(SDLK_a)) { battle.camera.move_left(modifier); }
 
-	battlecam.update();
+	battle.camera.update();
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -325,9 +329,9 @@ void Game::update_battle(void)
 		ImGui::NewFrame();
 		ImGui::Begin("Battle Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
-		ImGui::Text("seed: %d", seed);
+		ImGui::Text("seed: %d", campaign.seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
-		ImGui::Text("cam position: %f, %f, %f", battlecam.position.x, battlecam.position.y, battlecam.position.z);
+		ImGui::Text("cam position: %f, %f, %f", battle.camera.position.x, battle.camera.position.y, battle.camera.position.z);
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
 		ImGui::End();
 	}
@@ -339,24 +343,24 @@ void Game::update_battle(void)
 
 void Game::run_battle(void)
 {
-	battlecam.position = { 3072.f, 200.f, 3072.f };
-	battlecam.lookat(glm::vec3(0.f, 0.f, 0.f));
+	battle.camera.position = { 3072.f, 200.f, 3072.f };
+	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	glm::vec2 position = translate_3D_to_2D(player->position);
-	const struct tile *tily = atlas->tile_at_position(position);
+	glm::vec2 position = translate_3D_to_2D(campaign.player->position);
+	const struct tile *tily = campaign.atlas->tile_at_position(position);
 	uint32_t offset = 0;
 	float amp = 0.f;
 	if (tily) {
 		amp = tily->amp;
 		offset = tily->index;
 	}
-	const FloatImage *heightmap = atlas->get_heightmap();
+	const FloatImage *heightmap = campaign.atlas->get_heightmap();
 
-	landscape->generate(seed, offset, amp);
-	terrain->reload(landscape->get_heightmap(), landscape->get_normalmap());
-	terrain->change_atmosphere(modular.atmos.skybottom, 0.0005f);
+	battle.landscape->generate(campaign.seed, offset, amp);
+	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
+	battle.terrain->change_atmosphere(modular.atmos.skybottom, 0.0005f);
 	
-	physicsman.insert_body(battle_surface);
+	physicsman.insert_body(battle.surface);
 
 	// testing entities
 	btCollisionShape *sphere_shape = physicsman.add_sphere(1.f);
@@ -375,17 +379,17 @@ void Game::run_battle(void)
 	DynamicObject sphereobject = { glm::vec3(3072.f, 210.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), sphere_shape };
 	physicsman.insert_body(sphereobject.body);
 	ents.push_back(&sphereobject);
-	battle_ordinary->add_object(sphere, ents);
+	battle.ordinary->add_object(sphere, ents);
 
 	ents.clear();
 	ents.push_back(&cubeobject);
-	battle_ordinary->add_object(cube, ents);
+	battle.ordinary->add_object(cube, ents);
 	ents.clear();
 	ents.push_back(&cylinderobject);
-	battle_ordinary->add_object(cylinder, ents);
+	battle.ordinary->add_object(cylinder, ents);
 	ents.clear();
 	ents.push_back(&capsuleobject);
-	battle_ordinary->add_object(capsule, ents);
+	battle.ordinary->add_object(capsule, ents);
 
 	while (state == GS_BATTLE) {
 		timer.begin();
@@ -398,10 +402,10 @@ void Game::run_battle(void)
 
 		renderman.prepare_to_render();
 		
-		battle_ordinary->display(&battlecam);
+		battle.ordinary->display(&battle.camera);
 
-		terrain->display(&battlecam);
-		skybox.display(&battlecam);
+		battle.terrain->display(&battle.camera);
+		skybox.display(&battle.camera);
 
 		if (debugmode) {
 			ImGui::Render();
@@ -412,10 +416,10 @@ void Game::run_battle(void)
 		timer.end();
 	}
 	
-	battle_ordinary->clear();
+	battle.ordinary->clear();
 	physicsman.remove_body(sphereobject.body);
 	physicsman.remove_body(cubeobject.body);
-	physicsman.remove_body(battle_surface);
+	physicsman.remove_body(battle.surface);
 	physicsman.remove_body(cylinderobject.body);
 	physicsman.remove_body(capsuleobject.body);
 	// TODO shapes need to be deleted
@@ -423,50 +427,48 @@ void Game::run_battle(void)
 
 void Game::reserve_battle(void)
 {
-	battlecam.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
-	battlecam.project();
+	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
+	battle.camera.project();
 
-	landscape = new Landscape { 2048 };
+	battle.landscape = new Landscape { 2048 };
 	
-	terrain = new Terrain { landscape->SCALE, landscape->get_heightmap(), landscape->get_normalmap() };
+	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap() };
 
-	battle_surface = physicsman.add_heightfield(landscape->get_heightmap(), landscape->SCALE);
+	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 }
 
 void Game::reserve_campaign(void)
 {
-	camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
-	camera.project();
+	campaign.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
+	campaign.camera.project();
 
-	atlas = new Atlas { 2048, 512, 512 };
+	campaign.atlas = new Atlas { 2048, 512, 512 };
 
-	worldmap = new Worldmap { atlas->SCALE, atlas->get_heightmap(), atlas->get_rainmap() };
+	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_rainmap() };
 
-	relief = new Texture { atlas->get_relief() };
-	relief->change_wrapping(GL_CLAMP_TO_EDGE);
-	rivers = new Texture { atlas->get_biomes() };
+	rivers = new Texture { campaign.atlas->get_biomes() };
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	campaign_surface = physicsman.add_heightfield(atlas->get_heightmap(), atlas->SCALE);
+	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
 
-	campaign_ordinary = new RenderGroup { &debug_shader };
-	campaign_creatures = new RenderGroup { &object_shader };
-	battle_ordinary = new RenderGroup { &debug_shader };
+	campaign.ordinary = new RenderGroup { &debug_shader };
+	campaign.creatures = new RenderGroup { &object_shader };
+	battle.ordinary = new RenderGroup { &debug_shader };
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
-	player = new Army { startpos, 20.f };
+	campaign.player = new Army { startpos, 20.f };
 }
 
 void Game::cleanup_campaign(void)
 {
-	campaign_ordinary->clear();
-	campaign_creatures->clear();
+	campaign.ordinary->clear();
+	campaign.creatures->clear();
 
 	if (debugmode) {
 		debugger.delete_navmeshes();
 	}
-	physicsman.remove_body(campaign_surface);
-	campaign_landnav.cleanup();
+	physicsman.remove_body(campaign.surface);
+	campaign.landnav.cleanup();
 }
 
 void Game::update_campaign(void)
@@ -477,28 +479,28 @@ void Game::update_campaign(void)
 	}
 	
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
-	camera.target(rel_mousecoords);
+	campaign.camera.target(rel_mousecoords);
 
 	float modifier = 20.f * timer.delta;
-	if (inputman.key_down(SDLK_w)) { camera.move_forward(modifier); }
-	if (inputman.key_down(SDLK_s)) { camera.move_backward(modifier); }
-	if (inputman.key_down(SDLK_d)) { camera.move_right(modifier); }
-	if (inputman.key_down(SDLK_a)) { camera.move_left(modifier); }
+	if (inputman.key_down(SDLK_w)) { campaign.camera.move_forward(modifier); }
+	if (inputman.key_down(SDLK_s)) { campaign.camera.move_backward(modifier); }
+	if (inputman.key_down(SDLK_d)) { campaign.camera.move_right(modifier); }
+	if (inputman.key_down(SDLK_a)) { campaign.camera.move_left(modifier); }
 
-	camera.update();
+	campaign.camera.update();
 
 	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
-		glm::vec3 ray = camera.ndc_to_ray(inputman.abs_mousecoords());
-		struct ray_result result = physicsman.cast_ray(camera.position, camera.position + (1000.f * ray));
+		glm::vec3 ray = campaign.camera.ndc_to_ray(inputman.abs_mousecoords());
+		struct ray_result result = physicsman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
 		if (result.hit) {
-			marker.position = result.point;
+			campaign.marker.position = result.point;
 			std::list<glm::vec2> waypoints;
-			campaign_landnav.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
-			player->set_path(waypoints);
+			campaign.landnav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
+			campaign.player->set_path(waypoints);
 		}
 	}
 
-	player->update(timer.delta);
+	campaign.player->update(timer.delta);
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -506,10 +508,10 @@ void Game::update_campaign(void)
 		ImGui::NewFrame();
 		ImGui::Begin("Campaign Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
-		ImGui::Text("seed: %d", seed);
+		ImGui::Text("seed: %d", campaign.seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
-		ImGui::Text("cam position: %f, %f, %f", camera.position.x, camera.position.y, camera.position.z);
-		ImGui::Text("player position: %f, %f, %f", player->position.x, player->position.y, player->position.z);
+		ImGui::Text("cam position: %f, %f, %f", campaign.camera.position.x, campaign.camera.position.y, campaign.camera.position.z);
+		ImGui::Text("player position: %f, %f, %f", campaign.player->position.x, campaign.player->position.y, campaign.player->position.z);
 		if (ImGui::Button("Battle scene")) { state = GS_BATTLE; }
 		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
 		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
@@ -518,10 +520,10 @@ void Game::update_campaign(void)
 
 	inputman.update_keymap();
 
-	glm::vec3 origin = { player->position.x, atlas->SCALE.y, player->position.z };
-	glm::vec3 end = { player->position.x, 0.f, player->position.z };
+	glm::vec3 origin = { campaign.player->position.x, campaign.atlas->SCALE.y, campaign.player->position.z };
+	glm::vec3 end = { campaign.player->position.x, 0.f, campaign.player->position.z };
 	struct ray_result result = physicsman.cast_ray(origin, end);
-	player->set_y_offset(result.point.y);
+	campaign.player->set_y_offset(result.point.y);
 }
 	
 void Game::new_campaign(void)
@@ -530,19 +532,19 @@ void Game::new_campaign(void)
 	std::random_device rd;
 	std::uniform_int_distribution<long> dis;
 	std::mt19937 gen(rd());
-	seed = dis(gen);
-	//seed = 1337;
+	campaign.seed = dis(gen);
+	//campaign.seed = 1337;
 
-	write_log(LogType::RUN, "seed: " + std::to_string(seed));
+	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
 
-	atlas->generate(seed, &modular.params);
+	campaign.atlas->generate(campaign.seed, &modular.params);
 
-	atlas->create_maps();
-	atlas->create_land_navigation();
+	campaign.atlas->create_mapdata();
+	campaign.atlas->create_land_navigation();
 
-	campaign_landnav.build(atlas->vertex_soup, atlas->index_soup);
+	campaign.landnav.build(campaign.atlas->vertex_soup, campaign.atlas->index_soup);
 
-	saver.save("game.save", atlas, &campaign_landnav, seed);
+	saver.save("game.save", campaign.atlas, &campaign.landnav, campaign.seed);
 	
 	run_campaign();
 }
@@ -550,12 +552,12 @@ void Game::new_campaign(void)
 void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
-	saver.load("game.save", atlas, &campaign_landnav, seed);
+	saver.load("game.save", campaign.atlas, &campaign.landnav, campaign.seed);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
-	atlas->create_maps();
+	campaign.atlas->create_mapdata();
 
 	run_campaign();
 }
@@ -565,30 +567,30 @@ void Game::run_campaign(void)
 	state = GS_CAMPAIGN;
 
 	std::vector<const Entity*> ents;
-	ents.push_back(player);
-	campaign_creatures->add_object(duck, ents);
+	ents.push_back(campaign.player);
+	campaign.creatures->add_object(duck, ents);
 
 	Entity dragon_ent = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
 	ents.clear();
-	ents.push_back(&marker);
-	campaign_ordinary->add_object(cone, ents);
+	ents.push_back(&campaign.marker);
+	campaign.ordinary->add_object(cone, ents);
 	ents.clear();
 	ents.push_back(&dragon_ent);
-	campaign_ordinary->add_object(dragon, ents);
+	campaign.ordinary->add_object(dragon, ents);
 
-	camera.position = { 2048.f, 200.f, 2048.f };
-	camera.lookat(glm::vec3(0.f, 0.f, 0.f));
+	campaign.camera.position = { 2048.f, 200.f, 2048.f };
+	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
-	marker.position = { 2010.f, 200.f, 2010.f };
+	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
-	worldmap->reload(atlas->get_heightmap(), atlas->get_rainmap());
+	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_rainmap());
+	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f);
 
-	physicsman.insert_body(campaign_surface);
+	physicsman.insert_body(campaign.surface);
 
-	relief->reload(atlas->get_relief());
-	rivers->reload(atlas->get_biomes());
+	rivers->reload(campaign.atlas->get_biomes());
 
-	player->teleport(glm::vec2(2010.f, 2010.f));
+	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
@@ -597,15 +599,14 @@ void Game::run_campaign(void)
 
 		renderman.prepare_to_render();
 
-		campaign_ordinary->display(&camera);
+		campaign.ordinary->display(&campaign.camera);
 
-		campaign_creatures->display(&camera);
+		campaign.creatures->display(&campaign.camera);
 
-		relief->bind(GL_TEXTURE3);
 		rivers->bind(GL_TEXTURE4);
-		worldmap->display(&camera);
+		campaign.worldmap->display(&campaign.camera);
 
-		skybox.display(&camera);
+		skybox.display(&campaign.camera);
 
 		if (debugmode) {
 			ImGui::Render();
@@ -616,9 +617,9 @@ void Game::run_campaign(void)
 		timer.end();
 
 		if (state == GS_BATTLE) {
-			physicsman.remove_body(campaign_surface);
+			physicsman.remove_body(campaign.surface);
 			run_battle();
-			physicsman.insert_body(campaign_surface);
+			physicsman.insert_body(campaign.surface);
 		}
 	}
 
