@@ -366,8 +366,8 @@ void Atlas::gen_mapfield(void)
 	}
 
 	struct rectangle area = {
-		.min = glm::vec2(0.F, 0.F),
-		.max = glm::vec2(SCALE.x, SCALE.z)
+		glm::vec2(0.F, 0.F),
+		glm::vec2(SCALE.x, SCALE.z)
 	};
 
 	mapfield.generate(vertdata, mosaics, area);

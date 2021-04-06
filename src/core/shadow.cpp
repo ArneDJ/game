@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <vector>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <glm/glm.hpp>
@@ -95,7 +96,8 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 	//const glm::mat4 camera_perspective = cam->projection;
 	const glm::mat4 camera_perspective = glm::perspective(glm::radians(cam->FOV), cam->aspectratio, near, far);
 
-	float splits[CASCADE_COUNT];
+	//float splits[CASCADE_COUNT];
+	std::vector<float> splits;
 
 	// Calculate split depths based on view camera furstum
 	// Based on method presentd in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
@@ -105,7 +107,7 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 		float log = min_z * std::pow(ratio, p);
 		float uniform = min_z + range * p;
 		float d = lambda * (log - uniform) + uniform;
-		splits[i] = ((d - near) / cliprange);
+		splits.push_back((d - near) / cliprange);
 	}
 	/*
 	splits[0] = 0.02;
