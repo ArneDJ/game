@@ -1,4 +1,5 @@
 #include <chrono>
+#include <array>
 
 #include "timer.h"
 

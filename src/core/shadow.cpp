@@ -10,6 +10,15 @@
 #include "camera.h"
 #include "shadow.h"
 
+static const glm::mat4 SCALE_BIAS = {
+	0.5F, 0.0F, 0.0F, 0.0F, 
+	0.0F, 0.5F, 0.0F, 0.0F, 
+	0.0F, 0.0F, 0.5F, 0.0F, 
+	0.5F, 0.5F, 0.5F, 1.0F
+};
+
+// implementation based on:
+// https://github.com/SaschaWillems/Vulkan/blob/master/examples/shadowmappingcascade/shadowmappingcascade.cpp
 static struct depthmap gen_depthmap(GLsizei size, GLsizei layers)
 {
 	struct depthmap depth;
@@ -73,7 +82,7 @@ void Shadow::disable(void) const
 void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 {
 	const float near = cam->nearclip;
-	const float far = cam->farclip * 0.5f;
+	const float far = 0.03f * cam->farclip;
 	const float cliprange = far - near;
 	const float aspect = cam->aspectratio;
 
@@ -85,27 +94,25 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 
 	//const glm::mat4 camera_perspective = cam->projection;
 	const glm::mat4 camera_perspective = glm::perspective(glm::radians(cam->FOV), cam->aspectratio, near, far);
-	//const float PERSPECTIVE_OFFSET = 100.f;
 
 	float splits[CASCADE_COUNT];
 
 	// Calculate split depths based on view camera furstum
 	// Based on method presentd in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
-	const float lambda = 0.95f;
+	const float lambda = 0.85f;
 	for (uint32_t i = 0; i < CASCADE_COUNT; i++) {
 		float p = (i + 1) / static_cast<float>(CASCADE_COUNT);
 		float log = min_z * std::pow(ratio, p);
-		//float log = 1.f;
 		float uniform = min_z + range * p;
 		float d = lambda * (log - uniform) + uniform;
 		splits[i] = ((d - near) / cliprange);
 	}
 	/*
-	splits[0] = 4.f * 0.012;
-	splits[1] = 4.f * 0.029;
-	splits[2] = 4.f * 0.1;
-	splits[3] = 1.0;
+	splits[0] = 0.02;
+	splits[1] = 0.04;
+	splits[2] = 0.1;
 	*/
+	splits[3] = 0.5;
 
 	// Calculate orthographic projection matrix for each cascade
 	float last_split = 0.f;
@@ -156,11 +163,9 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 		glm::vec3 lightdir = normalize(-lightpos);
 		glm::mat4 lightview = glm::lookAt(center - lightdir * -min_extents.z, center, glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightortho = glm::ortho(min_extents.x, max_extents.x, min_extents.y, max_extents.y, 0.0f, max_extents.z - min_extents.z);
-		//glm::mat4 lightview = glm::lookAt(center + lightdir * -min_extents.z, center, glm::vec3(0.0f, 1.0f, 0.0f));
-		//glm::mat4 lightortho = glm::ortho(min_extents.x, max_extents.x, min_extents.y, max_extents.y, 0.0f, max_extents.z - min_extents.z);
 
 		// Store split distance and matrix in cascade
-		splitdepth[i] = (0.1f + split_dist * cliprange);
+		splitdepth[i] = (near + split_dist * cliprange);
 		shadowspace[i] = (lightortho * lightview);
 
 		last_split = splits[i];
@@ -178,4 +183,15 @@ void Shadow::binddepth(unsigned int section) const
 	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth.texture, 0, section);
 	glClearDepth(1.f);
 	glClear(GL_DEPTH_BUFFER_BIT);
+}
+	
+glm::mat4 Shadow::biased_shadowspace(uint8_t cascade) const
+{
+	glm::mat4 m = glm::mat4(1.f);
+
+	if (cascade < CASCADE_COUNT) {
+		m = SCALE_BIAS * shadowspace[cascade];
+	}
+
+	return m;
 }

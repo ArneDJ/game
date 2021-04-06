@@ -142,6 +142,7 @@ private:
 	Shadow *shadow;
 	// temporary assets
 	Texture *rivers;
+	bool show_cascades = false;
 private:
 	void init(void);
 	void init_settings(void);
@@ -327,6 +328,7 @@ void Game::update_battle(void)
 		ImGui::Text("seed: %d", campaign.seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", battle.camera.position.x, battle.camera.position.y, battle.camera.position.z);
+		ImGui::Checkbox("Show Cascades", &show_cascades);
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
 		ImGui::End();
 	}
@@ -415,14 +417,13 @@ void Game::run_battle(void)
 		battle.ordinary->display(&battle.camera);
 
 		shadow->bindtextures(GL_TEXTURE10);
-		// TODO shadow class needs to do this
 		std::vector<glm::mat4> shadowspace {
-			shadow->scalebias * shadow->shadowspace[0],
-			shadow->scalebias * shadow->shadowspace[1],
-			shadow->scalebias * shadow->shadowspace[2],
-			shadow->scalebias * shadow->shadowspace[3],
+			shadow->biased_shadowspace(0),
+			shadow->biased_shadowspace(1),
+			shadow->biased_shadowspace(2),
+			shadow->biased_shadowspace(3)
 		};
-		battle.terrain->display(&battle.camera, shadow->splitdepth, shadowspace);
+		battle.terrain->display(&battle.camera, shadow->splitdepth, shadowspace, show_cascades);
 
 		skybox.display(&battle.camera);
 

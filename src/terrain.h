@@ -6,7 +6,7 @@ public:
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *normalmap);
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr);
-	void display(const Camera *camera, const glm::vec4 &split, const std::vector<glm::mat4> &shadowspace);
+	void display(const Camera *camera, const glm::vec4 &split, const std::vector<glm::mat4> &shadowspace, bool show_cascades);
 private:
 	Mesh *patches = nullptr;
 	Texture *relief = nullptr;

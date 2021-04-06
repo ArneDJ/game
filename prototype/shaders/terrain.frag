@@ -22,6 +22,7 @@ uniform float FOG_FACTOR;
 // shadows
 uniform vec4 SPLIT;
 uniform mat4 SHADOWSPACE[4];
+uniform bool SHOW_CASCADES;
 
 vec3 fog(vec3 color, float dist)
 {
@@ -91,7 +92,21 @@ void main(void)
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
 	
-	vec3 color = mix(1.2*sand, stone, slope);
+	vec3 color = mix(sand, stone, slope);
+
+	if (SHOW_CASCADES == true) {
+		vec3 cascade = vec3(0, 0, 0);
+		if (fragment.zclipspace < SPLIT.x) {
+			cascade = vec3(1.0, 0.0, 0.0);
+		} else if (fragment.zclipspace < SPLIT.y) {
+			cascade = vec3(0.0, 1.0, 0.0);
+		} else if (fragment.zclipspace < SPLIT.z) {
+			cascade = vec3(0.0, 0.0, 1.0);
+		} else if (fragment.zclipspace < SPLIT.w) {
+			cascade = vec3(1.0, 0.0, 1.0);
+		}
+		color = mix(color, cascade, 0.5);
+	}
 
 	// terrain lighting
 	const vec3 lightdirection = vec3(0.5, 0.93, 0.1);

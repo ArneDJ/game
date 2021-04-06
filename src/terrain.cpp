@@ -70,7 +70,7 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 	normals->reload(normalmap);
 }
 
-void Terrain::display(const Camera *camera, const glm::vec4 &split, const std::vector<glm::mat4> &shadowspace)
+void Terrain::display(const Camera *camera, const glm::vec4 &split, const std::vector<glm::mat4> &shadowspace, bool show_cascades)
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -78,6 +78,7 @@ void Terrain::display(const Camera *camera, const glm::vec4 &split, const std::v
 	land.uniform_vec3("MAP_SCALE", scale);
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
+	land.uniform_bool("SHOW_CASCADES", show_cascades);
 	// shadows
 	land.uniform_vec4("SPLIT", split);
 	land.uniform_mat4_array("SHADOWSPACE", shadowspace);
