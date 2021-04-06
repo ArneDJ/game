@@ -62,6 +62,7 @@
 #include "core/navigation.h"
 #include "core/voronoi.h"
 #include "core/media.h"
+#include "core/shadow.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
@@ -137,6 +138,8 @@ private:
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
+	Shader shadow_shader;
+	Shadow *shadow;
 	// temporary assets
 	Texture *rivers;
 private:
@@ -188,6 +191,7 @@ void Game::init(void)
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
 	renderman.init();
+	shadow = new Shadow { 4096 };
 
 	if (debugmode) {
 		// Setup Dear ImGui context
@@ -230,6 +234,10 @@ void Game::load_module(void)
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
 
+	shadow_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
+	shadow_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
+	shadow_shader.link();
+
 	skybox.init(modular.atmos.skytop, modular.atmos.skybottom);
 
 	reserve_campaign();
@@ -241,6 +249,8 @@ void Game::load_module(void)
 
 void Game::teardown(void)
 {
+	delete shadow;
+
 	teardown_campaign();
 
 	teardown_battle();
@@ -385,11 +395,35 @@ void Game::run_battle(void)
 		cylinderobject.update();
 		capsuleobject.update();
 
+		// update cascaded shadows
+		// TODO shadow cameras are too far!
+		shadow->update(&battle.camera, glm::vec3(0.5f, 0.5f, 0.5f));
+		shadow->enable();
+		shadow_shader.use();
+		for (int i = 0; i < shadow->CASCADE_COUNT; i++) {
+			shadow->binddepth(i);
+			shadow_shader.uniform_mat4("VP", shadow->shadowspace[i]);
+			battle.ordinary->render(&shadow_shader);
+		}
+		shadow->disable();
+
+		//battle.camera.VP = shadow->shadowspace[0];
+		glViewport(0, 0, settings.window_width, settings.window_height);
+
 		renderman.prepare_to_render();
 		
 		battle.ordinary->display(&battle.camera);
 
-		battle.terrain->display(&battle.camera);
+		shadow->bindtextures(GL_TEXTURE10);
+		// TODO shadow class needs to do this
+		std::vector<glm::mat4> shadowspace {
+			shadow->scalebias * shadow->shadowspace[0],
+			shadow->scalebias * shadow->shadowspace[1],
+			shadow->scalebias * shadow->shadowspace[2],
+			shadow->scalebias * shadow->shadowspace[3],
+		};
+		battle.terrain->display(&battle.camera, shadow->splitdepth, shadowspace);
+
 		skybox.display(&battle.camera);
 
 		if (debugmode) {

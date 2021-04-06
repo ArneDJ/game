@@ -10,6 +10,8 @@ public:
 	~RenderGroup(void);
 	void add_object(const GLTF::Model *mod, const std::vector<const Entity*> &ents);
 	void display(const Camera *camera) const;
+	// TODO
+	void render(const Shader *program) const;
 	void clear(void);
 private:
 	const Shader *shader;

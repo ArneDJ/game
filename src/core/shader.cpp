@@ -119,7 +119,17 @@ void Shader::uniform_vec3(const GLchar *name, glm::vec3 vector) const
 	glUniform3fv(glGetUniformLocation(program, name), 1, glm::value_ptr(vector));
 }
 
+void Shader::uniform_vec4(const GLchar *name, glm::vec4 vector) const
+{
+	glUniform4fv(glGetUniformLocation(program, name), 1, glm::value_ptr(vector));
+}
+
 void Shader::uniform_mat4(const GLchar *name, glm::mat4 matrix) const
 {
 	glUniformMatrix4fv(glGetUniformLocation(program, name), 1, GL_FALSE, glm::value_ptr(matrix));
+}
+
+void Shader::uniform_mat4_array(const GLchar *name, const std::vector<glm::mat4> &matrices) const
+{
+	glUniformMatrix4fv(glGetUniformLocation(program, name), matrices.size(), GL_FALSE, glm::value_ptr(matrices[0]));
 }

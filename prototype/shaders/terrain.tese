@@ -5,6 +5,7 @@ layout(quads, fractional_even_spacing, ccw) in;
 out TESSEVAL {
 	vec3 position;
 	vec2 texcoord;
+	float zclipspace;
 } tesseval;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
@@ -23,4 +24,6 @@ void main(void)
 	tesseval.position = pos.xyz;
 
 	gl_Position = VP * pos;
+
+	tesseval.zclipspace = gl_Position.z;
 }
