@@ -11,11 +11,11 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/shader.h"
-#include "core/camera.h"
-#include "core/image.h"
-#include "core/texture.h"
-#include "core/mesh.h"
+#include "../core/shader.h"
+#include "../core/camera.h"
+#include "../core/image.h"
+#include "../core/texture.h"
+#include "../core/mesh.h"
 #include "worldmap.h"
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;

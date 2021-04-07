@@ -6,9 +6,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/camera.h"
-#include "core/shader.h"
-#include "core/mesh.h"
+#include "../core/camera.h"
+#include "../core/shader.h"
+#include "../core/mesh.h"
 #include "sky.h"
 
 void Skybox::init(void)
@@ -48,16 +48,16 @@ void Skybox::teardown(void)
 	
 void Skybox::update(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos)
 {
-	colortop = top;
-	colorbottom = bottom;
+	zenith = top;
+	horizon = bottom;
 	sunposition = sunpos;
 }
 	
 void Skybox::display(const Camera *camera) const
 {
 	shader.use();
-	shader.uniform_vec3("COLOR_TOP", colortop);
-	shader.uniform_vec3("COLOR_BOTTOM", colorbottom);
+	shader.uniform_vec3("ZENITH_COLOR", zenith);
+	shader.uniform_vec3("HORIZON_COLOR", horizon);
 	shader.uniform_vec3("SUN_POS", sunposition);
 	shader.uniform_mat4("V", camera->viewing);
 	shader.uniform_mat4("P", camera->projection);

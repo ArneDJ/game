@@ -9,7 +9,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "core/camera.h"
+#include "../core/camera.h"
 #include "shadow.h"
 
 static const glm::mat4 SCALE_BIAS = {
