@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <span>
+#include <array>
 
 #include <SDL2/SDL.h>
 #include <GL/glew.h>

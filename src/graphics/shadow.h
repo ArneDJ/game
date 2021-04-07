@@ -1,3 +1,6 @@
+#pragma once
+#include <array> // has to be included here to compile on windows
+
 struct depthmap {
 	GLuint FBO;
 	GLuint texture;
