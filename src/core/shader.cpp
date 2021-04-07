@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <glm/vec3.hpp>

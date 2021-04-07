@@ -15,7 +15,9 @@ layout(binding = 3) uniform sampler2D SANDMAP;
 
 layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
 
+// atmosphere
 uniform vec3 CAM_POS;
+uniform vec3 SUN_POS;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
 
@@ -109,10 +111,10 @@ void main(void)
 	}
 
 	// terrain lighting
-	const vec3 lightdirection = vec3(0.5, 0.93, 0.1);
+	//const vec3 lightdirection = vec3(0.5, 0.93, 0.1);
 	const vec3 ambient = vec3(0.5, 0.5, 0.5);
 	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
-	float diffuse = max(0.0, dot(normal, lightdirection));
+	float diffuse = max(0.0, dot(normal, SUN_POS));
 
 	float shadow = shadow_coef();
 

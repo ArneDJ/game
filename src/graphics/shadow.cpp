@@ -1,6 +1,7 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <array>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <glm/glm.hpp>
@@ -8,7 +9,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "camera.h"
+#include "core/camera.h"
 #include "shadow.h"
 
 static const glm::mat4 SCALE_BIAS = {
@@ -17,6 +18,9 @@ static const glm::mat4 SCALE_BIAS = {
 	0.0F, 0.0F, 0.5F, 0.0F, 
 	0.5F, 0.5F, 0.5F, 1.0F
 };
+
+// only a small portion of the visible scene will receive shadows
+static const float FARCLIP_ADJUST = 0.03F;
 
 // implementation based on:
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/shadowmappingcascade/shadowmappingcascade.cpp
@@ -59,10 +63,21 @@ static struct depthmap gen_depthmap(GLsizei size, GLsizei layers)
 
 Shadow::Shadow(size_t texture_size)
 { 
-	depth = gen_depthmap(texture_size, CASCADE_COUNT);
+	depth = gen_depthmap(texture_size, shadowspaces.size());
+	biased_shadowspaces.resize(shadowspaces.size());
+}
+	
+Shadow::~Shadow(void)
+{
+	if (glIsBuffer(depth.FBO) == GL_TRUE) {
+		glDeleteBuffers(1, &depth.FBO);
+	}
+	if (glIsTexture(depth.texture) == GL_TRUE) {
+		glDeleteTextures(1, &depth.texture);
+	}
 }
 
-void Shadow::enable(void) const
+void Shadow::enable(void)
 {
 	glCullFace(GL_FRONT);
 	glEnable(GL_POLYGON_OFFSET_FILL);
@@ -73,19 +88,19 @@ void Shadow::enable(void) const
 	glViewport(0, 0, depth.width, depth.height);
 }
 
-void Shadow::disable(void) const
+void Shadow::disable(void)
 {
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glCullFace(GL_BACK);
 }
 
-void Shadow::update(const Camera *cam, glm::vec3 lightpos)
+void Shadow::update(const Camera *camera, const glm::vec3 &lightpos)
 {
-	const float near = cam->nearclip;
-	const float far = 0.03f * cam->farclip;
+	const float near = camera->nearclip;
+	const float far = FARCLIP_ADJUST * camera->farclip;
 	const float cliprange = far - near;
-	const float aspect = cam->aspectratio;
+	const float aspect = camera->aspectratio;
 
 	const float min_z = near;
 	const float max_z = near + cliprange;
@@ -93,21 +108,19 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 	const float range = max_z - min_z;
 	const float ratio = max_z / min_z;
 
-	//const glm::mat4 camera_perspective = cam->projection;
-	const glm::mat4 camera_perspective = glm::perspective(glm::radians(cam->FOV), cam->aspectratio, near, far);
+	const glm::mat4 perspective = glm::perspective(glm::radians(camera->FOV), camera->aspectratio, near, far);
 
-	//float splits[CASCADE_COUNT];
-	std::vector<float> splits;
+	std::array<float, 4> splits;
 
 	// Calculate split depths based on view camera furstum
 	// Based on method presentd in https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch10.html
 	const float lambda = 0.85f;
-	for (uint32_t i = 0; i < CASCADE_COUNT; i++) {
-		float p = (i + 1) / static_cast<float>(CASCADE_COUNT);
+	for (int i = 0; i < shadowspaces.size(); i++) {
+		float p = (i + 1) / static_cast<float>(shadowspaces.size());
 		float log = min_z * std::pow(ratio, p);
 		float uniform = min_z + range * p;
 		float d = lambda * (log - uniform) + uniform;
-		splits.push_back((d - near) / cliprange);
+		splits[i] = ((d - near) / cliprange);
 	}
 	/*
 	splits[0] = 0.02;
@@ -118,7 +131,7 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 
 	// Calculate orthographic projection matrix for each cascade
 	float last_split = 0.f;
-	for (uint32_t i = 0; i < CASCADE_COUNT; i++) {
+	for (int i = 0; i < shadowspaces.size(); i++) {
 		float split_dist = splits[i];
 
 		glm::vec3 corners[8] = {
@@ -133,13 +146,13 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 		};
 
 		// Project frustum corners into world space
-		glm::mat4 invcam = glm::inverse(camera_perspective * cam->viewing);
-		for (uint32_t i = 0; i < 8; i++) {
+		glm::mat4 invcam = glm::inverse(perspective * camera->viewing);
+		for (int i = 0; i < 8; i++) {
 			glm::vec4 invcorner = invcam * glm::vec4(corners[i], 1.0f);
 			corners[i] = invcorner / invcorner.w;
 		}
 
-		for (uint32_t i = 0; i < 4; i++) {
+		for (int i = 0; i < 4; i++) {
 			glm::vec3 dist = corners[i + 4] - corners[i];
 			corners[i + 4] = corners[i] + (dist * split_dist);
 			corners[i] = corners[i] + (dist * last_split);
@@ -147,13 +160,13 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 
 		// Get frustum center
 		glm::vec3 center = glm::vec3(0.0f);
-		for (uint32_t i = 0; i < 8; i++) {
+		for (int i = 0; i < 8; i++) {
 			center += corners[i];
 		}
 		center /= 8.0f;
 
 		float radius = 0.0f;
-		for (uint32_t i = 0; i < 8; i++) {
+		for (int i = 0; i < 8; i++) {
 			float distance = glm::length(corners[i] - center);
 			radius = std::max(radius, distance);
 		}
@@ -168,32 +181,26 @@ void Shadow::update(const Camera *cam, glm::vec3 lightpos)
 
 		// Store split distance and matrix in cascade
 		splitdepth[i] = (near + split_dist * cliprange);
-		shadowspace[i] = (lightortho * lightview);
+		shadowspaces[i] = (lightortho * lightview);
 
 		last_split = splits[i];
 	}
+
+	// update biased
+	for (int i = 0; i < shadowspaces.size(); i++) {
+		biased_shadowspaces[i] = SCALE_BIAS * shadowspaces[i];
+	}
 }
 
-void Shadow::bindtextures(GLenum unit) const 
+void Shadow::bind_textures(GLenum unit) const 
 {
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, depth.texture);
 }
 
-void Shadow::binddepth(unsigned int section) const
+void Shadow::bind_depthmap(uint8_t section)
 {
 	glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth.texture, 0, section);
 	glClearDepth(1.f);
 	glClear(GL_DEPTH_BUFFER_BIT);
-}
-	
-glm::mat4 Shadow::biased_shadowspace(uint8_t cascade) const
-{
-	glm::mat4 m = glm::mat4(1.f);
-
-	if (cascade < CASCADE_COUNT) {
-		m = SCALE_BIAS * shadowspace[cascade];
-	}
-
-	return m;
 }

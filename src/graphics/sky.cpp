@@ -6,16 +6,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "camera.h"
-#include "shader.h"
-#include "mesh.h"
+#include "core/camera.h"
+#include "core/shader.h"
+#include "core/mesh.h"
 #include "sky.h"
 
-void Skybox::init(glm::vec3 top, glm::vec3 bottom)
+void Skybox::init(void)
 {
-	colortop = top;
-	colorbottom = bottom;
-
 	// create the cubemap mesh
 	const std::vector<glm::vec3> positions = {
 		{ -1.0, -1.0,  1.0 },
@@ -49,11 +46,19 @@ void Skybox::teardown(void)
 	delete cubemap;
 }
 	
-void Skybox::display(const Camera *camera)
+void Skybox::update(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos)
+{
+	colortop = top;
+	colorbottom = bottom;
+	sunposition = sunpos;
+}
+	
+void Skybox::display(const Camera *camera) const
 {
 	shader.use();
 	shader.uniform_vec3("COLOR_TOP", colortop);
 	shader.uniform_vec3("COLOR_BOTTOM", colorbottom);
+	shader.uniform_vec3("SUN_POS", sunposition);
 	shader.uniform_mat4("V", camera->viewing);
 	shader.uniform_mat4("P", camera->projection);
 

@@ -5,8 +5,9 @@ public:
 	~Terrain(void);
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *normalmap);
-	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr);
-	void display(const Camera *camera, const glm::vec4 &split, const std::vector<glm::mat4> &shadowspace, bool show_cascades);
+	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
+	void update_shadow(const Shadow *shadow, bool show_cascades);
+	void display(const Camera *camera) const;
 private:
 	Mesh *patches = nullptr;
 	Texture *relief = nullptr;
@@ -15,6 +16,7 @@ private:
 	Shader land;
 	glm::vec3 scale;
 	// atmosphere
+	glm::vec3 sunpos;
 	float fogfactor;
 	glm::vec3 fogcolor;
 };

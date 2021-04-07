@@ -16,6 +16,7 @@ include_directories(GLEW::GLEW)
 find_package(OpenMP REQUIRED)
 
 # external headers
+include_directories("src")
 include_directories("src/extern")
 include_directories("src/extern/bullet")
 
@@ -24,6 +25,8 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.h"
         "${PROJECT_SOURCE_DIR}/src/core/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/core/*.h"
+        "${PROJECT_SOURCE_DIR}/src/graphics/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/graphics/*.h"
         "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.h"
         "${PROJECT_SOURCE_DIR}/src/extern/recast/*.cpp"

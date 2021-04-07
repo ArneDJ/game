@@ -17,6 +17,7 @@
 #include "core/image.h"
 #include "core/texture.h"
 #include "core/mesh.h"
+#include "shadow.h"
 #include "terrain.h"
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
@@ -57,10 +58,11 @@ Terrain::~Terrain(void)
 	delete relief;
 }
 	
-void Terrain::change_atmosphere(const glm::vec3 &fogclr, float fogfctr)
+void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr)
 {
 	fogcolor = fogclr;
 	fogfactor = fogfctr;
+	sunpos = sun;
 }
 
 void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
@@ -69,19 +71,26 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 
 	normals->reload(normalmap);
 }
+	
+void Terrain::update_shadow(const Shadow *shadow, bool show_cascades)
+{
+	land.use();
+	land.uniform_bool("SHOW_CASCADES", show_cascades);
+	land.uniform_vec4("SPLIT", shadow->get_splitdepth());
+	land.uniform_mat4_array("SHADOWSPACE", shadow->get_biased_shadowspaces());
+		
+	shadow->bind_textures(GL_TEXTURE10);
+}
 
-void Terrain::display(const Camera *camera, const glm::vec4 &split, const std::vector<glm::mat4> &shadowspace, bool show_cascades)
+void Terrain::display(const Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
 	land.uniform_vec3("CAM_POS", camera->position);
 	land.uniform_vec3("MAP_SCALE", scale);
+	land.uniform_vec3("SUN_POS", sunpos);
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
-	land.uniform_bool("SHOW_CASCADES", show_cascades);
-	// shadows
-	land.uniform_vec4("SPLIT", split);
-	land.uniform_mat4_array("SHADOWSPACE", shadowspace);
 
 	relief->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);

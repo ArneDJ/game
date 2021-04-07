@@ -53,16 +53,18 @@
 #include "core/timer.h"
 #include "core/shader.h"
 #include "core/mesh.h"
-#include "core/sky.h"
 #include "core/texture.h"
 #include "core/model.h"
-#include "core/render.h"
 #include "core/physics.h"
 #include "core/animation.h"
 #include "core/navigation.h"
 #include "core/voronoi.h"
 #include "core/media.h"
-#include "core/shadow.h"
+#include "graphics/sky.h"
+#include "graphics/render.h"
+#include "graphics/shadow.h"
+#include "graphics/terrain.h"
+#include "graphics/worldmap.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
@@ -70,12 +72,13 @@
 #include "worldgraph.h"
 #include "mapfield.h"
 #include "atlas.h"
-#include "worldmap.h"
 #include "save.h"
 #include "army.h"
 #include "landscape.h"
-#include "terrain.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
+
+//static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
+static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
 
 enum game_state {
 	GS_TITLE,
@@ -138,7 +141,7 @@ private:
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
-	Shader shadow_shader;
+	Shader depth_shader;
 	Shadow *shadow;
 	// temporary assets
 	Texture *rivers;
@@ -235,11 +238,11 @@ void Game::load_module(void)
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
 
-	shadow_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
-	shadow_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
-	shadow_shader.link();
+	depth_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
+	depth_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
+	depth_shader.link();
 
-	skybox.init(modular.atmos.skytop, modular.atmos.skybottom);
+	skybox.init();
 
 	reserve_campaign();
 
@@ -336,10 +339,15 @@ void Game::update_battle(void)
 	inputman.update_keymap();
 	
 	physicsman.update(timer.delta);
+	
+	// update atmosphere
+	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position);
 }
 
 void Game::run_battle(void)
 {
+	// TODO atmosphere
+
 	battle.camera.position = { 3072.f, 200.f, 3072.f };
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
@@ -355,7 +363,7 @@ void Game::run_battle(void)
 
 	battle.landscape->generate(campaign.seed, offset, amp);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
-	battle.terrain->change_atmosphere(modular.atmos.skybottom, 0.0005f);
+	battle.terrain->change_atmosphere(sun_position, modular.atmos.skybottom, 0.0005f);
 	
 	physicsman.insert_body(battle.surface);
 
@@ -398,32 +406,26 @@ void Game::run_battle(void)
 		capsuleobject.update();
 
 		// update cascaded shadows
-		// TODO shadow cameras are too far!
-		shadow->update(&battle.camera, glm::vec3(0.5f, 0.5f, 0.5f));
+		shadow->update(&battle.camera, sun_position);
 		shadow->enable();
-		shadow_shader.use();
-		for (int i = 0; i < shadow->CASCADE_COUNT; i++) {
-			shadow->binddepth(i);
-			shadow_shader.uniform_mat4("VP", shadow->shadowspace[i]);
-			battle.ordinary->render(&shadow_shader);
+		depth_shader.use();
+		const auto shadowspaces = shadow->get_shadowspaces();
+		for (int i = 0; i < shadowspaces.size(); i++) {
+			// render into shadow depthmap
+			shadow->bind_depthmap(i);
+			depth_shader.uniform_mat4("VP", shadowspaces[i]);
+			battle.ordinary->render(&depth_shader);
 		}
 		shadow->disable();
 
-		//battle.camera.VP = shadow->shadowspace[0];
 		glViewport(0, 0, settings.window_width, settings.window_height);
 
 		renderman.prepare_to_render();
 		
 		battle.ordinary->display(&battle.camera);
 
-		shadow->bindtextures(GL_TEXTURE10);
-		std::vector<glm::mat4> shadowspace {
-			shadow->biased_shadowspace(0),
-			shadow->biased_shadowspace(1),
-			shadow->biased_shadowspace(2),
-			shadow->biased_shadowspace(3)
-		};
-		battle.terrain->display(&battle.camera, shadow->splitdepth, shadowspace, show_cascades);
+		battle.terrain->update_shadow(shadow, show_cascades);
+		battle.terrain->display(&battle.camera);
 
 		skybox.display(&battle.camera);
 
@@ -552,6 +554,9 @@ void Game::update_campaign(void)
 	glm::vec3 end = { campaign.player->position.x, 0.f, campaign.player->position.z };
 	struct ray_result result = physicsman.cast_ray(origin, end);
 	campaign.player->set_y_offset(result.point.y);
+
+	// update atmosphere
+	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position);
 }
 	
 void Game::new_campaign(void)

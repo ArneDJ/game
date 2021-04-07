@@ -11,13 +11,13 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "entity.h"
-#include "shader.h"
-#include "camera.h"
-#include "image.h"
-#include "texture.h"
-#include "mesh.h"
-#include "model.h"
+#include "core/entity.h"
+#include "core/shader.h"
+#include "core/camera.h"
+#include "core/image.h"
+#include "core/texture.h"
+#include "core/mesh.h"
+#include "core/model.h"
 #include "render.h"
 
 RenderGroup::RenderGroup(const Shader *shady)
