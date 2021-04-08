@@ -51,3 +51,12 @@ public:
 private:
 	std::map<std::string, Texture*> textures; // TODO hash string
 };
+
+// TODO put this in texture class
+GLuint generateTexture3D(int w, int h, int d);
+
+// TODO put this in texture class
+GLuint generateTexture2D(int w, int h);
+
+// TODO put this in texture class
+void bindTexture2D(unsigned int tex, int unit);

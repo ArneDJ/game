@@ -55,6 +55,7 @@
 #include "core/shader.h"
 #include "core/mesh.h"
 #include "core/texture.h"
+#include "core/buffers.h"
 #include "core/model.h"
 #include "core/physics.h"
 #include "core/animation.h"
@@ -66,6 +67,7 @@
 #include "graphics/shadow.h"
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
+#include "graphics/clouds.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
@@ -147,6 +149,7 @@ private:
 	// temporary assets
 	Texture *rivers;
 	bool show_cascades = false;
+	const GLTF::Model *cube;
 private:
 	void init(void);
 	void init_settings(void);
@@ -229,6 +232,9 @@ void Game::load_module(void)
 	modular.load(modulename);
 
 	mediaman.change_path(modular.path);
+
+	// load assets
+	cube = mediaman.load_model("cube.glb");
 
 	// load shaders
 	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
@@ -348,6 +354,8 @@ void Game::update_battle(void)
 void Game::run_battle(void)
 {
 	// TODO atmosphere
+	FrameBufferObject sceneFBO(windowman.width, windowman.height);
+	Cloudscape cloudscape(windowman.width, windowman.height);
 
 	battle.camera.position = { 3072.f, 200.f, 3072.f };
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
@@ -421,13 +429,28 @@ void Game::run_battle(void)
 
 		glViewport(0, 0, settings.window_width, settings.window_height);
 
+		//sceneFBO.bind();
 		renderman.prepare_to_render();
+	
+		object_shader.use();
+		object_shader.uniform_mat4("VP", battle.camera.VP);
+		object_shader.uniform_bool("INSTANCED", false);
+		glm::mat4 T = glm::translate(glm::mat4(1.f), glm::vec3(3072.f, 200.f, 3072.f));
+		glm::mat4 MVP = battle.camera.VP * T;
+		object_shader.uniform_mat4("MVP", MVP);
+		object_shader.uniform_mat4("MODEL", T);
+		GLuint cloudtex = cloudscape.get_raw_clouds();
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, cloudtex);
+		cube->display();
 		
 		battle.ordinary->display(&battle.camera);
 
+		//sceneFBO.bind();
 		battle.terrain->update_shadow(shadow, show_cascades);
 		battle.terrain->display(&battle.camera);
 
+		cloudscape.draw(&battle.camera, sun_position, modular.atmos.skybottom, modular.atmos.skybottom);
 		skybox.display(&battle.camera);
 
 		if (debugmode) {

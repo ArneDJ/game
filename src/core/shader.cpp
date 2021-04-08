@@ -110,9 +110,19 @@ void Shader::uniform_bool(const GLchar *name, bool boolean) const
 	glUniform1i(glGetUniformLocation(program, name), boolean);
 }
 
+void Shader::uniform_int(const GLchar *name, int integer) const
+{
+	glUniform1i(glGetUniformLocation(program, name), integer);
+}
+
 void Shader::uniform_float(const GLchar *name, GLfloat scalar) const
 {
 	glUniform1f(glGetUniformLocation(program, name), scalar);
+}
+
+void Shader::uniform_vec2(const GLchar *name, glm::vec2 vector) const
+{
+	glUniform2fv(glGetUniformLocation(program, name), 1, glm::value_ptr(vector));
 }
 
 void Shader::uniform_vec3(const GLchar *name, glm::vec3 vector) const
