@@ -20,6 +20,7 @@ class FrameBufferObject {
 public:
 	FrameBufferObject(int W, int H);
 	FrameBufferObject(int W, int H, int numColorAttachments);
+	~FrameBufferObject(void);
 	unsigned int FBO, renderBuffer, depthTex;
 	unsigned int tex;
 	unsigned int getColorAttachmentTex(int i);
@@ -33,6 +34,7 @@ private:
 class TextureSet { //for drawing compute shader
 public:
 	TextureSet(int W, int H, int num);
+	~TextureSet(void);
 	void bindTexture(int i, int unit);
 	unsigned int getColorAttachmentTex(int i);
 	int getNTextures() const {

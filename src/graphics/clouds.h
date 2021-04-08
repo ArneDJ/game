@@ -34,11 +34,15 @@ class Cloudscape {
 public:
 	Cloudscape(int SW, int SH);
 	~Cloudscape(void);
-	void draw(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color);
+	void draw(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color, float time);
 	enum cloudsTextureNames {fragColor, bloom, alphaness, cloudDistance};
 	GLuint get_raw_clouds(void)
 	{
 		return cloudsFBO->getColorAttachmentTex(0);
+	}
+	GLuint get_alpha_clouds(void)
+	{
+		return cloudsFBO->getColorAttachmentTex(2);
 	}
 private:
 	int SCR_WIDTH, SCR_HEIGHT;

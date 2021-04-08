@@ -58,12 +58,13 @@ unsigned int createTextureAttachment(int width, int height) {
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 
+	// attach it to the framebuffer
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
 	return texture;
 }
 
-unsigned int * createColorAttachments(int width, int height, unsigned int nColorAttachments) {
+unsigned int *createColorAttachments(int width, int height, unsigned int nColorAttachments) {
 	unsigned int * colorAttachments = new unsigned int[nColorAttachments];
 	glGenTextures(nColorAttachments, colorAttachments);
 
@@ -123,8 +124,8 @@ FrameBufferObject::FrameBufferObject(int W_, int H_) {
 	this->tex = createTextureAttachment(W, H);
 	this->depthTex = createDepthTextureAttachment(W, H);
 
-	colorAttachments = NULL;
-	nColorAttachments = 1;
+	colorAttachments = nullptr;
+	nColorAttachments = 0;
 }
 
 FrameBufferObject::FrameBufferObject(int W_, int H_, const int nColorAttachments) {
@@ -144,7 +145,28 @@ FrameBufferObject::FrameBufferObject(int W_, int H_, const int nColorAttachments
 	glDrawBuffers(nColorAttachments, colorAttachmentsFlag);
 	delete colorAttachmentsFlag;
 }
+	
+FrameBufferObject::~FrameBufferObject(void)
+{
+	for (int i = 0; i < nColorAttachments; i++) {
+		if (glIsTexture(colorAttachments[i]) == GL_TRUE) {
+			glDeleteTextures(1, &colorAttachments[i]);
+			colorAttachments[i] = 0;
+		}
+	}
+	delete colorAttachments;
 
+	glDeleteFramebuffers(1, &FBO);
+
+	if (glIsTexture(tex) == GL_TRUE) {
+		glDeleteTextures(1, &tex);
+		tex = 0;
+	}
+	if (glIsTexture(depthTex) == GL_TRUE) {
+		glDeleteTextures(1, &depthTex);
+		depthTex = 0;
+	}
+}
 
 void FrameBufferObject::bind() {
 	bindFrameBuffer(this->FBO, this->W, this->H);
@@ -169,6 +191,10 @@ TextureSet::TextureSet(int W, int H, int num)
 	}
 }
 
+TextureSet::~TextureSet(void)
+{
+	glDeleteTextures(nTextures, texture);
+}
 
 unsigned int TextureSet::getColorAttachmentTex(int i) {
 	if (i < 0 || i > nTextures) {

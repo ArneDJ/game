@@ -83,6 +83,44 @@
 //static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
 
+// TODO
+class ScreenMesh {
+public:
+	ScreenMesh(void)
+	{
+		float vertices[] = {
+			-1.0f, -1.0f, 0.0, 0.0,
+			1.0f, -1.0f, 1.0, 0.0,
+			-1.0f,  1.0f, 0.0, 1.0,
+			1.0f,  1.0f, 1.0, 1.0,
+			-1.0f,  1.0f, 0.0, 1.0,
+			1.0f, -1.0f, 1.0, 0.0
+		};
+
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+		glEnableVertexAttribArray(1);
+	}
+	~ScreenMesh(void)
+	{
+		glDeleteBuffers(1, &quadVBO);
+		glDeleteVertexArrays(1, &quadVAO);
+	}
+	void draw(void)
+	{
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+	}
+private:
+	GLuint quadVAO, quadVBO;
+};
+
 enum game_state {
 	GS_TITLE,
 	GS_NEW_CAMPAIGN,
@@ -145,6 +183,7 @@ private:
 	Shader object_shader;
 	Shader debug_shader;
 	Shader depth_shader;
+	Shader postproc_shader;
 	Shadow *shadow;
 	// temporary assets
 	Texture *rivers;
@@ -248,6 +287,10 @@ void Game::load_module(void)
 	depth_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
 	depth_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
 	depth_shader.link();
+
+	postproc_shader.compile("shaders/postproc.vert", GL_VERTEX_SHADER);
+	postproc_shader.compile("shaders/postproc.frag", GL_FRAGMENT_SHADER);
+	postproc_shader.link();
 
 	skybox.init();
 
@@ -356,6 +399,7 @@ void Game::run_battle(void)
 	// TODO atmosphere
 	FrameBufferObject sceneFBO(windowman.width, windowman.height);
 	Cloudscape cloudscape(windowman.width, windowman.height);
+	ScreenMesh screenmesh;
 
 	battle.camera.position = { 3072.f, 200.f, 3072.f };
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
@@ -432,6 +476,7 @@ void Game::run_battle(void)
 		//sceneFBO.bind();
 		renderman.prepare_to_render();
 	
+		/*
 		object_shader.use();
 		object_shader.uniform_mat4("VP", battle.camera.VP);
 		object_shader.uniform_bool("INSTANCED", false);
@@ -439,10 +484,10 @@ void Game::run_battle(void)
 		glm::mat4 MVP = battle.camera.VP * T;
 		object_shader.uniform_mat4("MVP", MVP);
 		object_shader.uniform_mat4("MODEL", T);
-		GLuint cloudtex = cloudscape.get_raw_clouds();
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, cloudtex);
+		//glBindTexture(GL_TEXTURE_2D, cloudtex);
 		cube->display();
+		*/
 		
 		battle.ordinary->display(&battle.camera);
 
@@ -450,8 +495,23 @@ void Game::run_battle(void)
 		battle.terrain->update_shadow(shadow, show_cascades);
 		battle.terrain->display(&battle.camera);
 
-		cloudscape.draw(&battle.camera, sun_position, modular.atmos.skybottom, modular.atmos.skybottom);
+		cloudscape.draw(&battle.camera, sun_position, modular.atmos.skybottom, modular.atmos.skybottom, timer.elapsed);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cloudscape.get_raw_clouds());
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, cloudscape.get_alpha_clouds());
+
 		skybox.display(&battle.camera);
+
+		// apply post processing effects to final screen image
+		/*
+		postproc_shader.use();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, cloudscape.get_raw_clouds());
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, cloudscape.get_alpha_clouds());
+		screenmesh.draw();
+		*/
 
 		if (debugmode) {
 			ImGui::Render();

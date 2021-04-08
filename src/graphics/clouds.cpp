@@ -174,7 +174,7 @@ Cloudscape::~Cloudscape(void)
 	delete cloudsPostProcessingFBO;
 }
 
-void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color)
+void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color, float time)
 {
 	float t1, t2;
 
@@ -189,7 +189,7 @@ void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm
 	cloudsShader.use();
 
 	cloudsShader.uniform_vec2("iResolution", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
-	cloudsShader.uniform_float("iTime", 1.f);
+	cloudsShader.uniform_float("iTime", time);
 	cloudsShader.uniform_mat4("inv_proj", glm::inverse(camera->projection));
 	cloudsShader.uniform_mat4("inv_view", glm::inverse(camera->viewing));
 	cloudsShader.uniform_vec3("cameraPosition", camera->position);
