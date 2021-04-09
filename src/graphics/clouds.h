@@ -6,14 +6,13 @@ class Clouds {
 public:
 	friend class Cloudscape;
 	void init(void);
-	~Clouds(void);
+	void teardown(void);
 private:
 	Shader volumetric;
 	Shader weather;
 	float coverage, speed, crispiness, curliness, density, absorption;
-	float earth_radius, sphere_inner_radius, sphere_outer_radius;
+	float earth_radius, inner_radius, outer_radius;
 	float perlin_frequency;
-	bool godrayed;
 	bool powdered;
 	glm::vec3 topcolor, bottomcolor;
 	glm::vec3 seed, old_seed;
@@ -31,19 +30,14 @@ private:
 class Cloudscape {
 public:
 	void init(int SW, int SH);
-	~Cloudscape(void);
-	void update(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color, float time);
-	enum cloudsTextureNames {fragColor, bloom, alphaness, cloudDistance};
+	void teardown(void);
+	void update(const Camera *camera, const glm::vec3 &lightpos, float time);
 	GLuint get_raw_clouds(void) const
 	{
-		return cloudsFBO->getColorAttachmentTex(0);
-	}
-	GLuint get_alpha_clouds(void) const
-	{
-		return cloudsFBO->getColorAttachmentTex(2);
+		return cloudscape;
 	}
 private:
 	int SCR_WIDTH, SCR_HEIGHT;
-	TextureSet *cloudsFBO;
+	GLuint cloudscape;
 	Clouds clouds;
 };

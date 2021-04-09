@@ -15,23 +15,33 @@
 #include "../core/shader.h"
 #include "../core/image.h"
 #include "../core/texture.h"
-#include "../core/buffers.h"
 #include "../core/camera.h"
 #include "clouds.h"
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 
+static const size_t PERLIN_RES = 128;
+static const size_t WORLEY_RES = 32;
+static const size_t WEATHERMAP_RES = 1024;
+
+static GLuint generateTexture2D(int w, int h);
+static GLuint generateTexture3D(int w, int h, int d);
 
 void Clouds::init(void)
 {
 	init_variables();
 	init_shaders();
+	
+	perlin = generateTexture3D(PERLIN_RES, PERLIN_RES, PERLIN_RES);
+	worley32 = generateTexture3D(WORLEY_RES, WORLEY_RES, WORLEY_RES);
+	weathermap = generateTexture2D(WEATHERMAP_RES, WEATHERMAP_RES);
+
 	generate_textures();
 	
 	generate_weather();
 }
 
-Clouds::~Clouds(void)
+void Clouds::teardown(void)
 {
 	if (glIsTexture(weathermap) == GL_TRUE) {
 		glDeleteTextures(1, &weathermap);
@@ -46,20 +56,19 @@ Clouds::~Clouds(void)
 
 void Clouds::init_variables(void)
 {
-	speed = 450.0;
+	speed = 200.0;
 	coverage = 0.45;
 	crispiness = 40.;
 	curliness = .1;
-	density = 0.02;
+	density = 0.01;
 	absorption = 0.35;
 
 	earth_radius = 600000.0;
-	sphere_inner_radius = 5000.0;
-	sphere_outer_radius = 17000.0;
+	inner_radius = 2000.0;
+	outer_radius = 14000.0;
 
 	perlin_frequency = 0.8;
 
-	godrayed = false;
 	powdered = false;
 
 	seed = glm::vec3(0.0, 0.0, 0.0);
@@ -84,12 +93,12 @@ void Clouds::init_shaders(void)
 
 void Clouds::generate_weather(void) 
 {
-	bindTexture2D(weathermap, 0);
+	glBindImageTexture(0, weathermap, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	weather.use();
 	weather.uniform_vec3("seed", seed);
 	weather.uniform_float("perlinFrequency", perlin_frequency);
 	std::cout << "computing weather!" << std::endl;
-	glDispatchCompute(INT_CEIL(1024, 8), INT_CEIL(1024, 8), 1);
+	glDispatchCompute(INT_CEIL(WEATHERMAP_RES, 8), INT_CEIL(WEATHERMAP_RES, 8), 1);
 	std::cout << "weather computed!!" << std::endl;
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -104,43 +113,33 @@ void Clouds::generate_textures(void)
 	comp.link();
 	
 	// perlin
-	//make texture
-	perlin = generateTexture3D(128, 128, 128);
-	//compute
 	comp.use();
-	comp.uniform_vec3("u_resolution", glm::vec3(128, 128, 128));
+	comp.uniform_vec3("u_resolution", glm::vec3(PERLIN_RES, PERLIN_RES, PERLIN_RES));
 	std::cout << "computing perlinworley!" << std::endl;
 	glActiveTexture(GL_TEXTURE0);
 	comp.uniform_int("outVolTex", 0);
 	glBindTexture(GL_TEXTURE_3D, perlin);
 	glBindImageTexture(0, perlin, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
-	glDispatchCompute(INT_CEIL(128, 4), INT_CEIL(128, 4), INT_CEIL(128, 4));
+	glDispatchCompute(INT_CEIL(PERLIN_RES, 4), INT_CEIL(PERLIN_RES, 4), INT_CEIL(PERLIN_RES, 4));
 	std::cout << "computed!!" << std::endl;
 	//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	glGenerateMipmap(GL_TEXTURE_3D);
 
 	// worley
-	//compute shaders
 	Shader worley;
 	worley.compile("shaders/worley.comp", GL_COMPUTE_SHADER);
 	worley.link();
 
-	//make texture
-	worley32 = generateTexture3D(32, 32, 32);
-
 	//compute
 	worley.use();
-	worley.uniform_vec3("u_resolution", glm::vec3(32, 32, 32));
+	worley.uniform_vec3("u_resolution", glm::vec3(WORLEY_RES, WORLEY_RES, WORLEY_RES));
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, worley32);
 	glBindImageTexture(0, worley32, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
 	std::cout << "computing worley 32!" << std::endl;
-	glDispatchCompute(INT_CEIL(32, 4), INT_CEIL(32, 4), INT_CEIL(32, 4));
+	glDispatchCompute(INT_CEIL(WORLEY_RES, 4), INT_CEIL(WORLEY_RES, 4), INT_CEIL(WORLEY_RES, 4));
 	std::cout << "computed!!" << std::endl;
 	glGenerateMipmap(GL_TEXTURE_3D);
-
-	// weathermap
-	weathermap = generateTexture2D(1024, 1024);
 
 	//compute
 	glBindImageTexture(0, weathermap, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
@@ -148,7 +147,7 @@ void Clouds::generate_textures(void)
 	weather.uniform_vec3("seed", seed);
 	weather.uniform_float("perlinFrequency", perlin_frequency);
 	std::cout << "computing weather!" << std::endl;
-	glDispatchCompute(INT_CEIL(1024, 8), INT_CEIL(1024, 8), 1);
+	glDispatchCompute(INT_CEIL(WEATHERMAP_RES, 8), INT_CEIL(WEATHERMAP_RES, 8), 1);
 	std::cout << "weather computed!!" << std::endl;
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -164,57 +163,48 @@ void Cloudscape::init(int SW, int SH)
 
 	SCR_WIDTH = SW;
 	SCR_HEIGHT = SH;
-	cloudsFBO = new TextureSet(SW, SH, 4);
+	cloudscape = generateTexture2D(SW, SH);
 }
 
-Cloudscape::~Cloudscape(void)
+void Cloudscape::teardown(void)
 {
-	delete cloudsFBO;
-}
-
-void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color, float time)
-{
-	float t1, t2;
-
-	// attach textures where the final result goes
-	for (int i = 0; i < cloudsFBO->getNTextures(); ++i) {
-		bindTexture2D(cloudsFBO->getColorAttachmentTex(i), i);
+	clouds.teardown();
+	if (glIsTexture(cloudscape) == GL_TRUE) {
+		glDeleteTextures(1, &cloudscape);
 	}
+}
 
-	Shader &cloudsShader = clouds.volumetric;
-	cloudsShader.use();
+void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, float time)
+{
+	Shader &volumetric = clouds.volumetric;
+	volumetric.use();
 
-	cloudsShader.uniform_vec2("iResolution", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
-	cloudsShader.uniform_float("iTime", time);
-	cloudsShader.uniform_mat4("inv_proj", glm::inverse(camera->projection));
-	cloudsShader.uniform_mat4("inv_view", glm::inverse(camera->viewing));
-	cloudsShader.uniform_vec3("cameraPosition", camera->position);
-	cloudsShader.uniform_float("FOV", camera->FOV);
-	cloudsShader.uniform_vec3("lightDirection", glm::normalize(lightpos));
-	cloudsShader.uniform_vec3("lightColor", glm::vec3(1.f, 1.f, 1.f));
+	volumetric.uniform_vec2("RESOLUTION", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
+	volumetric.uniform_float("TIME", time);
+	volumetric.uniform_mat4("INV_PROJ", glm::inverse(camera->projection));
+	volumetric.uniform_mat4("INV_VIEW", glm::inverse(camera->viewing));
+	volumetric.uniform_vec3("CAM_POS", camera->position);
+	volumetric.uniform_float("FOV", camera->FOV);
+	volumetric.uniform_vec3("SUN_POS", glm::normalize(lightpos));
+	volumetric.uniform_vec3("LIGHT_COLOR", glm::vec3(1.f, 1.f, 1.f));
 	
-	cloudsShader.uniform_float("coverage_multiplier", clouds.coverage);
-	cloudsShader.uniform_float("cloudSpeed", clouds.speed);
-	cloudsShader.uniform_float("crispiness", clouds.crispiness);
-	cloudsShader.uniform_float("curliness", clouds.curliness);
-	cloudsShader.uniform_float("absorption", clouds.absorption*0.01);
-	cloudsShader.uniform_float("densityFactor", clouds.density);
+	volumetric.uniform_float("COVERAGE", clouds.coverage);
+	volumetric.uniform_float("SPEED", clouds.speed);
+	volumetric.uniform_float("CRISPINESS", clouds.crispiness);
+	volumetric.uniform_float("CURLINESS", clouds.curliness);
+	volumetric.uniform_float("ABSORPTION", clouds.absorption*0.01);
+	volumetric.uniform_float("DENSITY_FACTOR", clouds.density);
 
-	cloudsShader.uniform_bool("enablePowder", clouds.powdered);
+	volumetric.uniform_bool("ENABLE_POWDER", clouds.powdered);
 
-	cloudsShader.uniform_float("earthRadius", clouds.earth_radius);
-	cloudsShader.uniform_float("sphereInnerRadius", clouds.sphere_inner_radius);
-	cloudsShader.uniform_float("sphereOuterRadius", clouds.sphere_outer_radius);
+	volumetric.uniform_float("EARTH_RADIUS", clouds.earth_radius);
+	volumetric.uniform_float("INNER_RADIUS", clouds.inner_radius);
+	volumetric.uniform_float("OUTER_RADIUS", clouds.outer_radius);
 
-	cloudsShader.uniform_vec3("cloudColorTop", clouds.topcolor);
-	cloudsShader.uniform_vec3("cloudColorBottom", clouds.bottomcolor);
+	volumetric.uniform_vec3("COLOR_TOP", clouds.topcolor);
+	volumetric.uniform_vec3("COLOR_BOTTOM", clouds.bottomcolor);
 
-	cloudsShader.uniform_vec3("skyColorTop", zenith_color);
-	cloudsShader.uniform_vec3("skyColorBottom", horizon_color);
-
-	glm::mat4 vp = camera->projection * camera->viewing;
-	cloudsShader.uniform_mat4("invViewProj", glm::inverse(vp));
-	cloudsShader.uniform_mat4("gVP", vp);
+	glBindImageTexture(0, cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_3D, clouds.perlin);
@@ -222,13 +212,49 @@ void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, const g
 	glBindTexture(GL_TEXTURE_3D, clouds.worley32);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, clouds.weathermap);
-	// isn't used
-	//cloudsShader.setSampler2D("depthMap", s->sceneFBO->depthTex, 3);
-	//glActiveTexture(GL_TEXTURE7);
-	//glBindTexture(GL_TEXTURE_2D, sceneFBO->depthTex);
 
-	//actual update
 	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_HEIGHT, 16), 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
+// TODO put this in texture class
+static GLuint generateTexture3D(int w, int h, int d) 
+{
+	GLuint tex_output;
+	glGenTextures(1, &tex_output);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_3D, tex_output);
+
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//glTexStorage3D(GL_TEXTURE_3D, 0, GL_RGBA32F, w, h, d);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, w, h, d, 0, GL_RGBA, GL_FLOAT, NULL);
+	glGenerateMipmap(GL_TEXTURE_3D);
+	glBindImageTexture(0, tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
+	return tex_output;
+}
+
+// TODO put this in texture class
+static GLuint generateTexture2D(int w, int h) 
+{
+	GLuint tex_output;
+	glGenTextures(1, &tex_output);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex_output);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RGBA, GL_FLOAT, NULL);
+
+	glBindImageTexture(0, tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+	return tex_output;
+}

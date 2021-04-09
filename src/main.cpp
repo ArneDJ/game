@@ -55,7 +55,6 @@
 #include "core/shader.h"
 #include "core/mesh.h"
 #include "core/texture.h"
-#include "core/buffers.h"
 #include "core/model.h"
 #include "core/physics.h"
 #include "core/animation.h"
@@ -282,6 +281,7 @@ void Game::teardown(void)
 		ImGui::DestroyContext();
 	}
 
+	cloudscape.teardown();
 	skybox.teardown();
 	//renderman.teardown();
 
@@ -438,11 +438,9 @@ void Game::run_battle(void)
 		battle.terrain->update_shadow(shadow, show_cascades);
 		battle.terrain->display(&battle.camera);
 
-		cloudscape.update(&battle.camera, sun_position, modular.atmos.skybottom, modular.atmos.skybottom, timer.elapsed);
+		cloudscape.update(&battle.camera, sun_position, timer.elapsed);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cloudscape.get_raw_clouds());
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, cloudscape.get_alpha_clouds());
 
 		skybox.display(&battle.camera);
 

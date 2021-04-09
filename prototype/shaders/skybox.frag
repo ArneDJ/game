@@ -7,10 +7,11 @@ out vec4 fcolor;
 uniform vec3 ZENITH_COLOR;
 uniform vec3 HORIZON_COLOR;
 uniform vec3 SUN_POS;
+uniform float SCREEN_WIDTH;
+uniform float SCREEN_HEIGHT;
 uniform bool CLOUDS_ENABLED;
 
-layout (binding = 0) uniform sampler2D CLOUD_COLOR;
-layout (binding = 1) uniform sampler2D CLOUD_ALPHA;
+layout (binding = 0) uniform sampler2D CLOUDMAP;
 
 vec3 sun_color(vec3 pos, float expo)
 {
@@ -33,10 +34,11 @@ void main(void)
 	// add clouds to the sky if enabled
 	if (CLOUDS_ENABLED) {
 		vec2 coords = gl_FragCoord.xy;
-		coords.x /= 1920.0;
-		coords.y /= 1080.0;
-		float alpha = texture(CLOUD_ALPHA, coords).r;
-		vec3 cloudcolor = texture(CLOUD_COLOR, coords).rgb;
+		coords.x /= SCREEN_WIDTH;
+		coords.y /= SCREEN_HEIGHT;
+		vec4 cloud = texture(CLOUDMAP, coords);
+		float alpha = cloud.a;
+		vec3 cloudcolor = cloud.rgb;
 
 		cloudcolor = mix(cloudcolor * HORIZON_COLOR, cloudcolor, dist);
 		color = mix(color, cloudcolor, alpha);

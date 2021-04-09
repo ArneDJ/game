@@ -61,6 +61,8 @@ void Skybox::display(const Camera *camera) const
 	shader.uniform_vec3("HORIZON_COLOR", horizon);
 	shader.uniform_vec3("SUN_POS", sunposition);
 	shader.uniform_bool("CLOUDS_ENABLED", clouds_enabled);
+	shader.uniform_float("SCREEN_WIDTH", float(camera->width));
+	shader.uniform_float("SCREEN_HEIGHT", float(camera->height));
 	shader.uniform_mat4("V", camera->viewing);
 	shader.uniform_mat4("P", camera->projection);
 
