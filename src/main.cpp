@@ -83,44 +83,6 @@
 //static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
 
-// TODO
-class ScreenMesh {
-public:
-	ScreenMesh(void)
-	{
-		float vertices[] = {
-			-1.0f, -1.0f, 0.0, 0.0,
-			1.0f, -1.0f, 1.0, 0.0,
-			-1.0f,  1.0f, 0.0, 1.0,
-			1.0f,  1.0f, 1.0, 1.0,
-			-1.0f,  1.0f, 0.0, 1.0,
-			1.0f, -1.0f, 1.0, 0.0
-		};
-
-		glGenVertexArrays(1, &quadVAO);
-		glGenBuffers(1, &quadVBO);
-		glBindVertexArray(quadVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
-		glEnableVertexAttribArray(1);
-	}
-	~ScreenMesh(void)
-	{
-		glDeleteBuffers(1, &quadVBO);
-		glDeleteVertexArrays(1, &quadVAO);
-	}
-	void draw(void)
-	{
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-	}
-private:
-	GLuint quadVAO, quadVBO;
-};
-
 enum game_state {
 	GS_TITLE,
 	GS_NEW_CAMPAIGN,
@@ -180,6 +142,7 @@ private:
 	MediaManager mediaman;
 	RenderManager renderman;
 	Skybox skybox;
+	Cloudscape cloudscape;
 	Shader object_shader;
 	Shader debug_shader;
 	Shader depth_shader;
@@ -188,7 +151,6 @@ private:
 	// temporary assets
 	Texture *rivers;
 	bool show_cascades = false;
-	const GLTF::Model *cube;
 private:
 	void init(void);
 	void init_settings(void);
@@ -273,7 +235,6 @@ void Game::load_module(void)
 	mediaman.change_path(modular.path);
 
 	// load assets
-	cube = mediaman.load_model("cube.glb");
 
 	// load shaders
 	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
@@ -293,6 +254,8 @@ void Game::load_module(void)
 	postproc_shader.link();
 
 	skybox.init();
+	cloudscape.init(windowman.width, windowman.height);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	reserve_campaign();
 
@@ -391,16 +354,11 @@ void Game::update_battle(void)
 	physicsman.update(timer.delta);
 	
 	// update atmosphere
-	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position);
+	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position, true);
 }
 
 void Game::run_battle(void)
 {
-	// TODO atmosphere
-	FrameBufferObject sceneFBO(windowman.width, windowman.height);
-	Cloudscape cloudscape(windowman.width, windowman.height);
-	ScreenMesh screenmesh;
-
 	battle.camera.position = { 3072.f, 200.f, 3072.f };
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
@@ -473,45 +431,20 @@ void Game::run_battle(void)
 
 		glViewport(0, 0, settings.window_width, settings.window_height);
 
-		//sceneFBO.bind();
 		renderman.prepare_to_render();
 	
-		/*
-		object_shader.use();
-		object_shader.uniform_mat4("VP", battle.camera.VP);
-		object_shader.uniform_bool("INSTANCED", false);
-		glm::mat4 T = glm::translate(glm::mat4(1.f), glm::vec3(3072.f, 200.f, 3072.f));
-		glm::mat4 MVP = battle.camera.VP * T;
-		object_shader.uniform_mat4("MVP", MVP);
-		object_shader.uniform_mat4("MODEL", T);
-		glActiveTexture(GL_TEXTURE1);
-		//glBindTexture(GL_TEXTURE_2D, cloudtex);
-		cube->display();
-		*/
-		
 		battle.ordinary->display(&battle.camera);
 
-		//sceneFBO.bind();
 		battle.terrain->update_shadow(shadow, show_cascades);
 		battle.terrain->display(&battle.camera);
 
-		cloudscape.draw(&battle.camera, sun_position, modular.atmos.skybottom, modular.atmos.skybottom, timer.elapsed);
+		cloudscape.update(&battle.camera, sun_position, modular.atmos.skybottom, modular.atmos.skybottom, timer.elapsed);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, cloudscape.get_raw_clouds());
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, cloudscape.get_alpha_clouds());
 
 		skybox.display(&battle.camera);
-
-		// apply post processing effects to final screen image
-		/*
-		postproc_shader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cloudscape.get_raw_clouds());
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, cloudscape.get_alpha_clouds());
-		screenmesh.draw();
-		*/
 
 		if (debugmode) {
 			ImGui::Render();
@@ -542,6 +475,7 @@ void Game::reserve_battle(void)
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
+	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
 	battle.terrain->load_materials(materials);
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
@@ -558,6 +492,7 @@ void Game::reserve_campaign(void)
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
+	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
 	campaign.worldmap->load_materials(materials);
 
 	rivers = new Texture { campaign.atlas->get_biomes() };
@@ -640,7 +575,7 @@ void Game::update_campaign(void)
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
-	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position);
+	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position, false);
 }
 	
 void Game::new_campaign(void)

@@ -22,7 +22,7 @@
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 
 
-Clouds::Clouds(void)
+void Clouds::init(void)
 {
 	init_variables();
 	init_shaders();
@@ -61,7 +61,6 @@ void Clouds::init_variables(void)
 
 	godrayed = false;
 	powdered = false;
-	postprocessed = true;
 
 	seed = glm::vec3(0.0, 0.0, 0.0);
 	old_seed = glm::vec3(0.0, 0.0, 0.0);
@@ -76,7 +75,7 @@ void Clouds::init_variables(void)
 
 void Clouds::init_shaders(void)
 {
-	volumetric.compile("shaders/volumetric_clouds.comp", GL_COMPUTE_SHADER);
+	volumetric.compile("shaders/clouds.comp", GL_COMPUTE_SHADER);
 	volumetric.link();
 
 	weather.compile("shaders/weather.comp", GL_COMPUTE_SHADER);
@@ -144,7 +143,6 @@ void Clouds::generate_textures(void)
 	weathermap = generateTexture2D(1024, 1024);
 
 	//compute
-	//bindTexture2D(weathermap, 0);
 	glBindImageTexture(0, weathermap, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	weather.use();
 	weather.uniform_vec3("seed", seed);
@@ -160,32 +158,30 @@ void Clouds::generate_textures(void)
 	old_seed = seed;
 }
 
-Cloudscape::Cloudscape(int SW, int SH)
+void Cloudscape::init(int SW, int SH)
 {
+	clouds.init();
+
 	SCR_WIDTH = SW;
 	SCR_HEIGHT = SH;
 	cloudsFBO = new TextureSet(SW, SH, 4);
-	cloudsPostProcessingFBO = new FrameBufferObject(1920, 1080, 2);
 }
 
 Cloudscape::~Cloudscape(void)
 {
 	delete cloudsFBO;
-	delete cloudsPostProcessingFBO;
 }
 
-void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color, float time)
+void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, const glm::vec3 &zenith_color, const glm::vec3 &horizon_color, float time)
 {
 	float t1, t2;
 
-	//cloudsFBO->bind();
 	// attach textures where the final result goes
 	for (int i = 0; i < cloudsFBO->getNTextures(); ++i) {
 		bindTexture2D(cloudsFBO->getColorAttachmentTex(i), i);
 	}
 
 	Shader &cloudsShader = clouds.volumetric;
-//sceneElements* s = drawableObject::scene;
 	cloudsShader.use();
 
 	cloudsShader.uniform_vec2("iResolution", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
@@ -194,7 +190,7 @@ void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm
 	cloudsShader.uniform_mat4("inv_view", glm::inverse(camera->viewing));
 	cloudsShader.uniform_vec3("cameraPosition", camera->position);
 	cloudsShader.uniform_float("FOV", camera->FOV);
-	cloudsShader.uniform_vec3("lightDirection", glm::normalize(lightpos - camera->position));
+	cloudsShader.uniform_vec3("lightDirection", glm::normalize(lightpos));
 	cloudsShader.uniform_vec3("lightColor", glm::vec3(1.f, 1.f, 1.f));
 	
 	cloudsShader.uniform_float("coverage_multiplier", clouds.coverage);
@@ -204,7 +200,7 @@ void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm
 	cloudsShader.uniform_float("absorption", clouds.absorption*0.01);
 	cloudsShader.uniform_float("densityFactor", clouds.density);
 
-	//cloudsShader.setBool("enablePowder", enablePowder);
+	cloudsShader.uniform_bool("enablePowder", clouds.powdered);
 
 	cloudsShader.uniform_float("earthRadius", clouds.earth_radius);
 	cloudsShader.uniform_float("sphereInnerRadius", clouds.sphere_inner_radius);
@@ -220,13 +216,10 @@ void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm
 	cloudsShader.uniform_mat4("invViewProj", glm::inverse(vp));
 	cloudsShader.uniform_mat4("gVP", vp);
 
-	//cloudsShader.setSampler3D("cloud", clouds.perlin, 0);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_3D, clouds.perlin);
-	//cloudsShader.setSampler3D("worley32", clouds.worley32, 1);
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_3D, clouds.worley32);
-	//cloudsShader.setSampler2D("weatherTex", clouds.weathermap, 2);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, clouds.weathermap);
 	// isn't used
@@ -234,56 +227,8 @@ void Cloudscape::draw(const Camera *camera, const glm::vec3 &lightpos, const glm
 	//glActiveTexture(GL_TEXTURE7);
 	//glBindTexture(GL_TEXTURE_2D, sceneFBO->depthTex);
 
-	//cloudsShader.setSampler2D("sky", clouds->sky->getSkyTexture(), 4);
-	// TODO
-	glActiveTexture(GL_TEXTURE8);
-	//glBindTexture(GL_TEXTURE_2D, );
-
-	//actual draw
-	//volumetricCloudsShader->draw();
-//if(!s->wireframe)
+	//actual update
 	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_HEIGHT, 16), 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-	/*
-	if (clouds.postProcess) {
-		// cloud post processing filtering
-		cloudsPostProcessingFBO->bind();
-		Shader &cloudsPPShader = clouds.postProcessingShader->getShader();
-
-		cloudsPPShader.use();
-
-		cloudsPPShader.setSampler2D("clouds", cloudsFBO->getColorAttachmentTex(VolumetricClouds::fragColor), 0);
-		cloudsPPShader.setSampler2D("emissions", cloudsFBO->getColorAttachmentTex(VolumetricClouds::bloom), 1);
-		cloudsPPShader.setSampler2D("depthMap", s->sceneFBO->depthTex, 2);
-
-		cloudsPPShader.setVec2("cloudRenderResolution", glm::vec2(SCR_WIDTH, SCR_HEIGHT));
-		cloudsPPShader.setVec2("resolution", glm::vec2(Window::SCR_WIDTH , Window::SCR_HEIGHT));
-
-		glm::mat4 lightModel;
-		lightModel = glm::translate(lightModel, s->lightPos);
-		glm::vec4 pos = vp * lightModel * glm::vec4(0.0, 60.0, 0.0, 1.0);
-		pos = pos / pos.w;
-		pos = pos * 0.5f + 0.5f;
-
-		//std::cout << pos.x << ": X; " << pos.y << " Y;" << std::endl;
-		cloudsPPShader.setVec4("lightPos", pos);
-
-		bool isLightInFront = false;
-		float lightDotCameraFront = glm::dot(glm::normalize(s->lightPos - s->cam->Position), glm::normalize(s->cam->Front));
-		//std::cout << "light dot camera front= " << lightDotCameraFront << std::endl;
-		if (lightDotCameraFront > 0.2) {
-			isLightInFront = true;
-		}
-
-		cloudsPPShader.setBool("isLightInFront", isLightInFront);
-		cloudsPPShader.setBool("enableGodRays", clouds.enableGodRays);
-		cloudsPPShader.setFloat("lightDotCameraFront", lightDotCameraFront);
-
-		cloudsPPShader.setFloat("time", glfwGetTime());
-		if (!s->wireframe)
-			clouds.postProcessingShader->draw();
-	}
-	*/
 }
 

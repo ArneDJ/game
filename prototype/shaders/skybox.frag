@@ -7,6 +7,7 @@ out vec4 fcolor;
 uniform vec3 ZENITH_COLOR;
 uniform vec3 HORIZON_COLOR;
 uniform vec3 SUN_POS;
+uniform bool CLOUDS_ENABLED;
 
 layout (binding = 0) uniform sampler2D CLOUD_COLOR;
 layout (binding = 1) uniform sampler2D CLOUD_ALPHA;
@@ -29,13 +30,17 @@ void main(void)
 	// add sun to the sky
 	color += sun_color(position, 500.0);
 
-	vec2 coords = gl_FragCoord.xy;
-	coords.x /= 1920.0;
-	coords.y /= 1080.0;
-	float alpha = texture(CLOUD_ALPHA, coords).r;
-	vec3 cloudcolor = texture(CLOUD_COLOR, coords).rgb;
+	// add clouds to the sky if enabled
+	if (CLOUDS_ENABLED) {
+		vec2 coords = gl_FragCoord.xy;
+		coords.x /= 1920.0;
+		coords.y /= 1080.0;
+		float alpha = texture(CLOUD_ALPHA, coords).r;
+		vec3 cloudcolor = texture(CLOUD_COLOR, coords).rgb;
 
-	color = mix(color, cloudcolor, alpha);
+		cloudcolor = mix(cloudcolor * HORIZON_COLOR, cloudcolor, dist);
+		color = mix(color, cloudcolor, alpha);
+	}
 
 	fcolor = vec4(color, 1.0);
 }

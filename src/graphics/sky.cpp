@@ -46,11 +46,12 @@ void Skybox::teardown(void)
 	delete cubemap;
 }
 	
-void Skybox::update(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos)
+void Skybox::update(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled)
 {
 	zenith = top;
 	horizon = bottom;
 	sunposition = sunpos;
+	clouds_enabled = cloudsenabled;
 }
 	
 void Skybox::display(const Camera *camera) const
@@ -59,6 +60,7 @@ void Skybox::display(const Camera *camera) const
 	shader.uniform_vec3("ZENITH_COLOR", zenith);
 	shader.uniform_vec3("HORIZON_COLOR", horizon);
 	shader.uniform_vec3("SUN_POS", sunposition);
+	shader.uniform_bool("CLOUDS_ENABLED", clouds_enabled);
 	shader.uniform_mat4("V", camera->viewing);
 	shader.uniform_mat4("P", camera->projection);
 

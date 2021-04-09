@@ -12,6 +12,7 @@ layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 1) uniform sampler2D NORMALMAP;
 layout(binding = 2) uniform sampler2D STONEMAP;
 layout(binding = 3) uniform sampler2D SANDMAP;
+layout(binding = 4) uniform sampler2D STONE_NORMAL;
 
 layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
 
@@ -93,8 +94,14 @@ void main(void)
 	
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
+
+	vec3 bump = texture(STONE_NORMAL, 100.0 * fragment.texcoord).rgb;
+	bump = (bump * 2.0) - 1.0;
+	bump = vec3(bump.x, bump.z, bump.y);
+	bump = normalize(bump);
 	
 	vec3 color = mix(sand, stone, slope);
+	normal = mix(normal, normalize(normal + bump), slope);
 
 	if (SHOW_CASCADES == true) {
 		vec3 cascade = vec3(0, 0, 0);
@@ -111,7 +118,6 @@ void main(void)
 	}
 
 	// terrain lighting
-	//const vec3 lightdirection = vec3(0.5, 0.93, 0.1);
 	const vec3 ambient = vec3(0.5, 0.5, 0.5);
 	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
 	float diffuse = max(0.0, dot(normal, SUN_POS));
