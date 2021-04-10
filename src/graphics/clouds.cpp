@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <map>
+#include <random>
 #include <GL/glew.h>
 #include <GL/gl.h> 
 
@@ -30,6 +31,7 @@ static GLuint generateTexture3D(int w, int h, int d);
 void Clouds::init(void)
 {
 	init_variables();
+
 	init_shaders();
 	
 	perlin = generateTexture3D(PERLIN_RES, PERLIN_RES, PERLIN_RES);
@@ -71,8 +73,10 @@ void Clouds::init_variables(void)
 
 	powdered = false;
 
-	seed = glm::vec3(0.0, 0.0, 0.0);
-	old_seed = glm::vec3(0.0, 0.0, 0.0);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> dist;
+	seed = { dist(gen), dist(gen), dist(gen) };
 
 	topcolor = (glm::vec3(169., 149., 149.)*(1.5f / 255.f));
 	bottomcolor = (glm::vec3(65., 70., 80.)*(1.5f / 255.f));
@@ -136,10 +140,6 @@ void Clouds::generate_textures(void)
 	glDispatchCompute(INT_CEIL(WEATHERMAP_RES, 8), INT_CEIL(WEATHERMAP_RES, 8), 1);
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-	// TODO seed
-	//seed = scene->seed;
-	old_seed = seed;
 }
 
 void Cloudscape::init(int SW, int SH)
@@ -149,6 +149,18 @@ void Cloudscape::init(int SW, int SH)
 	SCR_WIDTH = SW;
 	SCR_HEIGHT = SH;
 	cloudscape = generateTexture2D(SW, SH);
+	blurred_cloudscape = generateTexture2D(SW, SH);
+
+	glBindTexture(GL_TEXTURE_2D, cloudscape);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_2D, blurred_cloudscape);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	blur_shader.compile("shaders/blur.comp", GL_COMPUTE_SHADER);
+	blur_shader.link();
 }
 
 void Cloudscape::teardown(void)
@@ -156,6 +168,9 @@ void Cloudscape::teardown(void)
 	clouds.teardown();
 	if (glIsTexture(cloudscape) == GL_TRUE) {
 		glDeleteTextures(1, &cloudscape);
+	}
+	if (glIsTexture(blurred_cloudscape) == GL_TRUE) {
+		glDeleteTextures(1, &blurred_cloudscape);
 	}
 }
 
@@ -199,6 +214,21 @@ void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, float t
 	glBindTexture(GL_TEXTURE_2D, clouds.weathermap);
 
 	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_HEIGHT, 16), 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+	// now blur the final cloud texture
+	glBindImageTexture(0, cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(1, blurred_cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	blur_shader.use();
+	blur_shader.uniform_float("RADIUS", 1.f);
+	blur_shader.uniform_vec2("DIR", glm::vec2(1.f, 0.f));
+
+	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_WIDTH, 16), 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+	blur_shader.uniform_vec2("DIR", glm::vec2(0.f, 1.f));
+
+	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_WIDTH, 16), 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 

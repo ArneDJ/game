@@ -17,7 +17,7 @@ private:
 	float perlin_frequency;
 	bool powdered;
 	glm::vec3 topcolor, bottomcolor;
-	glm::vec3 seed, old_seed;
+	glm::vec3 seed;
 	// 3D textures
 	GLuint perlin, worley32, weathermap;
 private:
@@ -38,8 +38,15 @@ public:
 	{
 		return cloudscape;
 	}
+	GLuint get_blurred_clouds(void) const
+	{
+		return blurred_cloudscape;
+	}
 private:
 	int SCR_WIDTH, SCR_HEIGHT;
 	GLuint cloudscape;
+	GLuint blurred_cloudscape;
 	Clouds clouds;
+	// to blur final texture
+	Shader blur_shader;
 };

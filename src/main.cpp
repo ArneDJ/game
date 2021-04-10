@@ -440,7 +440,7 @@ void Game::run_battle(void)
 
 		cloudscape.update(&battle.camera, sun_position, timer.elapsed);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cloudscape.get_raw_clouds());
+		glBindTexture(GL_TEXTURE_2D, cloudscape.get_blurred_clouds());
 
 		skybox.display(&battle.camera);
 
@@ -582,6 +582,7 @@ void Game::new_campaign(void)
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
+	campaign.seed = 4998651408012010310;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
 

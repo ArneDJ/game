@@ -139,7 +139,7 @@ void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 		heightmap->data[i] = height;
 	}
 }
-
+	
 static struct landgen_parameters random_landgen_parameters(long seed, uint32_t offset)
 {
 	std::mt19937 gen(seed);
