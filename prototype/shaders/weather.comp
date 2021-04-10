@@ -13,20 +13,19 @@ layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout (rgba8, binding = 0) uniform image2D outWeatherTex;
 
-uniform vec3 seed;
+uniform vec3 SEED;
 
 // =====================================================================================
 // COMMON
 float random2D( in vec2 st ) 
 {
-    return fract( sin(dot( st.xy, vec2(12.9898,78.233 ) + seed.xy ) ) * 43758.5453123);
+    return fract( sin(dot( st.xy, vec2(12.9898,78.233 ) + SEED.xy ) ) * 43758.5453123);
 }
 
 // =====================================================================================
 // PERLIN NOISE SPECIFIC
 
-uniform float perlinAmplitude = 0.5;
-uniform float perlinFrequency = 0.8;
+uniform float PERLIN_FREQ = 0.8;
 uniform float perlinScale = 100.0;
 uniform int perlinOctaves = 4;
 
@@ -70,13 +69,10 @@ float perlinNoise(vec2 uv, float sc, float f, float a, int o)
 	return noiseValue * noiseValue;
 }
 
-// =====================================================================================
-
-
-void main()
+void main(void)
 {
-    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
-	
+	ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+
 	vec2 uv = vec2(float(pixel.x + 2.0) / 1024.0, float(pixel.y) / 1024.0);
 	vec2 suv = vec2(uv.x + 5.5, uv.y + 5.5);
 
@@ -85,7 +81,7 @@ void main()
 
 	//cloudType = cloudType*0.5 + cloudType_*0.5;
 
-	float coverage = perlinNoise(uv, perlinScale*0.95, perlinFrequency, perlinAmplitude, 4);
+	float coverage = perlinNoise(uv, perlinScale*0.95, PERLIN_FREQ, 0.5, 4);
 	vec4 weather = vec4( clamp(coverage, 0, 1), cloudType, 0, 1);
 
 	imageStore (outWeatherTex, pixel, weather);

@@ -143,6 +143,7 @@ void Atlas::plateau_heightmap(void)
 		float(mask->height) / SCALE.z
 	};
 
+	// add mountains
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
 		if (t.relief == HIGHLAND) {
@@ -156,6 +157,7 @@ void Atlas::plateau_heightmap(void)
 		}
 	}
 
+	// add foothills
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
 		bool candidate = false;

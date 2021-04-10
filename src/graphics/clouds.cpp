@@ -89,17 +89,23 @@ void Clouds::init_shaders(void)
 
 	weather.compile("shaders/weather.comp", GL_COMPUTE_SHADER);
 	weather.link();
+
+	perlinworley.compile("shaders/perlinworley.comp", GL_COMPUTE_SHADER);
+	perlinworley.link();
+
+	worley.compile("shaders/worley.comp", GL_COMPUTE_SHADER);
+	worley.link();
 }
 
 void Clouds::generate_weather(void) 
 {
 	glBindImageTexture(0, weathermap, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
 	weather.use();
-	weather.uniform_vec3("seed", seed);
-	weather.uniform_float("perlinFrequency", perlin_frequency);
-	std::cout << "computing weather!" << std::endl;
+	weather.uniform_vec3("SEED", seed);
+	weather.uniform_float("PERLIN_FREQ", perlin_frequency);
+
 	glDispatchCompute(INT_CEIL(WEATHERMAP_RES, 8), INT_CEIL(WEATHERMAP_RES, 8), 1);
-	std::cout << "weather computed!!" << std::endl;
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
@@ -107,48 +113,27 @@ void Clouds::generate_weather(void)
 void Clouds::generate_textures(void)
 {
 	// create the perlin worley noise mix texture
-	// TODO shader check
-	Shader comp;
-	comp.compile("shaders/perlinworley.comp", GL_COMPUTE_SHADER);
-	comp.link();
 	
-	// perlin
-	comp.use();
-	comp.uniform_vec3("u_resolution", glm::vec3(PERLIN_RES, PERLIN_RES, PERLIN_RES));
-	std::cout << "computing perlinworley!" << std::endl;
+	perlinworley.use();
 	glActiveTexture(GL_TEXTURE0);
-	comp.uniform_int("outVolTex", 0);
 	glBindTexture(GL_TEXTURE_3D, perlin);
 	glBindImageTexture(0, perlin, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
 	glDispatchCompute(INT_CEIL(PERLIN_RES, 4), INT_CEIL(PERLIN_RES, 4), INT_CEIL(PERLIN_RES, 4));
-	std::cout << "computed!!" << std::endl;
 	//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	glGenerateMipmap(GL_TEXTURE_3D);
 
-	// worley
-	Shader worley;
-	worley.compile("shaders/worley.comp", GL_COMPUTE_SHADER);
-	worley.link();
-
-	//compute
 	worley.use();
-	worley.uniform_vec3("u_resolution", glm::vec3(WORLEY_RES, WORLEY_RES, WORLEY_RES));
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_3D, worley32);
 	glBindImageTexture(0, worley32, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA8);
-	std::cout << "computing worley 32!" << std::endl;
 	glDispatchCompute(INT_CEIL(WORLEY_RES, 4), INT_CEIL(WORLEY_RES, 4), INT_CEIL(WORLEY_RES, 4));
-	std::cout << "computed!!" << std::endl;
 	glGenerateMipmap(GL_TEXTURE_3D);
 
-	//compute
+	// create the weather map
 	glBindImageTexture(0, weathermap, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	weather.use();
-	weather.uniform_vec3("seed", seed);
-	weather.uniform_float("perlinFrequency", perlin_frequency);
-	std::cout << "computing weather!" << std::endl;
+	weather.uniform_vec3("SEED", seed);
 	glDispatchCompute(INT_CEIL(WEATHERMAP_RES, 8), INT_CEIL(WEATHERMAP_RES, 8), 1);
-	std::cout << "weather computed!!" << std::endl;
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 

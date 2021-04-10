@@ -10,6 +10,8 @@ public:
 private:
 	Shader volumetric;
 	Shader weather;
+	Shader perlinworley;
+	Shader worley;
 	float coverage, speed, crispiness, curliness, density, absorption;
 	float earth_radius, inner_radius, outer_radius;
 	float perlin_frequency;

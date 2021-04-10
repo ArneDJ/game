@@ -473,7 +473,6 @@ void Game::reserve_battle(void)
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
-	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
 	battle.terrain->load_materials(materials);
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
@@ -490,7 +489,6 @@ void Game::reserve_campaign(void)
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
-	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
 	campaign.worldmap->load_materials(materials);
 
 	rivers = new Texture { campaign.atlas->get_biomes() };
