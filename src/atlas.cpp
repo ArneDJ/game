@@ -43,7 +43,7 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 	};
 	worldgraph = new Worldgraph { area };
 
-	biomes = new Image { 2048, 2048, COLORSPACE_RGB };
+	watermap = new Image { heightres, heightres, COLORSPACE_GRAYSCALE };
 
 	container = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
 	detail = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
@@ -56,7 +56,7 @@ Atlas::~Atlas(void)
 	delete terragen;
 	delete worldgraph;
 
-	delete biomes;
+	delete watermap;
 
 	delete container;
 	delete detail;
@@ -83,6 +83,9 @@ auto start = std::chrono::steady_clock::now();
 	detail_heightmap(seedling);
 
 	//terragen->heightmap->normalize(CHANNEL_RED);
+	
+	// now create the watermap
+	create_watermap();
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
@@ -251,35 +254,62 @@ void Atlas::detail_heightmap(long seed)
 
 	mask->clear();
 }
-	
-void Atlas::create_mapdata(void)
-{
-	// create the spatial hash field data for the tiles
-	gen_mapfield();
 
+void Atlas::create_watermap(void)
+{
 auto start = std::chrono::steady_clock::now();
-	// create relief texture
 	const glm::vec2 mapscale = {
-		float(biomes->width) / SCALE.x,
-		float(biomes->height) / SCALE.z
+		float(watermap->width) / SCALE.x,
+		float(watermap->height) / SCALE.z
 	};
 
-	biomes->clear();
+	watermap->clear();
 
+	// create the watermap
+	// first create the water mask
+	// add the sea tiles to the mask
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == SEABED) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				watermap->draw_triangle(a, b, c, CHANNEL_RED, 255);
+			}
+		}
+	}
+	// add the rivers to the mask
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			biomes->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_RED, 0);
-			biomes->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GREEN, 0);
-			biomes->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_BLUE, 255);
+			watermap->draw_thick_line(a.x, a.y, b.x, b.y, 2, CHANNEL_RED, 255);
+		}
+	}
+	
+	// now create the heightmap of the water based on the land heightmap
+	for (int x = 0; x < watermap->width; x++) {
+		for (int y = 0; y < watermap->height; y++) {
+			uint8_t mask = watermap->sample(x, y, CHANNEL_RED);
+			if (mask > 0) {
+				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				height = glm::clamp(height + 0.1f, 0.f, 1.f);
+				watermap->plot(x, y, CHANNEL_RED, 255 * height);
+			}
 		}
 	}
 
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
+}
+	
+void Atlas::create_mapdata(void)
+{
+	// create the spatial hash field data for the tiles
+	gen_mapfield();
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -297,9 +327,9 @@ const Image* Atlas::get_tempmap(void) const
 	return terragen->tempmap;
 }
 	
-const Image* Atlas::get_biomes(void) const
+const Image* Atlas::get_watermap(void) const
 {
-	return biomes;
+	return watermap;
 }
 	
 const struct tile* Atlas::tile_at_position(const glm::vec2 &position)
@@ -337,6 +367,15 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 		std::copy(data.begin(), data.end(), terragen->tempmap->data);
 	} else {
 		write_log(LogType::ERROR, "World error: could not load temperature map");
+	}
+}
+
+void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
+{
+	if (width == watermap->width && height == watermap->height && data.size() == watermap->size) {
+		std::copy(data.begin(), data.end(), watermap->data);
+	} else {
+		write_log(LogType::ERROR, "World error: could not load water map");
 	}
 }
 

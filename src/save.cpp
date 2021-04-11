@@ -65,6 +65,15 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 
 	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
 
+	const Image *waterimage = atlas->get_watermap();
+	watermap.width = waterimage->width;
+	watermap.height = waterimage->height;
+	watermap.channels = waterimage->channels;
+	watermap.size = waterimage->size;
+	watermap.data.resize(waterimage->size);
+
+	std::copy(waterimage->data, waterimage->data + waterimage->size, watermap.data.begin());
+
 	const Worldgraph *worldgraph = atlas->worldgraph;
 
 	// save the campaign navigation data
@@ -99,6 +108,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 			cereal::make_nvp("topology", topology), 
 			cereal::make_nvp("rain", rain), 
 			cereal::make_nvp("temperature", temperature),
+			cereal::make_nvp("watermap", watermap),
 			cereal::make_nvp("seed", seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
@@ -124,6 +134,7 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 			cereal::make_nvp("topology", topology), 
 			cereal::make_nvp("rain", rain), 
 			cereal::make_nvp("temperature", temperature),
+			cereal::make_nvp("watermap", watermap),
 			cereal::make_nvp("seed", seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
@@ -140,6 +151,8 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 	atlas->load_rainmap(rain.width, rain.height, rain.data);
 
 	atlas->load_tempmap(temperature.width, temperature.height, temperature.data);
+
+	atlas->load_watermap(watermap.width, watermap.height, watermap.data);
 	
 	// load campaign the navigation data
 	landnav->alloc(navmesh_land.origin, navmesh_land.tilewidth, navmesh_land.tileheight, navmesh_land.maxtiles, navmesh_land.maxpolys);

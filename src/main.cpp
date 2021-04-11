@@ -492,7 +492,7 @@ void Game::reserve_campaign(void)
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	campaign.worldmap->load_materials(materials);
 
-	rivers = new Texture { campaign.atlas->get_biomes() };
+	rivers = new Texture { campaign.atlas->get_watermap() };
 	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
@@ -639,7 +639,7 @@ void Game::run_campaign(void)
 
 	physicsman.insert_body(campaign.surface);
 
-	rivers->reload(campaign.atlas->get_biomes());
+	rivers->reload(campaign.atlas->get_watermap());
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 	
@@ -654,7 +654,7 @@ void Game::run_campaign(void)
 
 		campaign.creatures->display(&campaign.camera);
 
-		rivers->bind(GL_TEXTURE4);
+		rivers->bind(GL_TEXTURE3);
 		campaign.worldmap->display(&campaign.camera);
 
 		skybox.display(&campaign.camera);

@@ -65,5 +65,6 @@ private:
 	struct floatimage_record topology;
 	struct image_record temperature;
 	struct image_record rain;
+	struct image_record watermap;
 	struct navmesh_record navmesh_land;
 };
