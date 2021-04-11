@@ -97,6 +97,8 @@ struct game_settings {
 	bool fullscreen;
 	int FOV;
 	float look_sensitivity;
+	// graphics
+	bool clouds_enabled;
 };
 
 struct Campaign {
@@ -181,6 +183,9 @@ void Game::init_settings(void)
 	settings.FOV = reader.GetInteger("", "FOV", 90);
 	settings.look_sensitivity = float(reader.GetInteger("", "MOUSE_SENSITIVITY", 1));
 	debugmode = reader.GetBoolean("", "DEBUG_MODE", false);
+	
+	// graphics settings
+	settings.clouds_enabled = reader.GetBoolean("", "CLOUDS_ENABLED", false);
 }
 
 void Game::init(void)
@@ -354,7 +359,7 @@ void Game::update_battle(void)
 	physicsman.update(timer.delta);
 	
 	// update atmosphere
-	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position, true);
+	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position, settings.clouds_enabled);
 }
 
 void Game::run_battle(void)
@@ -375,6 +380,8 @@ void Game::run_battle(void)
 	battle.landscape->generate(campaign.seed, offset, amp);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
 	battle.terrain->change_atmosphere(sun_position, modular.atmos.skybottom, 0.0005f);
+
+	cloudscape.gen_parameters();
 	
 	physicsman.insert_body(battle.surface);
 
@@ -438,9 +445,11 @@ void Game::run_battle(void)
 		battle.terrain->update_shadow(shadow, show_cascades);
 		battle.terrain->display(&battle.camera);
 
-		cloudscape.update(&battle.camera, sun_position, timer.elapsed);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, cloudscape.get_blurred_clouds());
+		if (settings.clouds_enabled) {
+			cloudscape.update(&battle.camera, sun_position, timer.elapsed);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, cloudscape.get_blurred_clouds());
+		}
 
 		skybox.display(&battle.camera);
 

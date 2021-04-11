@@ -21,6 +21,20 @@
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 
+static const float EARTH_RADIUS = 600000.F;
+static const float CURLINESS = 0.1F;
+static const float ABSORPTION = 0.0035F;
+// cloud parameters
+static const float MIN_SPEED = 200.F;
+static const float MAX_SPEED = 300.F;
+static const float MIN_COVERAGE = 0.3F;
+static const float MAX_COVERAGE = 0.8F;
+static const float MIN_CURLINESS = 0.F;
+static const float MAX_CURLINESS = 3.F;
+static const float MIN_CRISPINESS = 30.F;
+static const float MAX_CRISPINESS = 50.F;
+static const float MIN_DENSITY = 0.F;
+static const float MAX_DENSITY = 0.1F;
 static const size_t PERLIN_RES = 128;
 static const size_t WORLEY_RES = 32;
 static const size_t WEATHERMAP_RES = 1024;
@@ -30,7 +44,18 @@ static GLuint generateTexture3D(int w, int h, int d);
 
 void Clouds::init(void)
 {
-	init_variables();
+	inner_radius = 2000.F;
+	outer_radius = 14000.F;
+
+	perlin_frequency = 0.8F;
+
+	powdered = false;
+
+	weathermap = 0;
+	perlin = 0;
+	worley32 = 0;
+
+	gen_parameters();
 
 	init_shaders();
 	
@@ -56,34 +81,31 @@ void Clouds::teardown(void)
 	}
 }
 
-void Clouds::init_variables(void)
+void Clouds::gen_parameters(void)
 {
-	speed = 200.0;
-	coverage = 0.45;
-	crispiness = 40.;
-	curliness = .1;
-	density = 0.01;
-	absorption = 0.35;
-
-	earth_radius = 600000.0;
-	inner_radius = 2000.0;
-	outer_radius = 14000.0;
-
-	perlin_frequency = 0.8;
-
-	powdered = false;
-
 	std::random_device rd;
 	std::mt19937 gen(rd());
+
+	std::uniform_real_distribution<float> speed_dist(MIN_SPEED, MAX_SPEED);
+	speed = speed_dist(gen);
+	std::uniform_real_distribution<float> coverage_dist(MIN_COVERAGE, MAX_COVERAGE);
+	coverage = coverage_dist(gen);
+	std::uniform_real_distribution<float> crispiness_dist(MIN_CRISPINESS, MAX_CRISPINESS);
+	crispiness = crispiness_dist(gen);
+
+	std::uniform_real_distribution<float> density_dist(MIN_DENSITY, MAX_DENSITY);
+	density = density_dist(gen);
+
+	printf("speed %f\n", speed);
+	printf("coverage %f\n", coverage);
+	printf("crispiness %f\n", crispiness);
+	printf("density %f\n", density);
+
 	std::uniform_real_distribution<float> dist;
 	seed = { dist(gen), dist(gen), dist(gen) };
 
 	topcolor = (glm::vec3(169., 149., 149.)*(1.5f / 255.f));
 	bottomcolor = (glm::vec3(65., 70., 80.)*(1.5f / 255.f));
-
-	weathermap = 0;
-	perlin = 0;
-	worley32 = 0;
 }
 
 void Clouds::init_shaders(void)
@@ -191,13 +213,13 @@ void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, float t
 	volumetric.uniform_float("COVERAGE", clouds.coverage);
 	volumetric.uniform_float("SPEED", clouds.speed);
 	volumetric.uniform_float("CRISPINESS", clouds.crispiness);
-	volumetric.uniform_float("CURLINESS", clouds.curliness);
-	volumetric.uniform_float("ABSORPTION", clouds.absorption*0.01);
+	volumetric.uniform_float("CURLINESS", CURLINESS);
+	volumetric.uniform_float("ABSORPTION", ABSORPTION);
 	volumetric.uniform_float("DENSITY_FACTOR", clouds.density);
 
 	volumetric.uniform_bool("ENABLE_POWDER", clouds.powdered);
 
-	volumetric.uniform_float("EARTH_RADIUS", clouds.earth_radius);
+	volumetric.uniform_float("EARTH_RADIUS", EARTH_RADIUS);
 	volumetric.uniform_float("INNER_RADIUS", clouds.inner_radius);
 	volumetric.uniform_float("OUTER_RADIUS", clouds.outer_radius);
 
@@ -220,7 +242,7 @@ void Cloudscape::update(const Camera *camera, const glm::vec3 &lightpos, float t
 	glBindImageTexture(0, cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glBindImageTexture(1, blurred_cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	blur_shader.use();
-	blur_shader.uniform_float("RADIUS", 1.f);
+
 	blur_shader.uniform_vec2("DIR", glm::vec2(1.f, 0.f));
 
 	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_WIDTH, 16), 1);
