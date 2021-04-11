@@ -61,12 +61,12 @@
 #include "core/navigation.h"
 #include "core/voronoi.h"
 #include "core/media.h"
+#include "graphics/clouds.h"
 #include "graphics/sky.h"
 #include "graphics/render.h"
 #include "graphics/shadow.h"
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
-#include "graphics/clouds.h"
 #include "object.h"
 #include "debugger.h"
 #include "module.h"
@@ -143,7 +143,6 @@ private:
 	MediaManager mediaman;
 	RenderManager renderman;
 	Skybox skybox;
-	Cloudscape cloudscape;
 	Shader object_shader;
 	Shader debug_shader;
 	Shader depth_shader;
@@ -257,8 +256,7 @@ void Game::load_module(void)
 	postproc_shader.compile("shaders/postproc.frag", GL_FRAGMENT_SHADER);
 	postproc_shader.link();
 
-	skybox.init();
-	cloudscape.init(windowman.width, windowman.height);
+	skybox.init(windowman.width, windowman.height);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	reserve_campaign();
@@ -286,7 +284,6 @@ void Game::teardown(void)
 		ImGui::DestroyContext();
 	}
 
-	cloudscape.teardown();
 	skybox.teardown();
 	//renderman.teardown();
 
@@ -359,7 +356,8 @@ void Game::update_battle(void)
 	physicsman.update(timer.delta);
 	
 	// update atmosphere
-	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position, settings.clouds_enabled);
+	skybox.change_atmosphere(modular.atmos.skytop, modular.atmos.skybottom, sun_position, settings.clouds_enabled);
+	skybox.update(&battle.camera, timer.elapsed);
 }
 
 void Game::run_battle(void)
@@ -381,8 +379,6 @@ void Game::run_battle(void)
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
 	battle.terrain->change_atmosphere(sun_position, modular.atmos.skybottom, 0.0005f);
 
-	cloudscape.gen_parameters();
-	
 	physicsman.insert_body(battle.surface);
 
 	// testing entities
@@ -413,7 +409,9 @@ void Game::run_battle(void)
 	ents.clear();
 	ents.push_back(&capsuleobject);
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
-
+	
+	skybox.pre_step();
+	
 	while (state == GS_BATTLE) {
 		timer.begin();
 
@@ -444,12 +442,6 @@ void Game::run_battle(void)
 
 		battle.terrain->update_shadow(shadow, show_cascades);
 		battle.terrain->display(&battle.camera);
-
-		if (settings.clouds_enabled) {
-			cloudscape.update(&battle.camera, sun_position, timer.elapsed);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, cloudscape.get_blurred_clouds());
-		}
 
 		skybox.display(&battle.camera);
 
@@ -580,7 +572,8 @@ void Game::update_campaign(void)
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
-	skybox.update(modular.atmos.skytop, modular.atmos.skybottom, sun_position, false);
+	skybox.change_atmosphere(modular.atmos.skytop, modular.atmos.skybottom, sun_position, false);
+	skybox.update(&campaign.camera, timer.elapsed);
 }
 	
 void Game::new_campaign(void)
@@ -590,8 +583,8 @@ void Game::new_campaign(void)
 	std::uniform_int_distribution<long> dis;
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
-	//campaign.seed = 1337;
-	campaign.seed = 4998651408012010310;
+	campaign.seed = 1337;
+	//campaign.seed = 4998651408012010310;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
 
@@ -649,7 +642,7 @@ void Game::run_campaign(void)
 	rivers->reload(campaign.atlas->get_biomes());
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
-
+	
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
 

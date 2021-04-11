@@ -20,8 +20,58 @@
 #include "texture.h"
 
 static inline GLenum texture_format(ddsktx_format format);
-static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type);
+
+GLuint generate_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type)
+{
+	GLuint texture = 0;
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+
+	if (texels == NULL) {
+		glTexImage2D(GL_TEXTURE_2D, 0, internalformat, width, height, 0, format, type, NULL);
+	} else {
+		glTexStorage2D(GL_TEXTURE_2D, 1, internalformat, width, height);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, texels);
+	}
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return texture;
+}
+
+GLuint generate_3D_texture(GLsizei width, GLsizei height, GLsizei depth, GLenum internalformat, GLenum format, GLenum type)
+{
+	GLuint texture = 0;
+
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_3D, texture);
+
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	glTexImage3D(GL_TEXTURE_3D, 0, internalformat, width, height, depth, 0, format, type, NULL);
+	glGenerateMipmap(GL_TEXTURE_3D);
+
+	return texture;
+}
 	
+void delete_texture(GLuint handle)
+{
+	if (glIsTexture(handle) == GL_TRUE) {
+		glDeleteTextures(1, &handle);
+	}
+}
+
 Texture::Texture(void)
 {
 	target = GL_TEXTURE_2D;
@@ -38,7 +88,6 @@ Texture::Texture(const std::string &filepath)
 	load_DDS(filepath);
 }
 	
-// TODO handle 3D and texture arrays
 Texture::Texture(const Image *image)
 {
 	target = GL_TEXTURE_2D;
@@ -46,6 +95,8 @@ Texture::Texture(const Image *image)
 	format = 0;
 
 	GLenum internalformat = 0;
+	GLenum type = GL_UNSIGNED_BYTE;
+
 	switch (image->channels) {
 	case 1: 
 		internalformat = GL_R8; 
@@ -65,7 +116,7 @@ Texture::Texture(const Image *image)
 		break;
 	}
 
-	handle = uncompressed_2D_texture(image->data, image->width, image->height, internalformat, format, GL_UNSIGNED_BYTE);
+	handle = generate_2D_texture(image->data, image->width, image->height, internalformat, format, type);
 }
 
 Texture::Texture(const FloatImage *image)
@@ -74,7 +125,9 @@ Texture::Texture(const FloatImage *image)
 	handle = 0;
 	format = 0;
 
+	GLenum type = GL_FLOAT;
 	GLenum internalformat = 0;
+
 	switch (image->channels) {
 	case 1: 
 		internalformat = GL_R32F; 
@@ -94,20 +147,12 @@ Texture::Texture(const FloatImage *image)
 		break;
 	}
 
-	handle = uncompressed_2D_texture(image->data, image->width, image->height, internalformat, format, GL_FLOAT);
+	handle = generate_2D_texture(image->data, image->width, image->height, internalformat, format, type);
 }
 
 Texture::~Texture(void)
 {
-	cleanup();
-}
-	
-void Texture::cleanup(void)
-{
-	if (glIsTexture(handle) == GL_TRUE) {
-		glDeleteTextures(1, &handle);
-		handle = 0;
-	}
+	delete_texture(handle);
 }
 	
 void Texture::change_wrapping(GLint wrapping)
@@ -125,7 +170,7 @@ void Texture::change_wrapping(GLint wrapping)
 void Texture::load(const std::string &filepath)
 {
 	// first delete texture data if it is present
-	cleanup();
+	delete_texture(handle);
 
 	// then create texture from DDS file
 	load_DDS(filepath);
@@ -263,26 +308,6 @@ static inline GLenum texture_format(ddsktx_format format)
 	// case DDSKTX_FORMAT_ETC2: return GL_COMPRESSED_RGB8_ETC2;      // ETC2 RGB8 not recognized on Windows
 	default : return 0;
 	}
-}
-
-static GLuint uncompressed_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type)
-{
-	GLuint texture = 0;
-
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexStorage2D(GL_TEXTURE_2D, 1, internalformat, width, height);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format, type, texels);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	return texture;
 }
 
 void TextureCache::clear(void)

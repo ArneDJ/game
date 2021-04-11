@@ -11,24 +11,22 @@ void main(void)
 {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 
-	vec4 color = imageLoad(INPUT, uv);
-
-	vec4 sum = vec4(0.0);
+	vec4 color = vec4(0.0);
 
 	float hstep = DIR.x;
 	float vstep = DIR.y;
 
-	sum += imageLoad(INPUT, ivec2(uv.x - 4.0*hstep, uv.y - 4.0*vstep)) * 0.0162162162;
-	sum += imageLoad(INPUT, ivec2(uv.x - 3.0*hstep, uv.y - 3.0*vstep)) * 0.0540540541;
-	sum += imageLoad(INPUT, ivec2(uv.x - 2.0*hstep, uv.y - 2.0*vstep)) * 0.1216216216;
-	sum += imageLoad(INPUT, ivec2(uv.x - 1.0*hstep, uv.y - 1.0*vstep)) * 0.1945945946;
+	color += imageLoad(INPUT, ivec2(uv.x - 4.0*hstep, uv.y - 4.0*vstep)) * 0.0162162162;
+	color += imageLoad(INPUT, ivec2(uv.x - 3.0*hstep, uv.y - 3.0*vstep)) * 0.0540540541;
+	color += imageLoad(INPUT, ivec2(uv.x - 2.0*hstep, uv.y - 2.0*vstep)) * 0.1216216216;
+	color += imageLoad(INPUT, ivec2(uv.x - 1.0*hstep, uv.y - 1.0*vstep)) * 0.1945945946;
 
-	sum += imageLoad(INPUT, ivec2(uv.x, uv.y)) * 0.2270270270;
+	color += imageLoad(INPUT, ivec2(uv.x, uv.y)) * 0.2270270270;
 
-	sum += imageLoad(INPUT, ivec2(uv.x + 1.0*hstep, uv.y + 1.0*vstep)) * 0.1945945946;
-	sum += imageLoad(INPUT, ivec2(uv.x + 2.0*hstep, uv.y + 2.0*vstep)) * 0.1216216216;
-	sum += imageLoad(INPUT, ivec2(uv.x + 3.0*hstep, uv.y + 3.0*vstep)) * 0.0540540541;
-	sum += imageLoad(INPUT, ivec2(uv.x + 4.0*hstep, uv.y + 4.0*vstep)) * 0.0162162162;
+	color += imageLoad(INPUT, ivec2(uv.x + 1.0*hstep, uv.y + 1.0*vstep)) * 0.1945945946;
+	color += imageLoad(INPUT, ivec2(uv.x + 2.0*hstep, uv.y + 2.0*vstep)) * 0.1216216216;
+	color += imageLoad(INPUT, ivec2(uv.x + 3.0*hstep, uv.y + 3.0*vstep)) * 0.0540540541;
+	color += imageLoad(INPUT, ivec2(uv.x + 4.0*hstep, uv.y + 4.0*vstep)) * 0.0162162162;
 
-	imageStore(OUTPUT, uv, sum);
+	imageStore(OUTPUT, uv, color);
 }

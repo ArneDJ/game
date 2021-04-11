@@ -20,7 +20,6 @@ private:
 	GLenum target = GL_TEXTURE_2D; // usually GL_TEXTURE_2D
 	GLenum format = GL_RED;
 private:
-	void cleanup(void);
 	void load_DDS(const std::string &filepath);
 	void DDS_to_texture(const uint8_t *blob, const size_t size);
 };
@@ -51,3 +50,9 @@ public:
 private:
 	std::map<std::string, Texture*> textures; // TODO hash string
 };
+
+GLuint generate_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type);
+
+GLuint generate_3D_texture(GLsizei width, GLsizei height, GLsizei depth, GLenum internalformat, GLenum format, GLenum type);
+
+void delete_texture(GLuint handle);

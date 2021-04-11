@@ -1,5 +1,7 @@
 #include <iostream>
+#include <random>
 #include <vector>
+#include <map>
 #include <GL/glew.h>
 #include <GL/gl.h>
 #include <glm/gtx/transform.hpp>
@@ -9,9 +11,14 @@
 #include "../core/camera.h"
 #include "../core/shader.h"
 #include "../core/mesh.h"
+#include "clouds.h"
 #include "sky.h"
 
-void Skybox::init(void)
+static const float DIST_MIN_COVERAGE = 0.F;
+static const float DIST_MAX_COVERAGE = 0.8F;
+static const float MIN_COVERAGE = 0.2F;
+
+void Skybox::init(uint16_t width, uint16_t height)
 {
 	// create the cubemap mesh
 	const std::vector<glm::vec3> positions = {
@@ -39,19 +46,42 @@ void Skybox::init(void)
 	shader.compile("shaders/skybox.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/skybox.frag", GL_FRAGMENT_SHADER);
 	shader.link();
+	
+	clouds.init(width, height);
 }
 
 void Skybox::teardown(void)
 {
+	clouds.teardown();
 	delete cubemap;
 }
+
+void Skybox::pre_step(void)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> coverage_dist(DIST_MIN_COVERAGE, DIST_MAX_COVERAGE);
+
+	float coverage = coverage_dist(gen);
+	clouds.gen_parameters(coverage);
+
+	// if there are too few clouds simply disable them
+	clouded = (coverage > MIN_COVERAGE);
+}
 	
-void Skybox::update(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled)
+void Skybox::change_atmosphere(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled)
 {
 	zenith = top;
 	horizon = bottom;
 	sunposition = sunpos;
 	clouds_enabled = cloudsenabled;
+}
+
+void Skybox::update(const Camera *camera, float time)
+{
+	if (clouds_enabled && clouded) {
+		clouds.update(camera, sunposition, time);
+	}
 }
 	
 void Skybox::display(const Camera *camera) const
@@ -60,11 +90,13 @@ void Skybox::display(const Camera *camera) const
 	shader.uniform_vec3("ZENITH_COLOR", zenith);
 	shader.uniform_vec3("HORIZON_COLOR", horizon);
 	shader.uniform_vec3("SUN_POS", sunposition);
-	shader.uniform_bool("CLOUDS_ENABLED", clouds_enabled);
+	shader.uniform_bool("CLOUDS_ENABLED", clouds_enabled && clouded);
 	shader.uniform_float("SCREEN_WIDTH", float(camera->width));
 	shader.uniform_float("SCREEN_HEIGHT", float(camera->height));
 	shader.uniform_mat4("V", camera->viewing);
 	shader.uniform_mat4("P", camera->projection);
+			
+	clouds.bind(GL_TEXTURE0);
 
 	glDepthFunc(GL_LEQUAL);
 	cubemap->draw();

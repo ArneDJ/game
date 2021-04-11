@@ -1,12 +1,7 @@
 #version 430
 
-/*
-	Fills a 3D texture with WORLEY noise to be used in the volumetric
-	clouds as shape eroder
-*/
-
-//Code from https://github.com/NadirRoGue
-//Special thanks https://github.com/NadirRoGue
+// Code from https://github.com/NadirRoGue
+// Special thanks https://github.com/NadirRoGue
 
 layout (local_size_x = 4, local_size_y = 4, local_size_z = 4) in;
 
@@ -283,7 +278,7 @@ vec4 stackable3DNoise(ivec3 pixel)
 
 void main()
 {
-    ivec3 pixel = ivec3(gl_GlobalInvocationID.xyz);
+	ivec3 pixel = ivec3(gl_GlobalInvocationID.xyz);
 
-	imageStore (outVolTex, pixel, stackable3DNoise(pixel));
+	imageStore(outVolTex, pixel, stackable3DNoise(pixel));
 }
