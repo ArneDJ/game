@@ -106,6 +106,9 @@ void Clouds::gen_parameters(float covrg)
 
 	std::uniform_real_distribution<float> density_dist(MIN_DENSITY, MAX_DENSITY);
 	density = density_dist(gen);
+	
+	std::uniform_real_distribution<float> wind_dist(-1.f, 1.f);
+	wind_direction = glm::normalize(glm::vec3(wind_dist(gen), 0.f, wind_dist(gen)));
 }
 
 void Clouds::init_shaders(void)
@@ -166,6 +169,7 @@ void Clouds::update(const Camera *camera, const glm::vec3 &lightpos, float time)
 	volumetric.uniform_vec3("SUN_POS", glm::normalize(lightpos));
 	volumetric.uniform_vec3("LIGHT_COLOR", glm::vec3(1.f, 1.f, 1.f));
 	
+	volumetric.uniform_vec3("WIND_DIRECTION", wind_direction);
 	volumetric.uniform_float("COVERAGE", coverage);
 	volumetric.uniform_float("SPEED", speed);
 	volumetric.uniform_float("CRISPINESS", crispiness);

@@ -13,6 +13,7 @@ private:
 	int SCR_WIDTH, SCR_HEIGHT;
 	//
 	float coverage, speed, crispiness, density;
+	glm::vec3 wind_direction; 
 	glm::vec3 topcolor, bottomcolor;
 	glm::vec3 seed; 
 	// 2D textures
