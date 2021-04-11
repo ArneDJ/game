@@ -25,21 +25,18 @@ static const float EARTH_RADIUS = 600000.F;
 static const float INNER_RADIUS = 2000.F;
 static const float OUTER_RADIUS = 14000.F;
 static const float CURLINESS = 0.1F;
+static const float CRISPINESS = 40.F;
 static const float ABSORPTION = 0.0035F;
 static const float PERLIN_FREQUENCY = 0.8F;
+static const size_t PERLIN_RES = 128;
+static const size_t WORLEY_RES = 32;
+static const size_t WEATHERMAP_RES = 1024;
 
 // cloud parameters
 static const float MIN_SPEED = 100.F;
 static const float MAX_SPEED = 200.F;
-static const float MIN_CURLINESS = 0.F;
-static const float MAX_CURLINESS = 3.F;
-static const float MIN_CRISPINESS = 30.F;
-static const float MAX_CRISPINESS = 50.F;
 static const float MIN_DENSITY = 0.F;
 static const float MAX_DENSITY = 0.1F;
-static const size_t PERLIN_RES = 128;
-static const size_t WORLEY_RES = 32;
-static const size_t WEATHERMAP_RES = 1024;
 
 void Clouds::init(int SW, int SH)
 {
@@ -100,9 +97,6 @@ void Clouds::gen_parameters(float covrg)
 
 	std::uniform_real_distribution<float> speed_dist(MIN_SPEED, MAX_SPEED);
 	speed = speed_dist(gen);
-
-	std::uniform_real_distribution<float> crispiness_dist(MIN_CRISPINESS, MAX_CRISPINESS);
-	crispiness = crispiness_dist(gen);
 
 	std::uniform_real_distribution<float> density_dist(MIN_DENSITY, MAX_DENSITY);
 	density = density_dist(gen);
@@ -172,7 +166,7 @@ void Clouds::update(const Camera *camera, const glm::vec3 &lightpos, float time)
 	volumetric.uniform_vec3("WIND_DIRECTION", wind_direction);
 	volumetric.uniform_float("COVERAGE", coverage);
 	volumetric.uniform_float("SPEED", speed);
-	volumetric.uniform_float("CRISPINESS", crispiness);
+	volumetric.uniform_float("CRISPINESS", CRISPINESS);
 	volumetric.uniform_float("CURLINESS", CURLINESS);
 	volumetric.uniform_float("ABSORPTION", ABSORPTION);
 	volumetric.uniform_float("DENSITY_FACTOR", density);
