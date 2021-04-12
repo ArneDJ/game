@@ -65,7 +65,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 
 	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
 
-	const Image *waterimage = atlas->get_watermap();
+	const FloatImage *waterimage = atlas->get_watermap();
 	watermap.width = waterimage->width;
 	watermap.height = waterimage->height;
 	watermap.channels = waterimage->channels;

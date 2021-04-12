@@ -20,17 +20,18 @@ public:
 	void create_mapdata(void);
 	void create_land_navigation(void);
 	const FloatImage* get_heightmap(void) const;
+	const FloatImage* get_watermap(void) const;
 	const Image* get_rainmap(void) const;
 	const Image* get_tempmap(void) const;
-	const Image* get_watermap(void) const;
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
+	void load_watermap(uint16_t width, uint16_t height, const std::vector<float> &data);
 	void load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 	void load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
-	void load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 	const struct tile* tile_at_position(const glm::vec2 &position);
 private:
 	Terragen *terragen;
-	Image *watermap; // heightmap of ocean, seas and rivers
+	FloatImage *watermap; // heightmap of ocean, seas and rivers
+	//Image *watermask;
 	std::vector<struct holding> holdings;
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
 	//void name_holds(void);
@@ -44,6 +45,7 @@ private:
 	void plateau_heightmap(void);
 	void detail_heightmap(long seed);
 	void gen_mapfield(void);
-	void create_watermap(void);
+	void create_watermap(float ocean_level);
+	void erode_heightmap(float ocean_level);
 };
 

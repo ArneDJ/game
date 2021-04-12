@@ -534,6 +534,14 @@ void Game::update_campaign(void)
 	if (inputman.key_down(SDLK_a)) { campaign.camera.move_left(modifier); }
 
 	campaign.camera.update();
+		
+	// TODO height at
+	struct ray_result camresult = physicsman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z));
+	if (camresult.hit) {
+		if (campaign.camera.position.y < camresult.point.y + 10.f) {
+			campaign.camera.position.y = camresult.point.y + 10.f;
+		}
+	}
 
 	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
 		glm::vec3 ray = campaign.camera.ndc_to_ray(inputman.abs_mousecoords());
@@ -583,7 +591,7 @@ void Game::new_campaign(void)
 	std::uniform_int_distribution<long> dis;
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
-	campaign.seed = 1337;
+	//campaign.seed = 1337;
 	//campaign.seed = 4998651408012010310;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));

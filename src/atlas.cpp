@@ -27,11 +27,15 @@
 #include "atlas.h"
 
 static const uint8_t SEABED_SMOOTH = 255;
-static const uint8_t LOWLAND_SMOOTH = 200;
-static const uint8_t UPLAND_SMOOTH = 180;
+static const uint8_t LOWLAND_SMOOTH = 220;
+static const uint8_t UPLAND_SMOOTH = 100;
 static const uint8_t HIGHLAND_SMOOTH = 0;
 static const float MAP_BLUR_STRENGTH = 5.F;
 static const float MAP_SMOOTH_TRANSITION = 5.F;
+
+static const float LAND_DOWNSCALE = 0.8F;
+
+static const uint16_t WATERMAP_RES = 2048;
 
 Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
@@ -43,7 +47,7 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 	};
 	worldgraph = new Worldgraph { area };
 
-	watermap = new Image { heightres, heightres, COLORSPACE_GRAYSCALE };
+	watermap = new FloatImage { WATERMAP_RES, WATERMAP_RES, COLORSPACE_GRAYSCALE };
 
 	container = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
 	detail = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
@@ -82,10 +86,10 @@ auto start = std::chrono::steady_clock::now();
 	plateau_heightmap();
 	detail_heightmap(seedling);
 
-	//terragen->heightmap->normalize(CHANNEL_RED);
-	
 	// now create the watermap
-	create_watermap();
+	create_watermap(LAND_DOWNSCALE*params->graph.lowland);
+	
+	erode_heightmap(0.98f*LAND_DOWNSCALE*params->graph.lowland);
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
@@ -190,7 +194,7 @@ void Atlas::plateau_heightmap(void)
 		for (int j = 0; j < terragen->heightmap->height; j++) {
 			uint8_t color = mask->sample(i, j, CHANNEL_RED);
 			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
-			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(0.8f * h, 0.9f * h, color / 255.f));
+			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.9f * h, color / 255.f));
 		}
 	}
 	
@@ -255,19 +259,43 @@ void Atlas::detail_heightmap(long seed)
 	mask->clear();
 }
 
-void Atlas::create_watermap(void)
+void Atlas::erode_heightmap(float ocean_level)
 {
-auto start = std::chrono::steady_clock::now();
+	mask->clear();
+
 	const glm::vec2 mapscale = {
-		float(watermap->width) / SCALE.x,
-		float(watermap->height) / SCALE.z
+		float(mask->width) / SCALE.x,
+		float(mask->height) / SCALE.z
 	};
 
-	watermap->clear();
+	// add the rivers to the mask
+	#pragma omp parallel for
+	for (const auto &bord : worldgraph->borders) {
+		if (bord.river) {
+			glm::vec2 a = mapscale * bord.c0->position;
+			glm::vec2 b = mapscale * bord.c1->position;
+			mask->draw_line(a.x, a.y, b.x, b.y, CHANNEL_RED, 255);
+		}
+	}
 
-	// create the watermap
-	// first create the water mask
-	// add the sea tiles to the mask
+	mask->blur(0.6f);
+	// let the rivers erode the land heightmap
+	for (int x = 0; x < terragen->heightmap->width; x++) {
+		for (int y = 0; y < terragen->heightmap->height; y++) {
+			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			if (masker > 0) {
+				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				float erosion = glm::clamp(1.f - (masker/255.f), 0.9f, 1.f);
+				//float eroded = glm::clamp(0.8f*height, 0.f, 1.f);
+				//height = glm::mix(height, eroded, 1.f);
+				terragen->heightmap->plot(x, y, CHANNEL_RED, erosion*height);
+			}
+		}
+	}
+	
+	// lower ocean bottom
+	mask->clear();
+
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
 		if (t.relief == SEABED) {
@@ -275,32 +303,108 @@ auto start = std::chrono::steady_clock::now();
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				watermap->draw_triangle(a, b, c, CHANNEL_RED, 255);
+				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
 			}
 		}
 	}
+	for (int x = 0; x < terragen->heightmap->width; x++) {
+		for (int y = 0; y < terragen->heightmap->height; y++) {
+			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			if (masker > 0) {
+				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				height = glm::clamp(height, 0.f, ocean_level);
+				terragen->heightmap->plot(x, y, CHANNEL_RED, height);
+			}
+		}
+	}
+}
+
+void Atlas::create_watermap(float ocean_level)
+{
+auto start = std::chrono::steady_clock::now();
+	const glm::vec2 mapscale = {
+		float(mask->width) / SCALE.x,
+		float(mask->height) / SCALE.z
+	};
+
+	mask->clear();
+
+	// create the watermask
 	// add the rivers to the mask
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			watermap->draw_thick_line(a.x, a.y, b.x, b.y, 2, CHANNEL_RED, 255);
+			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, CHANNEL_RED, 255);
+		}
+	}
+
+	// now create the heightmap of the water based on the land heightmap
+	const glm::vec2 scale = {
+		float(terragen->heightmap->width) / float(watermap->width) ,
+		float(terragen->heightmap->height) / float(watermap->height)
+	};
+	for (int x = 0; x < watermap->width; x++) {
+		for (int y = 0; y < watermap->height; y++) {
+			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			if (masker > 0) {
+				float height = terragen->heightmap->sample(scale.x*x, scale.y*y, CHANNEL_RED);
+				height = glm::clamp(height - 0.005f, 0.f, 1.f);
+				watermap->plot(x, y, CHANNEL_RED, height);
+			}
 		}
 	}
 	
-	// now create the heightmap of the water based on the land heightmap
-	for (int x = 0; x < watermap->width; x++) {
-		for (int y = 0; y < watermap->height; y++) {
-			uint8_t mask = watermap->sample(x, y, CHANNEL_RED);
-			if (mask > 0) {
-				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
-				height = glm::clamp(height + 0.1f, 0.f, 1.f);
-				watermap->plot(x, y, CHANNEL_RED, 255 * height);
+
+	mask->clear();
+	
+	// now map the height of the sea tils
+	// add the sea tiles to the mask
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.land == true && t.coast == true) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
 			}
 		}
 	}
 
+	#pragma omp parallel for
+	for (const auto &bord : worldgraph->borders) {
+		if (bord.river) {
+			glm::vec2 a = mapscale * bord.c0->position;
+			glm::vec2 b = mapscale * bord.c1->position;
+			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, CHANNEL_RED, 0);
+		}
+	}
+
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == SEABED) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
+			}
+		}
+	}
+
+	for (int x = 0; x < watermap->width; x++) {
+		for (int y = 0; y < watermap->height; y++) {
+			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			if (masker > 0) {
+				//float height = terragen->heightmap->sample(scale.x*x, scale.y*y, CHANNEL_RED);
+				//height = glm::clamp(height - 0.005f, 0.f, 1.f);
+				watermap->plot(x, y, CHANNEL_RED, 0.99f*ocean_level);
+			}
+		}
+	}
+	//watermap->blur(2.f);
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
@@ -327,7 +431,7 @@ const Image* Atlas::get_tempmap(void) const
 	return terragen->tempmap;
 }
 	
-const Image* Atlas::get_watermap(void) const
+const FloatImage* Atlas::get_watermap(void) const
 {
 	return watermap;
 }
@@ -370,7 +474,7 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 	}
 }
 
-void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
+void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<float> &data)
 {
 	if (width == watermap->width && height == watermap->height && data.size() == watermap->size) {
 		std::copy(data.begin(), data.end(), watermap->data);
