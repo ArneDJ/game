@@ -213,6 +213,39 @@ btRigidBody* PhysicsManager::add_heightfield(const FloatImage *image, const glm:
 	//insert_body(body);
 }
 
+btRigidBody* PhysicsManager::add_heightfield(const Image *image, const glm::vec3 &scale)
+{
+	btHeightfieldTerrainShape *shape = new btHeightfieldTerrainShape(image->width, image->height, image->data, 1.f, 0.f, 1.f, 1, PHY_UCHAR, false);
+
+	shapes.push_back(shape);
+
+	btVector3 scaling = { 
+		scale.x / float(image->width), 
+		scale.y / 255.f, 
+		scale.z / float(image->height)
+	};
+	shape->setLocalScaling(scaling);
+	shape->setFlipTriangleWinding(true);
+
+	btVector3 origin = { 0.5f * scale.x, 0.5f * (scale.y/255.f), 0.5f * scale.z };
+	btTransform transform;
+	transform.setIdentity();
+	transform.setOrigin(origin);
+
+	btScalar mass = { 0.f };
+	btVector3 inertia = { 0.f, 0.f, 0.f };
+
+	btDefaultMotionState *motionstate = new btDefaultMotionState(transform);
+	btRigidBody::btRigidBodyConstructionInfo rbinfo(mass, motionstate, shape, inertia);
+	btRigidBody *body = new btRigidBody(rbinfo);
+
+	body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK);
+
+	return body;
+	//add the body to the dynamics world
+	//insert_body(body);
+}
+
 void PhysicsManager::insert_body(btRigidBody *body)
 {
 	world->addRigidBody(body);

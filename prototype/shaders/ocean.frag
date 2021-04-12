@@ -7,7 +7,7 @@ in TESSEVAL {
 
 out vec4 fcolor;
 
-layout(binding = 3) uniform sampler2D DISPLACEMENT;
+layout(binding = 0) uniform sampler2D DISPLACEMENT;
 
 uniform vec3 CAM_POS;
 uniform vec3 FOG_COLOR;

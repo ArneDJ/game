@@ -47,7 +47,7 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 	};
 	worldgraph = new Worldgraph { area };
 
-	watermap = new FloatImage { WATERMAP_RES, WATERMAP_RES, COLORSPACE_GRAYSCALE };
+	watermap = new Image { WATERMAP_RES, WATERMAP_RES, COLORSPACE_GRAYSCALE };
 
 	container = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
 	detail = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
@@ -89,7 +89,7 @@ auto start = std::chrono::steady_clock::now();
 	// now create the watermap
 	create_watermap(LAND_DOWNSCALE*params->graph.lowland);
 	
-	erode_heightmap(0.98f*LAND_DOWNSCALE*params->graph.lowland);
+	erode_heightmap(0.97f*LAND_DOWNSCALE*params->graph.lowland);
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
@@ -351,7 +351,7 @@ auto start = std::chrono::steady_clock::now();
 			if (masker > 0) {
 				float height = terragen->heightmap->sample(scale.x*x, scale.y*y, CHANNEL_RED);
 				height = glm::clamp(height - 0.005f, 0.f, 1.f);
-				watermap->plot(x, y, CHANNEL_RED, height);
+				watermap->plot(x, y, CHANNEL_RED, 255*height);
 			}
 		}
 	}
@@ -398,9 +398,7 @@ auto start = std::chrono::steady_clock::now();
 		for (int y = 0; y < watermap->height; y++) {
 			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
 			if (masker > 0) {
-				//float height = terragen->heightmap->sample(scale.x*x, scale.y*y, CHANNEL_RED);
-				//height = glm::clamp(height - 0.005f, 0.f, 1.f);
-				watermap->plot(x, y, CHANNEL_RED, 0.99f*ocean_level);
+				watermap->plot(x, y, CHANNEL_RED, 255*(ocean_level));
 			}
 		}
 	}
@@ -431,7 +429,7 @@ const Image* Atlas::get_tempmap(void) const
 	return terragen->tempmap;
 }
 	
-const FloatImage* Atlas::get_watermap(void) const
+const Image* Atlas::get_watermap(void) const
 {
 	return watermap;
 }
@@ -474,7 +472,7 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 	}
 }
 
-void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<float> &data)
+void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
 {
 	if (width == watermap->width && height == watermap->height && data.size() == watermap->size) {
 		std::copy(data.begin(), data.end(), watermap->data);

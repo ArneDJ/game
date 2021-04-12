@@ -106,6 +106,7 @@ struct Campaign {
 	Navigation landnav;
 	Camera camera;
 	btRigidBody *surface;
+	btRigidBody *watersurface;
 	Atlas *atlas;
 	Entity marker;
 	Worldmap *worldmap;
@@ -149,7 +150,6 @@ private:
 	Shader postproc_shader;
 	Shadow *shadow;
 	// temporary assets
-	Texture *rivers;
 	bool show_cascades = false;
 private:
 	void init(void);
@@ -303,9 +303,8 @@ void Game::teardown_campaign(void)
 
 	delete campaign.atlas;
 
-	delete rivers;
-
 	delete campaign.surface;
+	delete campaign.watersurface;
 }
 
 void Game::teardown_battle(void)
@@ -486,16 +485,14 @@ void Game::reserve_campaign(void)
 
 	campaign.atlas = new Atlas { 2048, 512, 512 };
 
-	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_rainmap() };
+	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap() };
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	campaign.worldmap->load_materials(materials);
 
-	rivers = new Texture { campaign.atlas->get_watermap() };
-	rivers->change_wrapping(GL_CLAMP_TO_EDGE);
-
 	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
+	campaign.watersurface = physicsman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE);
 
 	campaign.ordinary = new RenderGroup { &debug_shader };
 	campaign.creatures = new RenderGroup { &object_shader };
@@ -514,6 +511,7 @@ void Game::cleanup_campaign(void)
 		debugger.delete_navmeshes();
 	}
 	physicsman.remove_body(campaign.surface);
+	physicsman.remove_body(campaign.watersurface);
 	campaign.landnav.cleanup();
 }
 
@@ -642,12 +640,11 @@ void Game::run_campaign(void)
 
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
-	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_rainmap());
+	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap());
 	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f);
 
 	physicsman.insert_body(campaign.surface);
-
-	rivers->reload(campaign.atlas->get_watermap());
+	physicsman.insert_body(campaign.watersurface);
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 	
@@ -662,7 +659,6 @@ void Game::run_campaign(void)
 
 		campaign.creatures->display(&campaign.camera);
 
-		rivers->bind(GL_TEXTURE3);
 		campaign.worldmap->display(&campaign.camera);
 
 		skybox.display(&campaign.camera);
@@ -677,8 +673,10 @@ void Game::run_campaign(void)
 
 		if (state == GS_BATTLE) {
 			physicsman.remove_body(campaign.surface);
+			physicsman.remove_body(campaign.watersurface);
 			run_battle();
 			physicsman.insert_body(campaign.surface);
+			physicsman.insert_body(campaign.watersurface);
 		}
 	}
 

@@ -20,7 +20,7 @@
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
-Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *rainmap)
+Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -30,6 +30,10 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	topology = new Texture { heightmap };
 	// special wrapping mode so edges of the map are at height 0
 	topology->change_wrapping(GL_CLAMP_TO_EDGE);
+
+	nautical = new Texture { watermap };
+	// special wrapping mode so edges of the map are at height 0
+	nautical->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	rain = new Texture { rainmap };
 	// special wrapping mode so edges of the map are at height 0
@@ -69,9 +73,10 @@ Worldmap::~Worldmap(void)
 	delete normalmap;
 }
 
-void Worldmap::reload(const FloatImage *heightmap, const Image *rainmap)
+void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap)
 {
 	topology->reload(heightmap);
+	nautical->reload(watermap);
 	rain->reload(rainmap);
 	normalmap->create_normalmap(heightmap, 32.f);
 	normals->reload(normalmap);
@@ -111,6 +116,8 @@ void Worldmap::display(const Camera *camera) const
 	water.uniform_vec3("MAP_SCALE", scale);
 	water.uniform_vec3("FOG_COLOR", fogcolor);
 	water.uniform_float("FOG_FACTOR", fogfactor);
+
+	nautical->bind(GL_TEXTURE0);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);

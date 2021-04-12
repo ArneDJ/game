@@ -7,7 +7,7 @@ out TESSEVAL {
 	vec2 texcoord;
 } tesseval;
 
-layout(binding = 3) uniform sampler2D DISPLACEMENT;
+layout(binding = 0) uniform sampler2D DISPLACEMENT;
 uniform mat4 VP;
 uniform vec3 MAP_SCALE;
 

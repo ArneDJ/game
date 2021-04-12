@@ -63,7 +63,7 @@ public:
 private:
 	std::string directory;
 	struct floatimage_record topology;
-	struct floatimage_record watermap;
+	struct image_record watermap;
 	struct image_record temperature;
 	struct image_record rain;
 	struct navmesh_record navmesh_land;
