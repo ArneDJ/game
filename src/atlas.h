@@ -19,6 +19,7 @@ public:
 	void generate(long seedling, const struct worldparams *params);
 	void create_mapdata(void);
 	void create_land_navigation(void);
+	void create_sea_navigation(void);
 	const FloatImage* get_heightmap(void) const;
 	const Image* get_watermap(void) const;
 	const Image* get_rainmap(void) const;

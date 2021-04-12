@@ -104,6 +104,7 @@ struct game_settings {
 struct Campaign {
 	long seed;
 	Navigation landnav;
+	Navigation seanav;
 	Camera camera;
 	btRigidBody *surface;
 	btRigidBody *watersurface;
@@ -513,6 +514,7 @@ void Game::cleanup_campaign(void)
 	physicsman.remove_body(campaign.surface);
 	physicsman.remove_body(campaign.watersurface);
 	campaign.landnav.cleanup();
+	campaign.seanav.cleanup();
 }
 
 void Game::update_campaign(void)
@@ -547,7 +549,7 @@ void Game::update_campaign(void)
 		if (result.hit) {
 			campaign.marker.position = result.point;
 			std::list<glm::vec2> waypoints;
-			campaign.landnav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
+			campaign.seanav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
 			campaign.player->set_path(waypoints);
 		}
 	}
@@ -597,11 +599,14 @@ void Game::new_campaign(void)
 	campaign.atlas->generate(campaign.seed, &modular.params);
 
 	campaign.atlas->create_mapdata();
-	campaign.atlas->create_land_navigation();
 
+	campaign.atlas->create_land_navigation();
 	campaign.landnav.build(campaign.atlas->vertex_soup, campaign.atlas->index_soup);
 
-	saver.save("game.save", campaign.atlas, &campaign.landnav, campaign.seed);
+	campaign.atlas->create_sea_navigation();
+	campaign.seanav.build(campaign.atlas->vertex_soup, campaign.atlas->index_soup);
+
+	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	
 	run_campaign();
 }
@@ -609,7 +614,7 @@ void Game::new_campaign(void)
 void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
-	saver.load("game.save", campaign.atlas, &campaign.landnav, campaign.seed);
+	saver.load("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";

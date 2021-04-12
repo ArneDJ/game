@@ -34,7 +34,7 @@ void Saver::change_directory(const std::string &dir)
 	directory = dir; 
 }
 
-void Saver::save(const std::string &filename, const Atlas *atlas, const Navigation *landnav, const long seed)
+void Saver::save(const std::string &filename, const Atlas *atlas, const Navigation *landnav, const Navigation *seanav, const long seed)
 {
 	const std::string filepath = directory + filename;
 
@@ -77,26 +77,53 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	const Worldgraph *worldgraph = atlas->worldgraph;
 
 	// save the campaign navigation data
-	navmesh_land.tilemeshes.clear();
+	{
+		navmesh_land.tilemeshes.clear();
 
-	const dtNavMesh *navmesh = landnav->get_navmesh();
-	if (navmesh) {
-		const dtNavMeshParams *navparams = navmesh->getParams();
-		navmesh_land.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
-		navmesh_land.tilewidth = navparams->tileWidth;
-		navmesh_land.tileheight = navparams->tileHeight;
-		navmesh_land.maxtiles = navparams->maxTiles;
-		navmesh_land.maxpolys = navparams->maxPolys;
-		for (int i = 0; i < navmesh->getMaxTiles(); i++) {
-			const dtMeshTile *tile = navmesh->getTile(i);
-			if (!tile) { continue; }
-			if (!tile->header) { continue; }
-			const dtMeshHeader *tileheader = tile->header;
-			struct nav_tilemesh_record navrecord;
-			navrecord.x = tileheader->x;
-			navrecord.y = tileheader->y;
-			navrecord.data.insert(navrecord.data.end(), tile->data, tile->data  + tile->dataSize);
-			navmesh_land.tilemeshes.push_back(navrecord);
+		const dtNavMesh *navmesh = landnav->get_navmesh();
+		if (navmesh) {
+			const dtNavMeshParams *navparams = navmesh->getParams();
+			navmesh_land.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
+			navmesh_land.tilewidth = navparams->tileWidth;
+			navmesh_land.tileheight = navparams->tileHeight;
+			navmesh_land.maxtiles = navparams->maxTiles;
+			navmesh_land.maxpolys = navparams->maxPolys;
+			for (int i = 0; i < navmesh->getMaxTiles(); i++) {
+				const dtMeshTile *tile = navmesh->getTile(i);
+				if (!tile) { continue; }
+				if (!tile->header) { continue; }
+				const dtMeshHeader *tileheader = tile->header;
+				struct nav_tilemesh_record navrecord;
+				navrecord.x = tileheader->x;
+				navrecord.y = tileheader->y;
+				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data  + tile->dataSize);
+				navmesh_land.tilemeshes.push_back(navrecord);
+			}
+		}
+	}
+
+	{
+		navmesh_sea.tilemeshes.clear();
+
+		const dtNavMesh *navmesh = seanav->get_navmesh();
+		if (navmesh) {
+			const dtNavMeshParams *navparams = navmesh->getParams();
+			navmesh_sea.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
+			navmesh_sea.tilewidth = navparams->tileWidth;
+			navmesh_sea.tileheight = navparams->tileHeight;
+			navmesh_sea.maxtiles = navparams->maxTiles;
+			navmesh_sea.maxpolys = navparams->maxPolys;
+			for (int i = 0; i < navmesh->getMaxTiles(); i++) {
+				const dtMeshTile *tile = navmesh->getTile(i);
+				if (!tile) { continue; }
+				if (!tile->header) { continue; }
+				const dtMeshHeader *tileheader = tile->header;
+				struct nav_tilemesh_record navrecord;
+				navrecord.x = tileheader->x;
+				navrecord.y = tileheader->y;
+				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data  + tile->dataSize);
+				navmesh_sea.tilemeshes.push_back(navrecord);
+			}
 		}
 	}
 
@@ -113,14 +140,15 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders),
-			cereal::make_nvp("landnav", navmesh_land)
+			cereal::make_nvp("landnav", navmesh_land),
+			cereal::make_nvp("seanav", navmesh_sea)
 		);
 	} else {
 		write_log(LogType::ERROR, "Save error: save file " + filepath + "could not be saved");
 	}
 }
 
-void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav, long &seed)
+void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav, Navigation *seanav, long &seed)
 {
 	const std::string filepath = directory + filename;
 
@@ -139,7 +167,8 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders),
-			cereal::make_nvp("landnav", navmesh_land)
+			cereal::make_nvp("landnav", navmesh_land),
+			cereal::make_nvp("seanav", navmesh_sea)
 		);
 	} else {
 		write_log(LogType::ERROR, "Save error: save file " + filepath + " could not be loaded");
@@ -158,6 +187,10 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 	landnav->alloc(navmesh_land.origin, navmesh_land.tilewidth, navmesh_land.tileheight, navmesh_land.maxtiles, navmesh_land.maxpolys);
 	for (const auto &tilemesh : navmesh_land.tilemeshes) {
 		landnav->load_tilemesh(tilemesh.x, tilemesh.y, tilemesh.data);
+	}
+	seanav->alloc(navmesh_sea.origin, navmesh_sea.tilewidth, navmesh_sea.tileheight, navmesh_sea.maxtiles, navmesh_sea.maxpolys);
+	for (const auto &tilemesh : navmesh_sea.tilemeshes) {
+		seanav->load_tilemesh(tilemesh.x, tilemesh.y, tilemesh.data);
 	}
 
 	worldgraph->reload_references();
