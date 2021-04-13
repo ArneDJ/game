@@ -14,6 +14,7 @@ private:
 	Texture *normals = nullptr;
 	std::vector<const Texture*> materials;
 	Shader land;
+	Shader water;
 	glm::vec3 scale;
 	// atmosphere
 	glm::vec3 sunpos;

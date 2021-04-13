@@ -36,11 +36,17 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	normals = new Texture { normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	land.compile("shaders/terrain.vert", GL_VERTEX_SHADER);
-	land.compile("shaders/terrain.tesc", GL_TESS_CONTROL_SHADER);
-	land.compile("shaders/terrain.tese", GL_TESS_EVALUATION_SHADER);
-	land.compile("shaders/terrain.frag", GL_FRAGMENT_SHADER);
+	land.compile("shaders/battle/terrain.vert", GL_VERTEX_SHADER);
+	land.compile("shaders/battle/terrain.tesc", GL_TESS_CONTROL_SHADER);
+	land.compile("shaders/battle/terrain.tese", GL_TESS_EVALUATION_SHADER);
+	land.compile("shaders/battle/terrain.frag", GL_FRAGMENT_SHADER);
 	land.link();
+
+	water.compile("shaders/battle/water.vert", GL_VERTEX_SHADER);
+	water.compile("shaders/battle/water.tesc", GL_TESS_CONTROL_SHADER);
+	water.compile("shaders/battle/water.tese", GL_TESS_EVALUATION_SHADER);
+	water.compile("shaders/battle/water.frag", GL_FRAGMENT_SHADER);
+	water.link();
 }
 
 void Terrain::load_materials(const std::vector<const Texture*> textures)
@@ -51,6 +57,8 @@ void Terrain::load_materials(const std::vector<const Texture*> textures)
 
 Terrain::~Terrain(void)
 {
+	materials.clear();
+
 	delete patches;
 
 	delete normals;
@@ -98,6 +106,19 @@ void Terrain::display(const Camera *camera) const
 	for (int i = 0; i < materials.size(); i++) {
 		materials[i]->bind(GL_TEXTURE2 + i);
 	}
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glPatchParameteri(GL_PATCH_VERTICES, 4);
+	patches->draw();
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//
+	water.use();
+	water.uniform_mat4("VP", camera->VP);
+	water.uniform_vec3("CAM_POS", camera->position);
+	water.uniform_vec3("MAP_SCALE", scale);
+	water.uniform_vec3("SUN_POS", sunpos);
+	water.uniform_vec3("FOG_COLOR", fogcolor);
+	water.uniform_float("FOG_FACTOR", fogfactor);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);

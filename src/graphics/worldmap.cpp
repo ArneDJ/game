@@ -45,16 +45,16 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	masks = new Texture { materialmasks };
 	masks->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	land.compile("shaders/worldmap.vert", GL_VERTEX_SHADER);
-	land.compile("shaders/worldmap.tesc", GL_TESS_CONTROL_SHADER);
-	land.compile("shaders/worldmap.tese", GL_TESS_EVALUATION_SHADER);
-	land.compile("shaders/worldmap.frag", GL_FRAGMENT_SHADER);
+	land.compile("shaders/campaign/worldmap.vert", GL_VERTEX_SHADER);
+	land.compile("shaders/campaign/worldmap.tesc", GL_TESS_CONTROL_SHADER);
+	land.compile("shaders/campaign/worldmap.tese", GL_TESS_EVALUATION_SHADER);
+	land.compile("shaders/campaign/worldmap.frag", GL_FRAGMENT_SHADER);
 	land.link();
 
-	water.compile("shaders/ocean.vert", GL_VERTEX_SHADER);
-	water.compile("shaders/ocean.tesc", GL_TESS_CONTROL_SHADER);
-	water.compile("shaders/ocean.tese", GL_TESS_EVALUATION_SHADER);
-	water.compile("shaders/ocean.frag", GL_FRAGMENT_SHADER);
+	water.compile("shaders/campaign/ocean.vert", GL_VERTEX_SHADER);
+	water.compile("shaders/campaign/ocean.tesc", GL_TESS_CONTROL_SHADER);
+	water.compile("shaders/campaign/ocean.tese", GL_TESS_EVALUATION_SHADER);
+	water.compile("shaders/campaign/ocean.frag", GL_FRAGMENT_SHADER);
 	water.link();
 }
 	
@@ -84,8 +84,10 @@ void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const 
 	topology->reload(heightmap);
 	nautical->reload(watermap);
 	rain->reload(rainmap);
+
 	normalmap->create_normalmap(heightmap, 32.f);
 	normals->reload(normalmap);
+
 	masks->reload(materialmasks);
 }
 

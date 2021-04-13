@@ -1,4 +1,24 @@
 
+class FrameSystem {
+public:
+	FrameSystem(uint16_t w, uint16_t h);
+	~FrameSystem(void);
+	void bind(void);
+	void unbind(void);
+	void display(void);
+private:
+	GLuint FBO;
+	GLuint colormap;
+	GLuint depthmap;
+	GLsizei height;
+	GLsizei width;
+	// the screen mesh to render
+	GLuint VAO = 0;
+	GLuint VBO = 0;
+	// final post process shader
+	Shader shader;
+};
+
 struct RenderObject {
 	const GLTF::Model *model;
 	std::vector<const Entity*> entities;

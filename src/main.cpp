@@ -145,6 +145,7 @@ private:
 	// graphics
 	MediaManager mediaman;
 	RenderManager renderman;
+	FrameSystem *framesystem;
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
@@ -205,6 +206,7 @@ void Game::init(void)
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
 	renderman.init();
+	framesystem = new FrameSystem { settings.window_width, settings.window_height };
 	shadow = new Shadow { 4096 };
 
 	if (debugmode) {
@@ -270,6 +272,8 @@ void Game::load_module(void)
 
 void Game::teardown(void)
 {
+	delete framesystem;
+
 	delete shadow;
 
 	teardown_campaign();
@@ -442,7 +446,7 @@ void Game::run_battle(void)
 
 		glViewport(0, 0, settings.window_width, settings.window_height);
 
-		renderman.prepare_to_render();
+		framesystem->bind();
 	
 		battle.ordinary->display(&battle.camera);
 
@@ -450,6 +454,12 @@ void Game::run_battle(void)
 		battle.terrain->display(&battle.camera);
 
 		skybox.display(&battle.camera);
+		
+		framesystem->unbind();
+
+		renderman.prepare_to_render();
+
+		framesystem->display();
 
 		if (debugmode) {
 			ImGui::Render();
