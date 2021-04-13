@@ -90,7 +90,7 @@ void Terrain::update_shadow(const Shadow *shadow, bool show_cascades)
 	shadow->bind_textures(GL_TEXTURE10);
 }
 
-void Terrain::display(const Camera *camera) const
+void Terrain::display_land(const Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -112,9 +112,17 @@ void Terrain::display(const Camera *camera) const
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	//
+}
+
+void Terrain::display_water(const Camera *camera) const
+{
 	water.use();
 	water.uniform_mat4("VP", camera->VP);
 	water.uniform_vec3("CAM_POS", camera->position);
+	water.uniform_float("NEAR_CLIP", camera->nearclip);
+	water.uniform_float("FAR_CLIP", camera->farclip);
+	water.uniform_float("SCREEN_WIDTH", float(camera->width));
+	water.uniform_float("SCREEN_HEIGHT", float(camera->height));
 	water.uniform_vec3("MAP_SCALE", scale);
 	water.uniform_vec3("SUN_POS", sunpos);
 	water.uniform_vec3("FOG_COLOR", fogcolor);

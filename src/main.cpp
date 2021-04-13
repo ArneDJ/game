@@ -150,8 +150,9 @@ private:
 	Shader object_shader;
 	Shader debug_shader;
 	Shader depth_shader;
-	Shader postproc_shader;
+	Shader copy_shader;
 	Shadow *shadow;
+	GLuint depthmap_copy;
 	// temporary assets
 	bool show_cascades = false;
 private:
@@ -256,9 +257,10 @@ void Game::load_module(void)
 	depth_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
 	depth_shader.link();
 
-	postproc_shader.compile("shaders/postproc.vert", GL_VERTEX_SHADER);
-	postproc_shader.compile("shaders/postproc.frag", GL_FRAGMENT_SHADER);
-	postproc_shader.link();
+	copy_shader.compile("shaders/copy.comp", GL_COMPUTE_SHADER);
+	copy_shader.link();
+
+	depthmap_copy = generate_2D_texture(NULL, windowman.width, windowman.height, GL_RGBA32F, GL_RGBA, GL_FLOAT);
 
 	skybox.init(windowman.width, windowman.height);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -272,6 +274,8 @@ void Game::load_module(void)
 
 void Game::teardown(void)
 {
+	delete_texture(depthmap_copy);
+
 	delete framesystem;
 
 	delete shadow;
@@ -451,9 +455,25 @@ void Game::run_battle(void)
 		battle.ordinary->display(&battle.camera);
 
 		battle.terrain->update_shadow(shadow, show_cascades);
-		battle.terrain->display(&battle.camera);
+		battle.terrain->display_land(&battle.camera);
 
 		skybox.display(&battle.camera);
+
+		// copy the current depth buffer
+		copy_shader.use();
+		//glBindImageTexture(0, framesystem->get_depthmap(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, framesystem->get_depthmap());
+		glBindImageTexture(1, depthmap_copy, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		#define INT_CEIL(n,d) (int)ceil((float)n/d)
+		glDispatchCompute(INT_CEIL(windowman.width, 16), INT_CEIL(windowman.width, 16), 1);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+		//framesystem->bind_depthmap(GL_TEXTURE2);
+		//framesystem->bind_colormap(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, depthmap_copy);
+		battle.terrain->display_water(&battle.camera);
 		
 		framesystem->unbind();
 

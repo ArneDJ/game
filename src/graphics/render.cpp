@@ -112,8 +112,8 @@ FrameSystem::FrameSystem(uint16_t w, uint16_t h)
 	glGenTextures(1, &depthmap);
 	glBindTexture(GL_TEXTURE_2D, depthmap);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -163,27 +163,37 @@ FrameSystem::~FrameSystem(void)
 	glDeleteFramebuffers(1, &FBO);
 }
 
-void FrameSystem::bind(void)
+void FrameSystem::bind(void) const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void FrameSystem::unbind(void)
+void FrameSystem::unbind(void) const
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void FrameSystem::display(void)
+void FrameSystem::display(void) const
 {
 	shader.use();
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, colormap);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, depthmap);
+	bind_colormap(GL_TEXTURE0);
+	bind_depthmap(GL_TEXTURE1);
 
 	glBindVertexArray(VAO);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+}
+	
+void FrameSystem::bind_colormap(GLenum unit) const
+{
+	glActiveTexture(unit);
+	glBindTexture(GL_TEXTURE_2D, colormap);
+}
+
+void FrameSystem::bind_depthmap(GLenum unit) const
+{
+	glActiveTexture(unit);
+	glBindTexture(GL_TEXTURE_2D, depthmap);
 }

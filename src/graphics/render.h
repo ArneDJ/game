@@ -3,9 +3,19 @@ class FrameSystem {
 public:
 	FrameSystem(uint16_t w, uint16_t h);
 	~FrameSystem(void);
-	void bind(void);
-	void unbind(void);
-	void display(void);
+	GLuint get_depthmap(void) const
+	{
+		return depthmap;
+	}
+	GLuint get_colormap(void) const
+	{
+		return colormap;
+	}
+	void bind_depthmap(GLenum unit) const;
+	void bind_colormap(GLenum unit) const;
+	void bind(void) const;
+	void unbind(void) const;
+	void display(void) const;
 private:
 	GLuint FBO;
 	GLuint colormap;

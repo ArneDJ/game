@@ -193,7 +193,7 @@ void Clouds::update(const Camera *camera, const glm::vec3 &lightpos, float time)
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	// now blur the final cloud texture
-	glBindImageTexture(0, cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glBindImageTexture(0, cloudscape, 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA32F);
 	glBindImageTexture(1, blurred_cloudscape, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	blurry.use();
 
