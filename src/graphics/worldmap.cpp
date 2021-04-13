@@ -20,7 +20,7 @@
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
-Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap)
+Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -36,12 +36,14 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	nautical->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	rain = new Texture { rainmap };
-	// special wrapping mode so edges of the map are at height 0
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	normalmap = new Image { heightmap->width, heightmap->height, COLORSPACE_RGB };
 	normals = new Texture { normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
+
+	masks = new Texture { materialmasks };
+	masks->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	land.compile("shaders/worldmap.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/worldmap.tesc", GL_TESS_CONTROL_SHADER);
@@ -64,6 +66,8 @@ void Worldmap::load_materials(const std::vector<const Texture*> textures)
 
 Worldmap::~Worldmap(void)
 {
+	materials.clear();
+
 	delete patches;
 	
 	delete topology;
@@ -71,15 +75,18 @@ Worldmap::~Worldmap(void)
 
 	delete normals;
 	delete normalmap;
+
+	delete masks;
 }
 
-void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap)
+void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks)
 {
 	topology->reload(heightmap);
 	nautical->reload(watermap);
 	rain->reload(rainmap);
 	normalmap->create_normalmap(heightmap, 32.f);
 	normals->reload(normalmap);
+	masks->reload(materialmasks);
 }
 
 void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr)
@@ -100,6 +107,7 @@ void Worldmap::display(const Camera *camera) const
 	topology->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
 	rain->bind(GL_TEXTURE2);
+	masks->bind(GL_TEXTURE3);
 
 	for (int i = 0; i < materials.size(); i++) {
 		materials[i]->bind(GL_TEXTURE4 + i);

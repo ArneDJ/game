@@ -17,7 +17,7 @@ struct mapfield_result {
 class Mapfield {
 public:
 	void generate(const std::vector<glm::vec2> &vertdata, const std::vector<struct mosaictriangle> &mosaictriangles, struct rectangle anchors);
-	struct mapfield_result index_in_field(const glm::vec2 &position);
+	struct mapfield_result index_in_field(const glm::vec2 &position) const;
 private:
 	const size_t REGION_RES = 128;
 	int regionscale;

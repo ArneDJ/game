@@ -1,10 +1,10 @@
 
 class Worldmap {
 public:
-	Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap);
+	Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks);
 	~Worldmap(void);
 	void load_materials(const std::vector<const Texture*> textures);
-	void reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap);
+	void reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks);
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr);
 	void display(const Camera *camera) const;
 private:
@@ -14,6 +14,7 @@ private:
 	Texture *nautical = nullptr;
 	Texture *rain = nullptr;
 	Texture *normals = nullptr;
+	Texture *masks = nullptr;
 	std::vector<const Texture*> materials;
 	Shader land;
 	Shader water;

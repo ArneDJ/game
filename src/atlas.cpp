@@ -26,6 +26,11 @@
 #include "mapfield.h"
 #include "atlas.h"
 
+enum material_channels {
+	CHANNEL_SNOW = 0,
+	CHANNEL_COUNT
+};
+
 static const uint8_t SEABED_SMOOTH = 255;
 static const uint8_t LOWLAND_SMOOTH = 220;
 static const uint8_t UPLAND_SMOOTH = 100;
@@ -35,11 +40,15 @@ static const float MAP_SMOOTH_TRANSITION = 5.F;
 
 static const float LAND_DOWNSCALE = 0.8F;
 
+static const uint16_t LANDMAP_RES = 2048;
 static const uint16_t WATERMAP_RES = 2048;
+static const uint16_t RAINMAP_RES = 512;
+static const uint16_t TEMPMAP_RES = 512;
+static const uint16_t MATERIALMASKS_RES = 2048;
 
-Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
+Atlas::Atlas(void)
 {
-	terragen = new Terragen { heightres, rainres, tempres };
+	terragen = new Terragen { LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES };
 
 	struct rectangle area = {
 		glm::vec2(0.F, 0.F),
@@ -53,6 +62,8 @@ Atlas::Atlas(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 	detail = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
 
 	mask = new Image { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
+	
+	materialmasks = new Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT};
 }
 
 Atlas::~Atlas(void)
@@ -65,12 +76,18 @@ Atlas::~Atlas(void)
 	delete container;
 	delete detail;
 	delete mask;
+	
+	delete materialmasks;
 }
 
 void Atlas::generate(long seedling, const struct worldparams *params)
 {
+auto start = std::chrono::steady_clock::now();
 	holdings.clear();
 	holding_tiles.clear();
+
+	mask->clear();
+	watermap->clear();
 
 	// first generate the world heightmap, rain and temperature data
 	terragen->generate(seedling, params);
@@ -81,10 +98,9 @@ void Atlas::generate(long seedling, const struct worldparams *params)
 	// generate holds based on generated world data
 	gen_holds();
 
-auto start = std::chrono::steady_clock::now();
 	smoothe_heightmap();
 	plateau_heightmap();
-	detail_heightmap(seedling);
+	oregony_heightmap(seedling);
 
 	// now create the watermap
 	create_watermap(LAND_DOWNSCALE*params->graph.lowland);
@@ -92,7 +108,7 @@ auto start = std::chrono::steady_clock::now();
 	erode_heightmap(0.97f*LAND_DOWNSCALE*params->graph.lowland);
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
-std::cout << "campaign heightmap finalization time: " << elapsed_seconds.count() << "s\n";
+std::cout << "campaign image maps time: " << elapsed_seconds.count() << "s\n";
 }
 
 void Atlas::smoothe_heightmap(void)
@@ -201,7 +217,7 @@ void Atlas::plateau_heightmap(void)
 	mask->clear();
 }
 
-void Atlas::detail_heightmap(long seed)
+void Atlas::oregony_heightmap(long seed)
 {
 	const glm::vec2 mapscale = {
 		float(mask->width) / SCALE.x,
@@ -402,16 +418,42 @@ auto start = std::chrono::steady_clock::now();
 			}
 		}
 	}
-	//watermap->blur(2.f);
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
+}
+	
+void Atlas::create_materialmasks(void)
+{
+	materialmasks->clear();
+
+	const glm::vec2 mapscale = {
+		float(materialmasks->width) / SCALE.x,
+		float(materialmasks->height) / SCALE.z
+	};
+
+	// snow
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == HIGHLAND) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				materialmasks->draw_triangle(a, b, c, CHANNEL_SNOW, 255);
+			}
+		}
+	}
+	
+	materialmasks->blur(1.f);
 }
 	
 void Atlas::create_mapdata(void)
 {
 	// create the spatial hash field data for the tiles
 	gen_mapfield();
+
+	create_materialmasks();
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -433,8 +475,18 @@ const Image* Atlas::get_watermap(void) const
 {
 	return watermap;
 }
+
+const Image* Atlas::get_materialmasks(void) const
+{
+	return materialmasks;
+}
 	
-const struct tile* Atlas::tile_at_position(const glm::vec2 &position)
+const struct navigation_soup* Atlas::get_navsoup(void) const
+{
+	return &navsoup;
+}
+	
+const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const
 {
 	auto result = mapfield.index_in_field(position);
 	
@@ -601,8 +653,8 @@ void Atlas::gen_holds(void)
 	
 void Atlas::create_land_navigation(void)
 {
-	vertex_soup.clear();
-	index_soup.clear();
+	navsoup.vertices.clear();
+	navsoup.indices.clear();
 
 	struct customedge {
 		std::pair<size_t, size_t> vertices;
@@ -778,9 +830,9 @@ void Atlas::create_land_navigation(void)
 
 	for (int i = 0; i < cdt.vertices.size(); i++) {
 		const auto pos = cdt.vertices[i].pos;
-		vertex_soup.push_back(pos.x);
-		vertex_soup.push_back(0.f);
-		vertex_soup.push_back(pos.y);
+		navsoup.vertices.push_back(pos.x);
+		navsoup.vertices.push_back(0.f);
+		navsoup.vertices.push_back(pos.y);
 
 	}
 	for (const auto &triangle : cdt.triangles) {
@@ -792,21 +844,21 @@ void Atlas::create_land_navigation(void)
 			vertices[i].y = pos.y;
 		}
 		if (clockwise(vertices[0], vertices[1], vertices[2])) {
-			index_soup.push_back(triangle.vertices[0]);
-			index_soup.push_back(triangle.vertices[1]);
-			index_soup.push_back(triangle.vertices[2]);
+			navsoup.indices.push_back(triangle.vertices[0]);
+			navsoup.indices.push_back(triangle.vertices[1]);
+			navsoup.indices.push_back(triangle.vertices[2]);
 		} else {
-			index_soup.push_back(triangle.vertices[0]);
-			index_soup.push_back(triangle.vertices[2]);
-			index_soup.push_back(triangle.vertices[1]);
+			navsoup.indices.push_back(triangle.vertices[0]);
+			navsoup.indices.push_back(triangle.vertices[2]);
+			navsoup.indices.push_back(triangle.vertices[1]);
 		}
 	}
 }
 
 void Atlas::create_sea_navigation(void)
 {
-	vertex_soup.clear();
-	index_soup.clear();
+	navsoup.vertices.clear();
+	navsoup.indices.clear();
 
 	struct customedge {
 		std::pair<size_t, size_t> vertices;
@@ -956,9 +1008,9 @@ void Atlas::create_sea_navigation(void)
 
 	for (int i = 0; i < cdt.vertices.size(); i++) {
 		const auto pos = cdt.vertices[i].pos;
-		vertex_soup.push_back(pos.x);
-		vertex_soup.push_back(0.f);
-		vertex_soup.push_back(pos.y);
+		navsoup.vertices.push_back(pos.x);
+		navsoup.vertices.push_back(0.f);
+		navsoup.vertices.push_back(pos.y);
 
 	}
 	for (const auto &triangle : cdt.triangles) {
@@ -970,13 +1022,13 @@ void Atlas::create_sea_navigation(void)
 			vertices[i].y = pos.y;
 		}
 		if (clockwise(vertices[0], vertices[1], vertices[2])) {
-			index_soup.push_back(triangle.vertices[0]);
-			index_soup.push_back(triangle.vertices[1]);
-			index_soup.push_back(triangle.vertices[2]);
+			navsoup.indices.push_back(triangle.vertices[0]);
+			navsoup.indices.push_back(triangle.vertices[1]);
+			navsoup.indices.push_back(triangle.vertices[2]);
 		} else {
-			index_soup.push_back(triangle.vertices[0]);
-			index_soup.push_back(triangle.vertices[2]);
-			index_soup.push_back(triangle.vertices[1]);
+			navsoup.indices.push_back(triangle.vertices[0]);
+			navsoup.indices.push_back(triangle.vertices[2]);
+			navsoup.indices.push_back(triangle.vertices[1]);
 		}
 	}
 }

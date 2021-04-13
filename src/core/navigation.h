@@ -30,7 +30,7 @@ public:
 	const dtNavMesh* get_navmesh(void) const { return navmesh; };	
 	bool alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys);
 	void cleanup(void);
-	bool build(std::vector<float> &vertices, std::vector<int> &indices);
+	bool build(const std::vector<float> &vertices, const std::vector<int> &indices);
 	void load_tilemesh(int x, int y, const std::vector<uint8_t> &data);
 	
 	void find_2D_path(const glm::vec2 &startpos, const glm::vec2 &endpos, std::list<glm::vec2> &pathways) const;

@@ -59,19 +59,6 @@ void RenderGroup::display(const Camera *camera) const
 	}
 }
 
-void RenderGroup::render(const Shader *program) const
-{
-	for (const auto &obj : objects) {
-		for (const auto &ent : obj.entities) {
-			glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
-			glm::mat4 R = glm::mat4(ent->rotation);
-			glm::mat4 M = T * R;
-			program->uniform_mat4("MODEL", M);
-			obj.model->display();
-		}
-	}
-}
-
 void RenderGroup::clear(void)
 {
 	objects.clear();

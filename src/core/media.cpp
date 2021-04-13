@@ -45,7 +45,6 @@ void MediaManager::teardown(void)
 	}
 }
 	
-// TODO better model texture import
 const GLTF::Model* MediaManager::load_model(const std::string &relpath)
 {
 	std::string filepath = basepath + "models/" + relpath;

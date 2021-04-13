@@ -132,7 +132,7 @@ void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vecto
 	}
 }
 
-struct mapfield_result Mapfield::index_in_field(const glm::vec2 &position)
+struct mapfield_result Mapfield::index_in_field(const glm::vec2 &position) const
 {
 	struct mapfield_result result = { false, 0 };
 

@@ -197,7 +197,7 @@ bool Navigation::alloc(const glm::vec3 &origin, float tilewidth, float tileheigh
 	return true;
 }
 
-bool Navigation::build(std::vector<float> &vertices, std::vector<int> &indices)
+bool Navigation::build(const std::vector<float> &vertices, const std::vector<int> &indices)
 {
 	navquery = new dtNavMeshQuery;
 	chunky_mesh = new rcChunkyTriMesh;
@@ -527,7 +527,7 @@ uint8_t* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin, floa
 	tbmin[1] = bmin[2];
 	tbmax[0] = bmax[0];
 	tbmax[1] = bmax[2];
-	int cid[512];// TODO: Make grow when returning too many items.
+	int cid[512];
 	const int ncid = rcGetChunksOverlappingRect(chunky_mesh, tbmin, tbmax, cid, 512);
 	if (!ncid) { 
 		return 0; 

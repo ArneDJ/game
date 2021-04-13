@@ -119,6 +119,7 @@ struct Campaign {
 struct Battle {
 	Camera camera;
 	RenderGroup *ordinary;
+	RenderGroup *shadowcasters;
 	Terrain *terrain;
 	btRigidBody *surface;
 	Landscape *landscape;
@@ -311,6 +312,7 @@ void Game::teardown_campaign(void)
 void Game::teardown_battle(void)
 {
 	delete battle.ordinary;
+	delete battle.shadowcasters;
 
 	delete battle.landscape;
 
@@ -399,16 +401,20 @@ void Game::run_battle(void)
 	physicsman.insert_body(sphereobject.body);
 	ents.push_back(&sphereobject);
 	battle.ordinary->add_object(mediaman.load_model("sphere.glb"), ents);
+	battle.shadowcasters->add_object(mediaman.load_model("sphere.glb"), ents);
 
 	ents.clear();
 	ents.push_back(&cubeobject);
 	battle.ordinary->add_object(mediaman.load_model("cube.glb"), ents);
+	battle.shadowcasters->add_object(mediaman.load_model("cube.glb"), ents);
 	ents.clear();
 	ents.push_back(&cylinderobject);
 	battle.ordinary->add_object(mediaman.load_model("cylinder.glb"), ents);
+	battle.shadowcasters->add_object(mediaman.load_model("cylinder.glb"), ents);
 	ents.clear();
 	ents.push_back(&capsuleobject);
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
+	battle.shadowcasters->add_object(mediaman.load_model("capsule.glb"), ents);
 	
 	skybox.pre_step();
 	
@@ -429,8 +435,8 @@ void Game::run_battle(void)
 		for (int i = 0; i < shadowspaces.size(); i++) {
 			// render into shadow depthmap
 			shadow->bind_depthmap(i);
-			depth_shader.uniform_mat4("VP", shadowspaces[i]);
-			battle.ordinary->render(&depth_shader);
+			depth_shader.uniform_mat4("DEPTH_VP", shadowspaces[i]);
+			battle.shadowcasters->display(&battle.camera);
 		}
 		shadow->disable();
 
@@ -455,6 +461,7 @@ void Game::run_battle(void)
 	}
 	
 	battle.ordinary->clear();
+	battle.shadowcasters->clear();
 	physicsman.remove_body(sphereobject.body);
 	physicsman.remove_body(cubeobject.body);
 	physicsman.remove_body(battle.surface);
@@ -484,12 +491,13 @@ void Game::reserve_campaign(void)
 	campaign.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	campaign.camera.project();
 
-	campaign.atlas = new Atlas { 2048, 512, 512 };
+	campaign.atlas = new Atlas;
 
-	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap() };
+	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks() };
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
+	materials.push_back(mediaman.load_texture("ground/snow.dds"));
 	campaign.worldmap->load_materials(materials);
 
 	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
@@ -498,6 +506,7 @@ void Game::reserve_campaign(void)
 	campaign.ordinary = new RenderGroup { &debug_shader };
 	campaign.creatures = new RenderGroup { &object_shader };
 	battle.ordinary = new RenderGroup { &debug_shader };
+	battle.shadowcasters = new RenderGroup { &depth_shader };
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	campaign.player = new Army { startpos, 20.f };
@@ -535,11 +544,11 @@ void Game::update_campaign(void)
 
 	campaign.camera.update();
 		
-	// TODO height at
 	struct ray_result camresult = physicsman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z));
 	if (camresult.hit) {
-		if (campaign.camera.position.y < camresult.point.y + 10.f) {
-			campaign.camera.position.y = camresult.point.y + 10.f;
+		float yoffset = camresult.point.y + 10;
+		if (campaign.camera.position.y < yoffset) {
+			campaign.camera.position.y = yoffset;
 		}
 	}
 
@@ -549,7 +558,7 @@ void Game::update_campaign(void)
 		if (result.hit) {
 			campaign.marker.position = result.point;
 			std::list<glm::vec2> waypoints;
-			campaign.seanav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
+			campaign.landnav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
 			campaign.player->set_path(waypoints);
 		}
 	}
@@ -601,10 +610,12 @@ void Game::new_campaign(void)
 	campaign.atlas->create_mapdata();
 
 	campaign.atlas->create_land_navigation();
-	campaign.landnav.build(campaign.atlas->vertex_soup, campaign.atlas->index_soup);
+	const auto land_navsoup = campaign.atlas->get_navsoup();
+	campaign.landnav.build(land_navsoup->vertices, land_navsoup->indices);
 
 	campaign.atlas->create_sea_navigation();
-	campaign.seanav.build(campaign.atlas->vertex_soup, campaign.atlas->index_soup);
+	const auto sea_navsoup = campaign.atlas->get_navsoup();
+	campaign.seanav.build(sea_navsoup->vertices, sea_navsoup->indices);
 
 	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	
@@ -645,7 +656,7 @@ void Game::run_campaign(void)
 
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
-	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap());
+	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks());
 	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f);
 
 	physicsman.insert_body(campaign.surface);
