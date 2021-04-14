@@ -114,7 +114,7 @@ void Terrain::display_land(const Camera *camera) const
 	//
 }
 
-void Terrain::display_water(const Camera *camera) const
+void Terrain::display_water(const Camera *camera, float time) const
 {
 	water.use();
 	water.uniform_mat4("VP", camera->VP);
@@ -125,6 +125,8 @@ void Terrain::display_water(const Camera *camera) const
 	water.uniform_float("SCREEN_HEIGHT", float(camera->height));
 	water.uniform_vec3("MAP_SCALE", scale);
 	water.uniform_vec3("SUN_POS", sunpos);
+	water.uniform_float("TIME", time);
+	water.uniform_vec2("WIND_DIR", glm::vec2(0.5, 0.5));
 	water.uniform_vec3("FOG_COLOR", fogcolor);
 	water.uniform_float("FOG_FACTOR", fogfactor);
 

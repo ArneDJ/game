@@ -21,6 +21,8 @@
 #include "../core/model.h"
 #include "render.h"
 
+#define INT_CEIL(n,d) (int)ceil((float)n/d)
+
 RenderGroup::RenderGroup(const Shader *shady)
 {
 	shader = shady;
@@ -112,6 +114,7 @@ FrameSystem::FrameSystem(uint16_t w, uint16_t h)
 	glGenTextures(1, &depthmap);
 	glBindTexture(GL_TEXTURE_2D, depthmap);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, w, h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	// GL_NEAREST seems to cause horizontal white lines
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -125,6 +128,17 @@ FrameSystem::FrameSystem(uint16_t w, uint16_t h)
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
+	glGenTextures(1, &depthmap_copy);
+	glBindTexture(GL_TEXTURE_2D, depthmap_copy);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, w, h, 0, GL_RED, GL_FLOAT, NULL);
+	glBindTexture(GL_TEXTURE_2D, depthmap_copy);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	// create the screen quad mesh
 	const float vertices[] = { 
@@ -147,14 +161,18 @@ FrameSystem::FrameSystem(uint16_t w, uint16_t h)
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
 	// create the post processing shader
-	shader.compile("shaders/postproc.vert", GL_VERTEX_SHADER);
-	shader.compile("shaders/postproc.frag", GL_FRAGMENT_SHADER);
-	shader.link();
+	postproc.compile("shaders/postproc.vert", GL_VERTEX_SHADER);
+	postproc.compile("shaders/postproc.frag", GL_FRAGMENT_SHADER);
+	postproc.link();
+
+	copy.compile("shaders/copy.comp", GL_COMPUTE_SHADER);
+	copy.link();
 }
 
 FrameSystem::~FrameSystem(void)
 {
 	delete_texture(depthmap);
+	delete_texture(depthmap_copy);
 	delete_texture(colormap);
 
 	glDeleteBuffers(1, &VBO);
@@ -177,7 +195,7 @@ void FrameSystem::unbind(void) const
 
 void FrameSystem::display(void) const
 {
-	shader.use();
+	postproc.use();
 
 	bind_colormap(GL_TEXTURE0);
 	bind_depthmap(GL_TEXTURE1);
@@ -196,4 +214,17 @@ void FrameSystem::bind_depthmap(GLenum unit) const
 {
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D, depthmap);
+}
+	
+void FrameSystem::copy_depthmap(void)
+{
+	copy.use();
+	copy.uniform_float("TEXTURE_WIDTH", float(width));
+	copy.uniform_float("TEXTURE_HEIGHT", float(height));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depthmap);
+	glBindImageTexture(1, depthmap_copy, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+	glDispatchCompute(INT_CEIL(width, 32), INT_CEIL(height, 32), 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }

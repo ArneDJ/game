@@ -199,12 +199,12 @@ void Clouds::update(const Camera *camera, const glm::vec3 &lightpos, float time)
 
 	blurry.uniform_vec2("DIR", glm::vec2(1.f, 0.f));
 
-	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_WIDTH, 16), 1);
+	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_HEIGHT, 16), 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 	blurry.uniform_vec2("DIR", glm::vec2(0.f, 1.f));
 
-	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_WIDTH, 16), 1);
+	glDispatchCompute(INT_CEIL(SCR_WIDTH, 16), INT_CEIL(SCR_HEIGHT, 16), 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 

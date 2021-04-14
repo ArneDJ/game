@@ -3,6 +3,11 @@ class FrameSystem {
 public:
 	FrameSystem(uint16_t w, uint16_t h);
 	~FrameSystem(void);
+	void copy_depthmap(void);
+	GLuint get_depthmap_copy(void) const
+	{
+		return depthmap_copy;
+	}
 	GLuint get_depthmap(void) const
 	{
 		return depthmap;
@@ -20,13 +25,15 @@ private:
 	GLuint FBO;
 	GLuint colormap;
 	GLuint depthmap;
+	GLuint depthmap_copy;
 	GLsizei height;
 	GLsizei width;
 	// the screen mesh to render
 	GLuint VAO = 0;
 	GLuint VBO = 0;
 	// final post process shader
-	Shader shader;
+	Shader postproc;
+	Shader copy;
 };
 
 struct RenderObject {
