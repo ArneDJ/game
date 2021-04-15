@@ -12,6 +12,8 @@ layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 2) uniform sampler2D DEPTHMAP;
 layout(binding = 4) uniform sampler2D NORMALMAP;
 
+layout(binding = 21) uniform sampler2D FLOWMAP;
+
 layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
 
 // atmosphere
@@ -113,6 +115,7 @@ void main(void)
 	vec3 color = vec3(0.7, 0.8, 0.9);
 	vec3 shallowcolor = vec3(0.8, 0.95, 1.0);
 
+	//vec2 dir = normalize(texture(FLOWMAP, fragment.texcoord).xy);
 	vec3 normal = texture(NORMALMAP, 0.05*fragment.position.xz + (0.1*TIME * WIND_DIR)).rbg;
 	normal = (normal * 2.0) - 1.0;
 	normal = normalize(normal);

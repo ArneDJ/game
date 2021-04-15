@@ -76,6 +76,7 @@
 #include "atlas.h"
 #include "save.h"
 #include "army.h"
+#include "eroder.h"
 #include "landscape.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -420,7 +421,12 @@ void Game::run_battle(void)
 	battle.shadowcasters->add_object(mediaman.load_model("capsule.glb"), ents);
 	
 	skybox.pre_step();
+
+	TerrainEroder eroder = { battle.landscape->get_heightmap() };
+	eroder.prestep(battle.landscape->get_heightmap());
 	
+	eroder.waterstep();
+
 	while (state == GS_BATTLE) {
 		timer.begin();
 
@@ -429,6 +435,8 @@ void Game::run_battle(void)
 		cubeobject.update();
 		cylinderobject.update();
 		capsuleobject.update();
+
+		eroder.erode(battle.landscape->get_heightmap());
 
 		// update cascaded shadows
 		shadow->update(&battle.camera, sun_position);

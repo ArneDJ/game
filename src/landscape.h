@@ -20,6 +20,7 @@ private:
 	FloatImage *heightmap = nullptr;
 	FloatImage *container = nullptr;
 	Image *normalmap = nullptr;
+	TerrainEroder *eroder = nullptr;
 private:
 	void gen_heightmap(long seed, uint32_t offset, float amplitude);
 };

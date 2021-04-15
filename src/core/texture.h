@@ -10,9 +10,14 @@ public:
 	// explicitly load texture
 	void load(const std::string &filepath); // from file
 	void bind(GLenum unit) const;
+	void bindimage(GLenum unit, GLenum access, GLenum imageformat) const
+	{
+		glBindImageTexture(unit, handle, 0, GL_FALSE, 0, access, imageformat);
+	}
 	// update texture data
 	void reload(const FloatImage *image);
 	void reload(const Image *image);
+	void unload(FloatImage *image);
 	// change wrapping method
 	void change_wrapping(GLint wrapping);
 private:

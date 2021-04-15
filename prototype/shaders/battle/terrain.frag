@@ -9,7 +9,8 @@ in TESSEVAL {
 out vec4 fcolor;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
-layout(binding = 1) uniform sampler2D NORMALMAP;
+//TODO layout(binding = 1) uniform sampler2D NORMALMAP;
+layout(binding = 20) uniform sampler2D NORMALMAP;
 layout(binding = 2) uniform sampler2D STONEMAP;
 layout(binding = 3) uniform sampler2D SANDMAP;
 
@@ -83,10 +84,9 @@ float shadow_coef(void)
 
 void main(void)
 {
-	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 	vec3 normal = texture(NORMALMAP, fragment.texcoord).rgb;
-	normal = (normal * 2.0) - 1.0;
-	normal = normalize(normal);
+	//normal = (normal * 2.0) - 1.0;
+	//normal = normalize(normal);
 
 	float slope = 1.0 - normal.y;
 	//slope = smoothstep(0.4, 0.55, slope);

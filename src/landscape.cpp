@@ -3,12 +3,18 @@
 #include <random>
 #include <algorithm>
 #include <array>
+#include <map>
 #include <chrono>
+#include <GL/glew.h>
+#include <GL/gl.h> 
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "core/shader.h"
 #include "core/image.h"
+#include "core/texture.h"
+#include "eroder.h"
 #include "landscape.h"
 
 struct landgen_parameters {
@@ -55,10 +61,13 @@ Landscape::Landscape(uint16_t heightres)
 	normalmap = new Image { heightres, heightres, COLORSPACE_RGB };
 
 	container = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
+
+	eroder = new TerrainEroder { heightmap };
 }
 
 Landscape::~Landscape(void)
 {
+	delete eroder;
 	delete heightmap;
 	delete normalmap;
 	delete container;
@@ -67,6 +76,8 @@ Landscape::~Landscape(void)
 void Landscape::generate(long seed, uint32_t offset, float amplitude)
 {
 	gen_heightmap(seed, offset, amplitude);
+
+	//eroder->erode(heightmap);
 
 	// create the normalmap
 	normalmap->create_normalmap(heightmap, 32.f);
@@ -113,6 +124,7 @@ void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 	heightmap->noise(&fractalnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
+	/*
 	// mix two noise images based on height
 	for (int i = 0; i < heightmap->size; i++) {
 		float height = heightmap->data[i];
@@ -138,6 +150,7 @@ void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 		height = glm::clamp(height, 0.f, 1.f);
 		heightmap->data[i] = height;
 	}
+	*/
 }
 	
 static struct landgen_parameters random_landgen_parameters(long seed, uint32_t offset)

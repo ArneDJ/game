@@ -8,7 +8,7 @@ out TESSEVAL {
 	vec4 clip;
 } tesseval;
 
-layout(binding = 0) uniform sampler2D DISPLACEMENT;
+layout(binding = 6) uniform sampler2D DISPLACEMENT;
 uniform mat4 VP;
 uniform vec3 MAP_SCALE;
 
@@ -20,8 +20,8 @@ void main(void)
 
 	tesseval.texcoord = pos.xz / MAP_SCALE.xz;
 
-	//pos.y = MAP_SCALE.y * texture(DISPLACEMENT, tesseval.texcoord).r;
-	pos.y = MAP_SCALE.y * 0.1;
+	pos.y = MAP_SCALE.y * (texture(DISPLACEMENT, tesseval.texcoord).r + texture(DISPLACEMENT, tesseval.texcoord).g);
+	//pos.y = MAP_SCALE.y * 0.1;
 	tesseval.position = pos.xyz;
 
 	tesseval.clip = VP * pos;
