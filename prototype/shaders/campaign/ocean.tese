@@ -5,6 +5,7 @@ layout(quads, fractional_even_spacing, ccw) in;
 out TESSEVAL {
 	vec3 position;
 	vec2 texcoord;
+	vec4 clip;
 } tesseval;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
@@ -22,5 +23,6 @@ void main(void)
 	pos.y = MAP_SCALE.y * texture(DISPLACEMENT, tesseval.texcoord).r;
 	tesseval.position = pos.xyz;
 
-	gl_Position = VP * pos;
+	tesseval.clip = VP * pos;
+	gl_Position = tesseval.clip;
 }

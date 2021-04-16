@@ -76,7 +76,6 @@
 #include "atlas.h"
 #include "save.h"
 #include "army.h"
-#include "eroder.h"
 #include "landscape.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
@@ -422,11 +421,6 @@ void Game::run_battle(void)
 	
 	skybox.pre_step();
 
-	TerrainEroder eroder = { battle.landscape->get_heightmap() };
-	eroder.prestep(battle.landscape->get_heightmap());
-	
-	eroder.waterstep();
-
 	while (state == GS_BATTLE) {
 		timer.begin();
 
@@ -435,8 +429,6 @@ void Game::run_battle(void)
 		cubeobject.update();
 		cylinderobject.update();
 		capsuleobject.update();
-
-		eroder.erode(battle.landscape->get_heightmap());
 
 		// update cascaded shadows
 		shadow->update(&battle.camera, sun_position);
@@ -523,6 +515,7 @@ void Game::reserve_campaign(void)
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	materials.push_back(mediaman.load_texture("ground/snow.dds"));
+	materials.push_back(mediaman.load_texture("ground/water.dds"));
 	campaign.worldmap->load_materials(materials);
 
 	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
@@ -682,7 +675,7 @@ void Game::run_campaign(void)
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks());
-	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f);
+	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f, sun_position);
 
 	physicsman.insert_body(campaign.surface);
 	physicsman.insert_body(campaign.watersurface);
@@ -694,15 +687,27 @@ void Game::run_campaign(void)
 
 		update_campaign();
 
-		renderman.prepare_to_render();
-
+		framesystem->bind();
+	
 		campaign.ordinary->display(&campaign.camera);
 
 		campaign.creatures->display(&campaign.camera);
 
-		campaign.worldmap->display(&campaign.camera);
+		campaign.worldmap->display_land(&campaign.camera);
 
 		skybox.display(&campaign.camera);
+
+		framesystem->copy_depthmap();
+		
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, framesystem->get_depthmap_copy());
+		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
+
+		framesystem->unbind();
+
+		renderman.prepare_to_render();
+		
+		framesystem->display();
 
 		if (debugmode) {
 			ImGui::Render();

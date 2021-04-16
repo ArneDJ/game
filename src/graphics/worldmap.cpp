@@ -91,13 +91,14 @@ void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const 
 	masks->reload(materialmasks);
 }
 
-void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr)
+void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &sunposition)
 {
 	fogcolor = fogclr;
 	fogfactor = fogfctr;
+	sunpos = sunposition;
 }
 
-void Worldmap::display(const Camera *camera) const
+void Worldmap::display_land(const Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -119,15 +120,27 @@ void Worldmap::display(const Camera *camera) const
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	//
+}
+
+void Worldmap::display_water(const Camera *camera, float time) const
+{
 	water.use();
 	water.uniform_mat4("VP", camera->VP);
 	water.uniform_vec3("CAM_POS", camera->position);
+	water.uniform_float("NEAR_CLIP", camera->nearclip);
+	water.uniform_float("FAR_CLIP", camera->farclip);
+	water.uniform_float("TIME", time);
 	water.uniform_vec3("MAP_SCALE", scale);
 	water.uniform_vec3("FOG_COLOR", fogcolor);
 	water.uniform_float("FOG_FACTOR", fogfactor);
+	water.uniform_vec3("SUN_POS", sunpos);
 
 	nautical->bind(GL_TEXTURE0);
+
+	// TODO remove normalmaps form materials
+	for (int i = 0; i < materials.size(); i++) {
+		materials[i]->bind(GL_TEXTURE4 + i);
+	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);

@@ -12,8 +12,6 @@ layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 2) uniform sampler2D DEPTHMAP;
 layout(binding = 4) uniform sampler2D NORMALMAP;
 
-layout(binding = 21) uniform sampler2D FLOWMAP;
-
 layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
 
 // atmosphere
@@ -26,8 +24,6 @@ uniform float TIME;
 uniform vec3 CAM_POS;
 uniform float NEAR_CLIP;
 uniform float FAR_CLIP;
-uniform float SCREEN_WIDTH;
-uniform float SCREEN_HEIGHT;
 
 // shadows
 uniform vec4 SPLIT;
@@ -115,7 +111,6 @@ void main(void)
 	vec3 color = vec3(0.7, 0.8, 0.9);
 	vec3 shallowcolor = vec3(0.8, 0.95, 1.0);
 
-	//vec2 dir = normalize(texture(FLOWMAP, fragment.texcoord).xy);
 	vec3 normal = texture(NORMALMAP, 0.05*fragment.position.xz + (0.1*TIME * WIND_DIR)).rbg;
 	normal = (normal * 2.0) - 1.0;
 	normal = normalize(normal);
@@ -126,8 +121,7 @@ void main(void)
 	float edge_softness = 10.5;
 	float depth = texture(DEPTHMAP, ndc).r;
 	float floor_dist = 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
-	depth = gl_FragCoord.z;
-	float water_dist = 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
+	float water_dist = 2.0 * near * far / (far + near - (2.0 * gl_FragCoord.z - 1.0) * (far - near));
 	float waterdepth = floor_dist - water_dist;
 
 	color = mix(shallowcolor, color, clamp(waterdepth/40.0, 0.0, 1.0));

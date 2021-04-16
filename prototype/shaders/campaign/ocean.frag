@@ -3,15 +3,23 @@
 in TESSEVAL {
 	vec3 position;
 	vec2 texcoord;
+	vec4 clip;
 } fragment;
 
 out vec4 fcolor;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
+layout(binding = 2) uniform sampler2D DEPTHMAP;
+layout(binding = 7) uniform sampler2D NORMALMAP;
 
-uniform vec3 CAM_POS;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
+uniform float TIME;
+uniform vec3 SUN_POS;
+//
+uniform vec3 CAM_POS;
+uniform float NEAR_CLIP;
+uniform float FAR_CLIP;
 
 vec3 fog(vec3 color, float dist)
 {
@@ -19,11 +27,61 @@ vec3 fog(vec3 color, float dist)
 	return mix(color, FOG_COLOR, amount );
 }
 
+vec3 do_specular(vec3 eyedir, vec3 lightdir, vec3 normal)
+{
+	float shinedamp = 20.0;
+	float reflectivity = 0.4;
+	vec3 lightcolor = vec3(1.0, 1.0, 1.0);
+	vec3 reflected = reflect(-lightdir, normal);
+	float spec = dot(reflected , eyedir);
+	spec = max(spec, 0.0);
+	spec = pow(spec, shinedamp);
+
+	return spec * reflectivity * lightcolor;
+}
+
+vec3 do_diffuse(vec3 lightdir, vec3 normal)
+{
+	vec2 lightbias = vec2(1.0, 1.0);
+	vec3 lightcolor = vec3(1.0, 1.0, 1.0);
+	float brightness = max(dot(lightdir, normal), 0.0);
+
+	return (lightcolor * lightbias.x) + (brightness * lightcolor * lightbias.y);
+}
+
 void main(void)
 {
-	float height = texture(DISPLACEMENT, fragment.texcoord).r;
+	vec3 color = vec3(0.7, 0.8, 0.9) * vec3(0.5);
+	vec3 shallowcolor = vec3(0.8, 0.95, 1.0) * vec3(0.5);
 
-	vec3 color = vec3(height);
+	vec3 normal = texture(NORMALMAP, 0.05*fragment.position.xz + (0.1*TIME * vec2(0.5, 0.5))).rbg;
+	normal = (normal * 2.0) - 1.0;
+	normal = normalize(normal);
 
-	fcolor = vec4(color, 1.0);
+	vec2 ndc = (fragment.clip.xy / fragment.clip.w) / 2.0 + 0.5;
+	float near = NEAR_CLIP;
+	float far = FAR_CLIP;
+	float depth = texture(DEPTHMAP, ndc).r;
+	float floor_dist = 2.0 * near * far / (far + near - (2.0 * depth - 1.0) * (far - near));
+	float water_dist = 2.0 * near * far / (far + near - (2.0 * gl_FragCoord.z - 1.0) * (far - near));
+	// TODO fix z-fighting
+	float waterdepth = floor_dist - water_dist;
+
+	color = mix(shallowcolor, color, clamp(waterdepth/30.0, 0.0, 1.0));
+
+	vec3 eyedir = normalize(CAM_POS - fragment.position);
+	vec3 spec = do_specular(eyedir, SUN_POS, normal);
+	vec3 diff = do_diffuse(eyedir, normal);
+
+	color = mix(color * diff, color, 0.8);
+	color += spec;
+
+	/*
+	float alpha = clamp(waterdepth / 1.5, 0.0, 1.0);
+	if (distance(CAM_POS, fragment.position) > 400.0) {
+		alpha = 1.0;
+	}
+	*/
+
+	fcolor = vec4(color, 0.9);
 }

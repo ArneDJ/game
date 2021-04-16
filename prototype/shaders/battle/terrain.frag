@@ -9,8 +9,7 @@ in TESSEVAL {
 out vec4 fcolor;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
-//TODO layout(binding = 1) uniform sampler2D NORMALMAP;
-layout(binding = 20) uniform sampler2D NORMALMAP;
+layout(binding = 1) uniform sampler2D NORMALMAP;
 layout(binding = 2) uniform sampler2D STONEMAP;
 layout(binding = 3) uniform sampler2D SANDMAP;
 

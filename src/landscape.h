@@ -1,12 +1,4 @@
 
-struct erosion_data {
-	//float water = 0.f;
-	float sediment = 0.f;
-	glm::vec4 flux;
-	glm::vec2 velocity;
-};
-
-
 class Landscape {
 public:
 	glm::vec3 SCALE = { 6144.F, 512.F, 6144.F };
@@ -20,7 +12,6 @@ private:
 	FloatImage *heightmap = nullptr;
 	FloatImage *container = nullptr;
 	Image *normalmap = nullptr;
-	TerrainEroder *eroder = nullptr;
 private:
 	void gen_heightmap(long seed, uint32_t offset, float amplitude);
 };

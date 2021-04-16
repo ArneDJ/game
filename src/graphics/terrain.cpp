@@ -121,8 +121,6 @@ void Terrain::display_water(const Camera *camera, float time) const
 	water.uniform_vec3("CAM_POS", camera->position);
 	water.uniform_float("NEAR_CLIP", camera->nearclip);
 	water.uniform_float("FAR_CLIP", camera->farclip);
-	water.uniform_float("SCREEN_WIDTH", float(camera->width));
-	water.uniform_float("SCREEN_HEIGHT", float(camera->height));
 	water.uniform_vec3("MAP_SCALE", scale);
 	water.uniform_vec3("SUN_POS", sunpos);
 	water.uniform_float("TIME", time);
