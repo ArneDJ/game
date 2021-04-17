@@ -73,6 +73,11 @@ void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, f
 	sunpos = sun;
 }
 
+void Terrain::change_grass(const glm::vec3 &color)
+{
+	grasscolor = color;
+}
+
 void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 {
 	relief->reload(heightmap);
@@ -99,6 +104,7 @@ void Terrain::display_land(const Camera *camera) const
 	land.uniform_vec3("SUN_POS", sunpos);
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
+	land.uniform_vec3("GRASS_COLOR", grasscolor);
 
 	relief->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);

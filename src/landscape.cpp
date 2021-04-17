@@ -112,6 +112,7 @@ void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 	fractalnoise.SetGradientPerturbAmp(params.detail_perturb);
 
 	heightmap->noise(&fractalnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
+	heightmap->normalize(CHANNEL_RED);
 	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
 	// mix two noise images based on height

@@ -86,13 +86,15 @@ struct tile {
 	std::vector<uint32_t> borderIDs;
 	//
 	float amp;
+	uint8_t precipitation;
+	uint8_t temperature;
 	enum RELIEF relief;
 	enum SITE site;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
-		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, relief, site);
+		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, site);
 	}
 };
 
@@ -128,6 +130,7 @@ private:
 	void gen_relief(const FloatImage *heightmap, const struct worldparams *params);
 	void gen_rivers(const struct worldparams *params);
 	void gen_sites(long seed, const struct worldparams *params);
+	void gen_properties(const Image *temperatures, const Image *rainfall);
 	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);
 	void remove_echoriads(void);

@@ -81,6 +81,8 @@
 
 //static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
+static const glm::vec3 grass_dry = glm::vec3(1.f, 1.f, 0.2f);
+static const glm::vec3 grass_verdant = glm::vec3(0.7f, 1.f, 0.2f);
 
 enum game_state {
 	GS_TITLE,
@@ -374,15 +376,18 @@ void Game::run_battle(void)
 	const struct tile *tily = campaign.atlas->tile_at_position(position);
 	uint32_t offset = 0;
 	float amp = 0.f;
+	uint8_t precipitation = 0;
 	if (tily) {
 		amp = tily->amp;
 		offset = tily->index;
+		precipitation = tily->precipitation;
 	}
-	const FloatImage *heightmap = campaign.atlas->get_heightmap();
+	glm::vec3 grasscolor = glm::mix(grass_dry, grass_verdant, precipitation / 255.f);
 
 	battle.landscape->generate(campaign.seed, offset, amp);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
 	battle.terrain->change_atmosphere(sun_position, modular.atmos.skybottom, 0.0005f);
+	battle.terrain->change_grass(grasscolor);
 
 	physicsman.insert_body(battle.surface);
 
@@ -457,10 +462,6 @@ void Game::run_battle(void)
 		// copy the current depth buffer
 		framesystem->copy_depthmap();
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, framesystem->get_depthmap_copy());
-		battle.terrain->display_water(&battle.camera, timer.elapsed);
-		
 		framesystem->unbind();
 
 		renderman.prepare_to_render();
@@ -497,7 +498,9 @@ void Game::reserve_battle(void)
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
-	materials.push_back(mediaman.load_texture("ground/water.dds"));
+	materials.push_back(mediaman.load_texture("ground/grass.dds"));
+	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
+	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
 	battle.terrain->load_materials(materials);
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
@@ -515,7 +518,8 @@ void Game::reserve_campaign(void)
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	materials.push_back(mediaman.load_texture("ground/snow.dds"));
-	materials.push_back(mediaman.load_texture("ground/water.dds"));
+	materials.push_back(mediaman.load_texture("ground/grass.dds"));
+	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
 	campaign.worldmap->load_materials(materials);
 
 	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
@@ -676,6 +680,7 @@ void Game::run_campaign(void)
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks());
 	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f, sun_position);
+	campaign.worldmap->change_grass(grass_dry, grass_verdant);
 
 	physicsman.insert_body(campaign.surface);
 	physicsman.insert_body(campaign.watersurface);

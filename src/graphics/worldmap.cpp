@@ -38,7 +38,7 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	rain = new Texture { rainmap };
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normalmap = new Image { heightmap->width, heightmap->height, COLORSPACE_RGB };
+	normalmap = new FloatImage { heightmap->width, heightmap->height, COLORSPACE_RGB };
 	normals = new Texture { normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
@@ -106,6 +106,8 @@ void Worldmap::display_land(const Camera *camera) const
 	land.uniform_vec3("MAP_SCALE", scale);
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
+	land.uniform_vec3("GRASS_DRY", grass_dry);
+	land.uniform_vec3("GRASS_VERDANT", grass_verdant);
 
 	topology->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
@@ -146,4 +148,10 @@ void Worldmap::display_water(const Camera *camera, float time) const
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+	
+void Worldmap::change_grass(const glm::vec3 &dry, const glm::vec3 &verdant)
+{
+	grass_dry = dry;
+	grass_verdant = verdant;
 }

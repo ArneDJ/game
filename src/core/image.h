@@ -71,4 +71,5 @@ public:
 	void noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
 	void cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
 	void normalize(uint8_t chan);
+	void create_normalmap(const FloatImage *displacement, float strength);
 };

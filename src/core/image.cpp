@@ -276,7 +276,11 @@ void Image::create_normalmap(const FloatImage *displacement, float strength)
 	#pragma omp parallel for
 	for (int x = 0; x < displacement->width; x++) {
 		for (int y = 0; y < displacement->height; y++) {
-			const glm::vec3 normal = filter_normal(x, y, strength, displacement);
+			glm::vec3 normal = filter_normal(x, y, strength, displacement);
+			// convert to positive values to store in an image
+			normal.x = (normal.x + 1.f) / 2.f;
+			normal.y = (normal.y + 1.f) / 2.f;
+			normal.z = (normal.z + 1.f) / 2.f;
 			plot(x, y, CHANNEL_RED, 255 * normal.x);
 			plot(x, y, CHANNEL_GREEN, 255 * normal.y);
 			plot(x, y, CHANNEL_BLUE, 255 * normal.z);
@@ -427,6 +431,32 @@ void FloatImage::normalize(uint8_t chan)
 	}
 }
 
+void FloatImage::create_normalmap(const FloatImage *displacement, float strength)
+{
+	if (channels != COLORSPACE_RGB) {
+		write_log(LogType::ERROR, "Normal map creation error: image is not RGB");
+		return;
+	}
+	if (displacement->channels != COLORSPACE_GRAYSCALE) {
+		write_log(LogType::ERROR, "Normal map creation error: displacement image is not grayscale");
+		return;
+	}
+	if (width != displacement->width || height != displacement->height) {
+		write_log(LogType::ERROR, "Normal map creation error: displacement image is not same resolution as normalmap image");
+		return;
+	}
+
+	#pragma omp parallel for
+	for (int x = 0; x < displacement->width; x++) {
+		for (int y = 0; y < displacement->height; y++) {
+			const glm::vec3 normal = filter_normal(x, y, strength, displacement);
+			plot(x, y, CHANNEL_RED, normal.x);
+			plot(x, y, CHANNEL_GREEN, normal.y);
+			plot(x, y, CHANNEL_BLUE, normal.z);
+		}
+	}
+}
+
 static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *image)
 {
 	float T = image->sample(x, y + 1, CHANNEL_RED);
@@ -445,10 +475,6 @@ static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *i
 
 	glm::vec3 normal(-X, Y, Z);
 	normal = glm::normalize(normal);
-	// convert to positive values to store in a texture
-	normal.x = (normal.x + 1.f) / 2.f;
-	normal.y = (normal.y + 1.f) / 2.f;
-	normal.z = (normal.z + 1.f) / 2.f;
 
 	return normal;
 }

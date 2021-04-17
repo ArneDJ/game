@@ -25,9 +25,6 @@
 #include "terragen.h"
 #include "worldgraph.h"
 
-enum TEMPERATURE { COLD, TEMPERATE, WARM };
-enum VEGETATION { ARID, DRY, HUMID };
-
 static struct branch *insert_branch(const struct corner *confluence);
 static void delete_basin(struct basin *tree);
 static void prune_branches(struct branch *root);
@@ -119,21 +116,7 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 		correct_walls();
 	}
 
-	// assign local tile amplitude
-	// higher amplitude means more mountain terrain
-	// lower amplitude means more flat terrain
-	for (struct tile &t : tiles) {
-		bool near_mountain = false;
-		for (const auto &n : t.neighbors) {
-			if (n->relief == HIGHLAND) {
-				near_mountain = true;
-				break;
-			}
-		}
-		if (near_mountain == false) {
-			t.amp = glm::clamp(t.amp, 0.25f, 0.5f);
-		}
-	}
+	gen_properties(terra->tempmap, terra->rainmap);
 
 	gen_sites(seed, params);
 }
@@ -166,6 +149,8 @@ void Worldgraph::gen_diagram(long seed, float radius)
 		t.river = false;
 		t.center = cell.center;
 		t.amp = 0.f;
+		t.precipitation = 0;
+		t.temperature = 0;
 		t.relief = SEABED;
 		t.site = VACANT;
 
@@ -798,6 +783,40 @@ void Worldgraph::erode_mountains(void)
 			}
 		}
 		++it;
+	}
+}
+
+void Worldgraph::gen_properties(const Image *temperatures, const Image *rainfall)
+{
+	// assign local tile amplitude
+	// higher amplitude means more mountain terrain
+	// lower amplitude means more flat terrain
+	for (struct tile &t : tiles) {
+		bool near_mountain = false;
+		for (const auto &n : t.neighbors) {
+			if (n->relief == HIGHLAND) {
+				near_mountain = true;
+				break;
+			}
+		}
+		if (near_mountain == false) {
+			t.amp = glm::clamp(t.amp, 0.25f, 0.5f);
+		}
+	}
+	
+	// assign local tile temperature and precipitation
+	const glm::vec2 scale_temp = { 
+		float(temperatures->width) / area.max.x,
+		float(temperatures->height) / area.max.y
+	};
+	const glm::vec2 scale_rain = { 
+		float(rainfall->width) / area.max.x,
+		float(rainfall->height) / area.max.y
+	};
+
+	for (struct tile &t : tiles) {
+		t.precipitation = rainfall->sample(scale_rain.x*t.center.x, scale_rain.y*t.center.y, CHANNEL_RED);
+		t.temperature = temperatures->sample(scale_temp.x*t.center.x, scale_temp.y*t.center.y, CHANNEL_RED);
 	}
 }
 

@@ -28,6 +28,7 @@
 
 enum material_channels {
 	CHANNEL_SNOW = 0,
+	CHANNEL_GRASS,
 	CHANNEL_COUNT
 };
 
@@ -210,7 +211,7 @@ void Atlas::plateau_heightmap(void)
 		for (int j = 0; j < terragen->heightmap->height; j++) {
 			uint8_t color = mask->sample(i, j, CHANNEL_RED);
 			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
-			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.9f * h, color / 255.f));
+			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
 		}
 	}
 	
@@ -257,7 +258,7 @@ void Atlas::oregony_heightmap(long seed)
 		}
 	}
 	
-	mask->blur(5.f);
+	mask->blur(3.f);
 
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap->width; i++) {
@@ -266,7 +267,7 @@ void Atlas::oregony_heightmap(long seed)
 			float height = terragen->heightmap->sample(i, j, CHANNEL_RED);
 			float m = container->sample(i, j, CHANNEL_RED);
 			float d = detail->sample(i, j, CHANNEL_RED);
-			m = 0.35f * glm::mix(d, m, 0.45f);
+			m = 0.3f * glm::mix(d, m, 0.5f);
 			height += (color / 255.f) * m;
 			terragen->heightmap->plot(i, j, CHANNEL_RED, height);
 		}
@@ -442,6 +443,26 @@ void Atlas::create_materialmasks(void)
 				glm::vec2 c = mapscale * bord->c1->position;
 				materialmasks->draw_triangle(a, b, c, CHANNEL_SNOW, 255);
 			}
+		}
+	}
+	// grass
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == LOWLAND || t.relief == UPLAND) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				materialmasks->draw_triangle(a, b, c, CHANNEL_GRASS, 255);
+			}
+		}
+	}
+	#pragma omp parallel for
+	for (const auto &bord : worldgraph->borders) {
+		if (bord.coast || bord.river) {
+			glm::vec2 a = mapscale * bord.c0->position;
+			glm::vec2 b = mapscale * bord.c1->position;
+			materialmasks->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
 		}
 	}
 	

@@ -12,14 +12,19 @@ layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 1) uniform sampler2D NORMALMAP;
 layout(binding = 2) uniform sampler2D STONEMAP;
 layout(binding = 3) uniform sampler2D SANDMAP;
+layout(binding = 4) uniform sampler2D GRASSMAP;
+layout(binding = 5) uniform sampler2D DETAILMAP;
 
 layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
 
+uniform vec3 MAP_SCALE;
 // atmosphere
 uniform vec3 CAM_POS;
 uniform vec3 SUN_POS;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
+
+uniform vec3 GRASS_COLOR;
 
 // shadows
 uniform vec4 SPLIT;
@@ -83,17 +88,33 @@ float shadow_coef(void)
 
 void main(void)
 {
+	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 	vec3 normal = texture(NORMALMAP, fragment.texcoord).rgb;
-	//normal = (normal * 2.0) - 1.0;
-	//normal = normalize(normal);
+	normal = (normal * 2.0) - 1.0;
+	normal = normalize(normal);
+	
+	vec3 bump = texture(DETAILMAP, 100.0 * fragment.texcoord).rbg;
+	bump = (bump * 2.0) - 1.0;
+	bump = normalize(bump);
+
+	vec3 tangent = normalize(cross(normal, vec3(0.0, 0.0, 1.0)));
+	vec3 bitangent = normalize(cross(tangent, normal));
+	mat3 orthobasis = mat3(tangent, normal, bitangent);
+	vec3 detail_normal = orthobasis * bump;
 
 	float slope = 1.0 - normal.y;
-	//slope = smoothstep(0.4, 0.55, slope);
+	slope = smoothstep(0.2, 0.6, slope);
+	
+	normal = mix(normal, detail_normal, slope);
 	
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
+	vec3 grass = texture(GRASSMAP, 400.0 * fragment.texcoord).rgb;
 	
-	vec3 color = mix(sand, stone, slope);
+	//vec3 color = mix(sand, GRASS_COLOR * grass, smoothstep(0.1, 0.11, height));
+	//vec3 color = vec3(0.796, 0.88, 0.512) * grass;
+	vec3 color = GRASS_COLOR * grass;
+	color = mix(color, stone, slope);
 
 	if (SHOW_CASCADES == true) {
 		vec3 cascade = vec3(0, 0, 0);

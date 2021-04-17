@@ -115,6 +115,7 @@ void Terragen::gen_rainmap(long seed, const struct worldparams *params)
 			float detail = 0.5f * (fastnoise.GetNoise(x, y) + 1.f);
 			float dev = gauss(1.f, params->rain.gauss_center, params->rain.gauss_sigma, rain);
 			rain = glm::mix(rain, detail, params->rain.detail_mix*dev);
+			rain = glm::smoothstep(0.1f, 0.3f, rain);
 			rainmap->plot(i, j, CHANNEL_RED, 255 * glm::clamp(rain, 0.f, 1.f));
 		}
 	}

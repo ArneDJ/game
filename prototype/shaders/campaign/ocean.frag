@@ -10,7 +10,7 @@ out vec4 fcolor;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 2) uniform sampler2D DEPTHMAP;
-layout(binding = 7) uniform sampler2D NORMALMAP;
+layout(binding = 8) uniform sampler2D NORMALMAP;
 
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
@@ -83,5 +83,8 @@ void main(void)
 	}
 	*/
 
-	fcolor = vec4(color, 0.9);
+	fcolor = vec4(fog(color, distance(CAM_POS, fragment.position)), 0.9);
+
+	float gamma = 1.2;
+	fcolor.rgb = pow(fcolor.rgb, vec3(1.0/gamma));
 }
