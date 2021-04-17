@@ -81,8 +81,6 @@
 
 //static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
-static const glm::vec3 grass_dry = glm::vec3(1.f, 1.f, 0.2f);
-static const glm::vec3 grass_verdant = glm::vec3(0.7f, 1.f, 0.2f);
 
 enum game_state {
 	GS_TITLE,
@@ -363,7 +361,7 @@ void Game::update_battle(void)
 	physicsman.update(timer.delta);
 	
 	// update atmosphere
-	skybox.change_atmosphere(modular.atmos.skytop, modular.atmos.skybottom, sun_position, settings.clouds_enabled);
+	skybox.change_atmosphere(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
 	skybox.update(&battle.camera, timer.elapsed);
 }
 
@@ -382,11 +380,11 @@ void Game::run_battle(void)
 		offset = tily->index;
 		precipitation = tily->precipitation;
 	}
-	glm::vec3 grasscolor = glm::mix(grass_dry, grass_verdant, precipitation / 255.f);
+	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
 	battle.landscape->generate(campaign.seed, offset, amp);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
-	battle.terrain->change_atmosphere(sun_position, modular.atmos.skybottom, 0.0005f);
+	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
 	physicsman.insert_body(battle.surface);
@@ -611,7 +609,7 @@ void Game::update_campaign(void)
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
-	skybox.change_atmosphere(modular.atmos.skytop, modular.atmos.skybottom, sun_position, false);
+	skybox.change_atmosphere(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
 	skybox.update(&campaign.camera, timer.elapsed);
 }
 	
@@ -622,7 +620,7 @@ void Game::new_campaign(void)
 	std::uniform_int_distribution<long> dis;
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
-	campaign.seed = 1337;
+	//campaign.seed = 1337;
 	//campaign.seed = 4998651408012010310;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
@@ -679,8 +677,8 @@ void Game::run_campaign(void)
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks());
-	campaign.worldmap->change_atmosphere(modular.atmos.skybottom, 0.0005f, sun_position);
-	campaign.worldmap->change_grass(grass_dry, grass_verdant);
+	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, sun_position);
+	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
 	physicsman.insert_body(campaign.surface);
 	physicsman.insert_body(campaign.watersurface);

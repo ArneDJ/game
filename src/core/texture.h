@@ -48,14 +48,6 @@ private:
 	GLenum usage = GL_STATIC_DRAW;
 };
 
-class TextureCache {
-public:
-	const Texture* add(const std::string &filepath);
-	void clear(void);
-private:
-	std::map<std::string, Texture*> textures; // TODO hash string
-};
-
 GLuint generate_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type);
 
 GLuint generate_3D_texture(GLsizei width, GLsizei height, GLsizei depth, GLenum internalformat, GLenum format, GLenum type);

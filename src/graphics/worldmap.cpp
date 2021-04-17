@@ -107,7 +107,7 @@ void Worldmap::display_land(const Camera *camera) const
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
 	land.uniform_vec3("GRASS_DRY", grass_dry);
-	land.uniform_vec3("GRASS_VERDANT", grass_verdant);
+	land.uniform_vec3("GRASS_LUSH", grass_lush);
 
 	topology->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
@@ -139,7 +139,6 @@ void Worldmap::display_water(const Camera *camera, float time) const
 
 	nautical->bind(GL_TEXTURE0);
 
-	// TODO remove normalmaps form materials
 	for (int i = 0; i < materials.size(); i++) {
 		materials[i]->bind(GL_TEXTURE4 + i);
 	}
@@ -150,8 +149,8 @@ void Worldmap::display_water(const Camera *camera, float time) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 	
-void Worldmap::change_grass(const glm::vec3 &dry, const glm::vec3 &verdant)
+void Worldmap::change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush)
 {
 	grass_dry = dry;
-	grass_verdant = verdant;
+	grass_lush = lush;
 }

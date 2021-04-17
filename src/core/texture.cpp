@@ -317,28 +317,3 @@ static inline GLenum texture_format(ddsktx_format format)
 	}
 }
 
-void TextureCache::clear(void)
-{
-	for (auto it = textures.begin(); it != textures.end(); it++) {
-		puts("deleting");
-		std::cout << it->first << std::endl;
-		Texture *texture = it->second;
-		delete texture;
-	}
-}
-
-const Texture* TextureCache::add(const std::string &filepath)
-{
-	auto mit = textures.find(filepath);
-
-	// texture not found in map
-	// load new one
-	if (mit == textures.end()) {
-		Texture *texture = new Texture { filepath };
-		textures.insert(make_pair(filepath, texture));
-
-		return texture;
-	}
-
-	return mit->second;
-}

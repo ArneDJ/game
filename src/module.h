@@ -106,10 +106,12 @@ struct worldparams {
 	}
 };
 
-struct atmosphere {
+struct colorization {
 	glm::vec3 ambient = { 1.f, 1.f, 1.f };
-	glm::vec3 skytop = { 0.447f, 0.639f, 0.784f };
-	glm::vec3 skybottom = { 0.647f, 0.623f, 0.672f };
+	glm::vec3 skytop = { 0.525f, 0.735f, 0.84f };
+	glm::vec3 skybottom = { 0.725f, 0.735f, 0.74f };
+	glm::vec3 grass_dry = { 1.f, 1.f, 0.2f };
+	glm::vec3 grass_lush = { 0.7f, 1.f, 0.2f };
 	
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -117,7 +119,9 @@ struct atmosphere {
 		archive(
 			cereal::make_nvp("ambient_x", ambient.x), cereal::make_nvp("ambient_y", ambient.y), cereal::make_nvp("ambient_z", ambient.z),
 			cereal::make_nvp("skytop_x", skytop.x), cereal::make_nvp("skytop_y", skytop.y), cereal::make_nvp("skytop_z", skytop.z),
-			cereal::make_nvp("skybottom_x", skybottom.x), cereal::make_nvp("skybottom_y", skybottom.y), cereal::make_nvp("skybottom_z", skybottom.z)
+			cereal::make_nvp("skybottom_x", skybottom.x), cereal::make_nvp("skybottom_y", skybottom.y), cereal::make_nvp("skybottom_z", skybottom.z),
+			cereal::make_nvp("grass_dry_x", grass_dry.x), cereal::make_nvp("grass_dry_y", grass_dry.y), cereal::make_nvp("grass_dry_z", grass_dry.z),
+			cereal::make_nvp("grass_lush_x", grass_lush.x), cereal::make_nvp("grass_lush_y", grass_lush.y), cereal::make_nvp("grass_lush_z", grass_lush.z)
 		);
 	}
 };
@@ -126,15 +130,15 @@ class Module {
 public:
 	// the world generation settings
 	struct worldparams params;
-	struct atmosphere atmos;
+	struct colorization colors;
 	std::string path;
 	std::string name;
 public:
 	void load(const std::string &modname);
 private:
 	void load_world_parameters(const std::string &filepath);
-	void load_atmosphere(const std::string &filepath);
+	void load_colors(const std::string &filepath);
 	// only used when the file is missing
 	void save_world_parameters(const std::string &filepath);
-	void save_atmosphere(const std::string &filepath);
+	void save_colors(const std::string &filepath);
 };

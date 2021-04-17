@@ -21,7 +21,7 @@ uniform vec3 CAM_POS;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
 uniform vec3 GRASS_DRY;
-uniform vec3 GRASS_VERDANT;
+uniform vec3 GRASS_LUSH;
 
 vec3 fog(vec3 color, float dist)
 {
@@ -105,7 +105,7 @@ void main(void)
 	slope = smoothstep(0.7, 0.8, slope);
 	
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
-	vec3 sand = texture(SANDMAP, 100.0 * fragment.texcoord).rgb;
+	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
 	vec3 snow = texture(SNOWMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 grass = texture(GRASSMAP, 200.0 * fragment.texcoord).rgb;
 	
@@ -114,7 +114,7 @@ void main(void)
 	float grasslevel = mask.g;
 	float rainlevel = texture(RAINMAP, fragment.texcoord).r;
 	
-	vec3 grassness = mix(GRASS_DRY, GRASS_VERDANT, rainlevel);
+	vec3 grassness = mix(GRASS_DRY, GRASS_LUSH, rainlevel);
 	grass *= grassness;
 
 	vec3 color = mix(sand, grass, grasslevel);

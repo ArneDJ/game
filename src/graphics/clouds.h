@@ -12,7 +12,7 @@ public:
 private:
 	int SCR_WIDTH, SCR_HEIGHT;
 	//
-	float coverage, speed, density;
+	float coverage, speed;
 	glm::vec3 wind_direction; 
 	glm::vec3 topcolor, bottomcolor;
 	glm::vec3 seed; 

@@ -6,7 +6,7 @@ public:
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks);
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr,  const glm::vec3 &sunposition);
-	void change_grass(const glm::vec3 &dry, const glm::vec3 &verdant);
+	void change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush);
 	void display_land(const Camera *camera) const;
 	void display_water(const Camera *camera, float time) const;
 private:
@@ -25,7 +25,7 @@ private:
 	float fogfactor;
 	glm::vec3 fogcolor;
 	glm::vec3 sunpos;
-	// vegetation
+	// ground colors
 	glm::vec3 grass_dry;
-	glm::vec3 grass_verdant;
+	glm::vec3 grass_lush;
 };

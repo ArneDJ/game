@@ -20,11 +20,11 @@ void Module::load(const std::string &modname)
 	path = "modules/" + modname + "/";
 	
 	std::string worldpath = path + "worldgen.json";
-	std::string atmospath = path + "atmosphere.json";
+	std::string atmospath = path + "colors.json";
 
 	load_world_parameters(worldpath);
 
-	load_atmosphere(atmospath);
+	load_colors(atmospath);
 
 	// lowland may not be higher than upland
 	if (params.graph.lowland > params.graph.upland) {
@@ -64,29 +64,29 @@ void Module::load_world_parameters(const std::string &filepath)
 	}
 }
 
-void Module::load_atmosphere(const std::string &filepath)
+void Module::load_colors(const std::string &filepath)
 {
 	std::ifstream stream(filepath);
 
 	if (stream.is_open()) {
 		cereal::JSONInputArchive archive(stream);
-		archive(cereal::make_nvp("atmosphere", atmos));
+		archive(cereal::make_nvp("colors", colors));
 	} else {
 		// file not found 
-		// use default atmosphere and save the file
-		write_log(LogType::ERROR, "Module load error: could not open " + filepath + ", resorting to default atmosphere");
-		atmos = {};
-		save_atmosphere(filepath);
+		// use default colorization and save the file
+		write_log(LogType::ERROR, "Module load error: could not open " + filepath + ", resorting to default colors");
+		colors = {};
+		save_colors(filepath);
 	}
 }
 
-void Module::save_atmosphere(const std::string &filepath)
+void Module::save_colors(const std::string &filepath)
 {
 	std::ofstream stream(filepath);
 
 	if (stream.is_open()) {
 		cereal::JSONOutputArchive archive(stream);
-		archive(cereal::make_nvp("atmosphere", atmos));
+		archive(cereal::make_nvp("colors", colors));
 	} else {
 		write_log(LogType::ERROR, "Module save error: could not save to " + filepath);
 	}
