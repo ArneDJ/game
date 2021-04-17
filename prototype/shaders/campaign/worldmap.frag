@@ -98,8 +98,6 @@ void main(void)
 	float height = texture(DISPLACEMENT, fragment.texcoord).r;
 
 	vec3 normal = texture(NORMALMAP, fragment.texcoord).rgb;
-	//normal = (normal * 2.0) - 1.0;
-	//normal = normalize(normal);
 
 	float strata = warpfbm(0.01 * fragment.position.xz);
 

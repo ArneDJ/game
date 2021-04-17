@@ -54,6 +54,7 @@ private:
 	void gen_mapfield(void);
 	void create_watermap(float ocean_level);
 	void erode_heightmap(float ocean_level);
+	void clamp_heightmap(float land_level);
 	void create_materialmasks(void);
 };
 

@@ -622,7 +622,7 @@ void Game::new_campaign(void)
 	std::uniform_int_distribution<long> dis;
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
-	//campaign.seed = 1337;
+	campaign.seed = 1337;
 	//campaign.seed = 4998651408012010310;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));

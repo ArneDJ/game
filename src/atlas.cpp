@@ -106,7 +106,9 @@ auto start = std::chrono::steady_clock::now();
 	// now create the watermap
 	create_watermap(LAND_DOWNSCALE*params->graph.lowland);
 	
+	clamp_heightmap(LAND_DOWNSCALE*params->graph.lowland);
 	erode_heightmap(0.97f*LAND_DOWNSCALE*params->graph.lowland);
+
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign image maps time: " << elapsed_seconds.count() << "s\n";
@@ -297,6 +299,7 @@ void Atlas::erode_heightmap(float ocean_level)
 
 	mask->blur(0.6f);
 	// let the rivers erode the land heightmap
+	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap->width; x++) {
 		for (int y = 0; y < terragen->heightmap->height; y++) {
 			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
@@ -310,9 +313,9 @@ void Atlas::erode_heightmap(float ocean_level)
 		}
 	}
 	
-	// lower ocean bottom
 	mask->clear();
 
+	// lower ocean bottom
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
 		if (t.relief == SEABED) {
@@ -324,12 +327,59 @@ void Atlas::erode_heightmap(float ocean_level)
 			}
 		}
 	}
+	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap->width; x++) {
 		for (int y = 0; y < terragen->heightmap->height; y++) {
 			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
 				height = glm::clamp(height, 0.f, ocean_level);
+				terragen->heightmap->plot(x, y, CHANNEL_RED, height);
+			}
+		}
+	}
+}
+	
+void Atlas::clamp_heightmap(float land_level)
+{
+	const glm::vec2 mapscale = {
+		float(mask->width) / SCALE.x,
+		float(mask->height) / SCALE.z
+	};
+
+	mask->clear();
+
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.land) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
+			}
+		}
+	}
+
+	mask->blur(1.f);
+
+	// ignore rivers
+	#pragma omp parallel for
+	for (const auto &bord : worldgraph->borders) {
+		if (bord.river) {
+			glm::vec2 a = mapscale * bord.c0->position;
+			glm::vec2 b = mapscale * bord.c1->position;
+			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, CHANNEL_RED, 0);
+		}
+	}
+
+	#pragma omp parallel for
+	for (int x = 0; x < terragen->heightmap->width; x++) {
+		for (int y = 0; y < terragen->heightmap->height; y++) {
+			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			if (masker > 0) {
+				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				height = glm::clamp(height, land_level, 1.f);
 				terragen->heightmap->plot(x, y, CHANNEL_RED, height);
 			}
 		}
