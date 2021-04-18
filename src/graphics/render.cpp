@@ -76,6 +76,7 @@ void RenderManager::init(void)
 	glCullFace(GL_BACK);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glLineWidth(5.f);
 }
 	

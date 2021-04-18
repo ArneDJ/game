@@ -492,7 +492,7 @@ void Game::reserve_battle(void)
 
 	battle.landscape = new Landscape { 2048 };
 	
-	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap() };
+	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), mediaman.load_texture("foliage/grass.dds") };
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));

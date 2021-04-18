@@ -1,7 +1,20 @@
 
+class Grass {
+public:
+	Grass(const Texture *tex);
+	~Grass(void);
+	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
+	void display(const Camera *camera) const;
+private:
+	const Texture *texture;
+	//Mesh *mesh = nullptr;
+	BatchMesh *batchmesh = nullptr;
+	Shader shader;
+};
+
 class Terrain {
 public:
-	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap);
+	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Texture *grassmat);
 	~Terrain(void);
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *normalmap);
@@ -23,4 +36,6 @@ private:
 	float fogfactor;
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
+	//
+	Grass *grass = nullptr;
 };

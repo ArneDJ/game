@@ -22,7 +22,7 @@
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap)
+Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Texture *grassmat)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -47,6 +47,8 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	water.compile("shaders/battle/water.tese", GL_TESS_EVALUATION_SHADER);
 	water.compile("shaders/battle/water.frag", GL_FRAGMENT_SHADER);
 	water.link();
+
+	grass = new Grass { grassmat };
 }
 
 void Terrain::load_materials(const std::vector<const Texture*> textures)
@@ -58,6 +60,8 @@ void Terrain::load_materials(const std::vector<const Texture*> textures)
 Terrain::~Terrain(void)
 {
 	materials.clear();
+
+	delete grass;
 
 	delete patches;
 
@@ -83,6 +87,8 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 	relief->reload(heightmap);
 
 	normals->reload(normalmap);
+	
+	grass->spawn(scale, heightmap, normalmap);
 }
 	
 void Terrain::update_shadow(const Shadow *shadow, bool show_cascades)
@@ -118,6 +124,8 @@ void Terrain::display_land(const Camera *camera) const
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	//
+	
+	grass->display(camera);
 }
 
 void Terrain::display_water(const Camera *camera, float time) const
@@ -138,4 +146,93 @@ void Terrain::display_water(const Camera *camera, float time) const
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+Grass::Grass(const Texture *tex)
+{
+	texture = tex;
+
+	const std::vector<glm::vec3> vertices = {
+		{ 1.0, 0.0, 0.0 },
+		{ -1.0, 0.0, 0.0 },
+		{ -1.0, 1.0, 0.0 },
+		{ 1.0, 1.0, 0.0 },
+
+		{ 0.0, 0.0, 1.0 },
+		{ 0.0, 0.0, -1.0 },
+		{ 0.0, 1.0, -1.0 },
+		{ 0.0, 1.0, 1.0 }
+	};
+
+	const std::vector<glm::vec2> texcoords = {
+		{ 1.0, 1.0 },
+		{ 0.0, 1.0 },
+		{ 0.0, 0.0 },
+		{ 1.0, 0.0 },
+
+		{ 1.0, 1.0 },
+		{ 0.0, 1.0 },
+		{ 0.0, 0.0 },
+		{ 1.0, 0.0 }
+	};
+	// indices
+	const std::vector<uint16_t> indices = {
+		0, 1, 2,
+		0, 2, 3,
+
+		4, 5, 6,
+		4, 6, 7,
+	};
+	batchmesh = new BatchMesh { vertices, texcoords, indices };
+
+	shader.compile("shaders/battle/grass.vert", GL_VERTEX_SHADER);
+	shader.compile("shaders/battle/grass.frag", GL_FRAGMENT_SHADER);
+	shader.link();
+}
+
+Grass::~Grass(void)
+{
+	delete batchmesh;
+}
+
+void Grass::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
+{
+	glm::vec2 hmapscale = {
+		float(heightmap->width) / scale.x,
+		float(heightmap->height) / scale.z
+	};
+
+	// random points
+	glm::vec2 min = { 0.25f * scale.x, 0.25f * scale.z };
+	glm::vec2 max = { 0.75f * scale.x, 0.75f * scale.z };
+
+	std::vector<glm::mat4> transforms;
+	for (int i = 0; i < 100; i++) {
+		for (int j = 0; j < 50; j++) {
+			//glm::vec3 position = { min.x + i, 0.f, min.y + j };
+			glm::vec3 position = { 3072.f + i, 0.f, 3072.f + j };
+			position.y = scale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+			glm::mat4 T = glm::translate(glm::mat4(1.f), position);
+			transforms.push_back(T);
+		}
+	}
+
+	batchmesh->reload(transforms);
+}
+
+void Grass::display(const Camera *camera) const
+{
+	glDisable(GL_CULL_FACE);
+
+	shader.use();
+	shader.uniform_mat4("VP", camera->VP);
+	shader.uniform_vec3("CAM_POS", camera->position);
+
+	glm::mat4 MVP = camera->VP;
+	shader.uniform_mat4("MVP", MVP);
+	shader.uniform_mat4("MODEL", glm::mat4(1.f));
+	texture->bind(GL_TEXTURE0);
+	batchmesh->draw();
+	
+	glEnable(GL_CULL_FACE);
 }

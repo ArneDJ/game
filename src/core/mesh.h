@@ -29,6 +29,7 @@ public:
 	Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis);
 	Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
+	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords, const std::vector<uint16_t> &indices);
 	// tesselation mesh
 	Mesh(uint32_t res, const glm::vec2 &min, const glm::vec2 &max);
 	~Mesh(void);
@@ -40,4 +41,25 @@ public:
 	GLuint EBO = 0; // Element Buffer Object
 	GLenum indextype = GL_UNSIGNED_BYTE; // (GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, or GL_UNSIGNED_INT)
 	std::vector<struct primitive> primitives;
+};
+
+class BatchMesh {
+public:
+	BatchMesh(const std::vector<glm::vec3> &posdata, const std::vector<glm::vec2> &texdata, const std::vector<uint16_t> &indexdata);
+	~BatchMesh(void);
+	void reload(const std::vector<glm::mat4> &transforms);
+	void draw(void) const;
+private:
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec2> texcoords;
+	std::vector<uint16_t> indices;
+private:
+	std::vector<glm::vec3> position_soup;
+	std::vector<glm::vec2> texcoord_soup;
+	std::vector<uint16_t> index_soup;
+private:
+	struct primitive primi;
+	GLuint VAO = 0; // Vertex Array Object
+	GLuint VBO = 0; // Vertex Buffer Object
+	GLuint EBO = 0; // Element Buffer Object
 };

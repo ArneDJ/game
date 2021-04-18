@@ -80,7 +80,7 @@ Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_
 	primi.firstvertex = 0;
 	primi.vertexcount = GLsizei(vertices.size());
 	primi.mode = mode;
-	primi.indexed = indices.size() > 0;
+	primi.indexed = (indices.size() > 0);
 
 	primitives.push_back(primi);
 
@@ -121,7 +121,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	primi.firstvertex = 0;
 	primi.vertexcount = GLsizei(positions.size());
 	primi.mode = GL_TRIANGLES;
-	primi.indexed = indices.size() > 0;
+	primi.indexed = (indices.size() > 0);
 
 	primitives.push_back(primi);
 
@@ -146,6 +146,48 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 }
 	
+Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords, const std::vector<uint16_t> &indices)
+{
+	const size_t positions_size = sizeof(glm::vec3) * positions.size();
+	const size_t texcoords_size = sizeof(glm::vec2) * texcoords.size();
+	const size_t indices_size = sizeof(uint16_t) * indices.size();
+
+	// tell OpenGL how to render the buffer
+	struct primitive primi;
+	primi.firstindex = 0;
+	primi.indexcount = GLsizei(indices.size());
+	primi.firstvertex = 0;
+	primi.vertexcount = GLsizei(positions.size());
+	primi.mode = GL_TRIANGLES;
+	primi.indexed = (indices.size() > 0);
+
+	primitives.push_back(primi);
+
+	// create the OpenGL buffers
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	// add index buffer
+	if (primi.indexed) {
+		glGenBuffers(1, &EBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices.data(), GL_STATIC_DRAW);
+		indextype = GL_UNSIGNED_SHORT;
+	}
+
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, positions_size+texcoords_size, NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, positions_size, positions.data());
+	glBufferSubData(GL_ARRAY_BUFFER, positions_size, texcoords_size, texcoords.data());
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(positions_size));
+}
+
 Mesh::Mesh(uint32_t res, const glm::vec2 &min, const glm::vec2 &max)
 {
 	struct primitive primi;
@@ -220,6 +262,104 @@ void Mesh::draw_instanced(GLsizei count)
 		} else {
 			glDrawArraysInstanced(prim.mode, prim.firstvertex, prim.vertexcount, count);
 		}
+	}
+}
+
+BatchMesh::BatchMesh(const std::vector<glm::vec3> &posdata, const std::vector<glm::vec2> &texdata, const std::vector<uint16_t> &indexdata)
+{
+	positions.insert(positions.begin(), posdata.begin(), posdata.end());
+	texcoords.insert(texcoords.begin(), texdata.begin(), texdata.end());
+	indices.insert(indices.begin(), indexdata.begin(), indexdata.end());
+
+	primi.firstindex = 0;
+	primi.indexcount = 0;
+	primi.firstvertex = 0;
+	primi.vertexcount = 0;
+	primi.mode = GL_TRIANGLES;
+	primi.indexed = (indices.size() > 0);
+
+	// create the OpenGL buffers
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	// add index buffer
+	if (primi.indexed) {
+		glGenBuffers(1, &EBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW);
+	}
+
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, 0, NULL, GL_STATIC_DRAW);
+}
+
+BatchMesh::~BatchMesh(void)
+{
+	glDeleteBuffers(1, &EBO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &VAO);
+}
+
+void BatchMesh::reload(const std::vector<glm::mat4> &transforms)
+{
+	position_soup.clear();
+	texcoord_soup.clear();
+	index_soup.clear();
+
+	printf("transform count %d\n", transforms.size());
+
+	for (const auto &T : transforms) {
+		int index_offset = position_soup.size();
+		for (const auto &base : positions) {
+			glm::vec4 vertex = { base.x, base.y, base.z, 1.f };
+			vertex = T * vertex;
+			position_soup.push_back(glm::vec3(vertex.x, vertex.y, vertex.z));
+		}
+		for (const auto &texcoord : texcoords) {
+			texcoord_soup.push_back(texcoord);
+		}
+		for (const auto &index : indices) {
+			index_soup.push_back(index_offset + index);
+		}
+	}
+
+	primi.indexcount = index_soup.size();
+	primi.vertexcount = position_soup.size();
+	printf("%d\n", primi.indexcount);
+	printf("%d\n\n", primi.vertexcount);
+
+	const size_t positions_size = sizeof(glm::vec3) * position_soup.size();
+	const size_t texcoords_size = sizeof(glm::vec2) * texcoord_soup.size();
+	const size_t indices_size = sizeof(uint16_t) * index_soup.size();
+
+	if (primi.indexed) {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, index_soup.data(), GL_STATIC_DRAW);
+	}
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, positions_size+texcoords_size, NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, positions_size, position_soup.data());
+	glBufferSubData(GL_ARRAY_BUFFER, positions_size, texcoords_size, texcoord_soup.data());
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(positions_size));
+}
+
+void BatchMesh::draw(void) const
+{
+	glBindVertexArray(VAO);
+
+	if (primi.indexed) {
+		glDrawElementsBaseVertex(primi.mode, primi.indexcount, GL_UNSIGNED_SHORT, (GLvoid *)((primi.firstindex)*typesize(GL_UNSIGNED_SHORT)), primi.firstvertex);
+	} else {
+		glDrawArrays(primi.mode, primi.firstvertex, primi.vertexcount);
 	}
 }
 

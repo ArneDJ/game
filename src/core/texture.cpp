@@ -167,6 +167,12 @@ void Texture::change_wrapping(GLint wrapping)
 	glBindTexture(target, 0);
 }
 	
+void change_filtering(GLint filter)
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+}
+
 void Texture::load(const std::string &filepath)
 {
 	// first delete texture data if it is present
