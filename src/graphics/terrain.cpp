@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <random>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -75,11 +76,14 @@ void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, f
 	fogcolor = fogclr;
 	fogfactor = fogfctr;
 	sunpos = sun;
+	grass->fogcolor = fogclr;
+	grass->fogfactor = fogfctr;
 }
 
 void Terrain::change_grass(const glm::vec3 &color)
 {
 	grasscolor = color;
+	grass->color = color;
 }
 
 void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
@@ -153,27 +157,27 @@ Grass::Grass(const Texture *tex)
 	texture = tex;
 
 	const std::vector<glm::vec3> vertices = {
-		{ 1.0, 0.0, 0.0 },
-		{ -1.0, 0.0, 0.0 },
-		{ -1.0, 1.0, 0.0 },
-		{ 1.0, 1.0, 0.0 },
+		{ 2.0, -0.25, 0.0 },
+		{ -2.0, -0.25, 0.0 },
+		{ -2.0, 2.0, 0.0 },
+		{ 2.0, 2.0, 0.0 },
 
-		{ 0.0, 0.0, 1.0 },
-		{ 0.0, 0.0, -1.0 },
-		{ 0.0, 1.0, -1.0 },
-		{ 0.0, 1.0, 1.0 }
+		{ 0.0, -0.25, 2.0 },
+		{ 0.0, -0.25, -2.0 },
+		{ 0.0, 2.0, -2.0 },
+		{ 0.0, 2.0, 2.0 }
 	};
 
 	const std::vector<glm::vec2> texcoords = {
-		{ 1.0, 1.0 },
-		{ 0.0, 1.0 },
-		{ 0.0, 0.0 },
-		{ 1.0, 0.0 },
+		{ 0.95, 0.95 },
+		{ 0.05, 0.95 },
+		{ 0.05, 0.05 },
+		{ 0.95, 0.05 },
 
-		{ 1.0, 1.0 },
-		{ 0.0, 1.0 },
-		{ 0.0, 0.0 },
-		{ 1.0, 0.0 }
+		{ 0.95, 0.95 },
+		{ 0.05, 0.95 },
+		{ 0.05, 0.05 },
+		{ 0.95, 0.05 }
 	};
 	// indices
 	const std::vector<uint16_t> indices = {
@@ -183,7 +187,9 @@ Grass::Grass(const Texture *tex)
 		4, 5, 6,
 		4, 6, 7,
 	};
-	batchmesh = new BatchMesh { vertices, texcoords, indices };
+	mesh = new Mesh { vertices, texcoords, indices };
+	tbuffer.matrices.resize(20*20*1000);
+	tbuffer.alloc(GL_DYNAMIC_DRAW);
 
 	shader.compile("shaders/battle/grass.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/battle/grass.frag", GL_FRAGMENT_SHADER);
@@ -192,7 +198,7 @@ Grass::Grass(const Texture *tex)
 
 Grass::~Grass(void)
 {
-	delete batchmesh;
+	delete mesh;
 }
 
 void Grass::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
@@ -203,21 +209,39 @@ void Grass::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Ima
 	};
 
 	// random points
-	glm::vec2 min = { 0.25f * scale.x, 0.25f * scale.z };
-	glm::vec2 max = { 0.75f * scale.x, 0.75f * scale.z };
+	glm::vec2 offset = { 3000.f, 3000.f };
 
-	std::vector<glm::mat4> transforms;
-	for (int i = 0; i < 100; i++) {
-		for (int j = 0; j < 50; j++) {
-			//glm::vec3 position = { min.x + i, 0.f, min.y + j };
-			glm::vec3 position = { 3072.f + i, 0.f, 3072.f + j };
-			position.y = scale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
-			glm::mat4 T = glm::translate(glm::mat4(1.f), position);
-			transforms.push_back(T);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+
+	int index = 0;
+	for (int i = 0; i < 20; i++) {
+		for (int j = 0; j < 20; j++) {
+			glm::vec2 min = { offset.x, offset.y };
+			glm::vec2 max = { offset.x + 50.f, offset.y + 50.f };
+			std::uniform_real_distribution<float> map_x(min.x, max.x);
+			std::uniform_real_distribution<float> map_y(-0.5f, 0.5f);
+			std::uniform_real_distribution<float> map_z(min.y, max.y);
+			for (int i = 0; i < 1000; i++) {
+				glm::vec3 position = { map_x(gen), 0.f, map_z(gen) };
+				position.y = scale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+				position.y += map_y(gen);
+				glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+
+				glm::mat4 T = glm::translate(glm::mat4(1.f), position);
+				glm::mat4 R = glm::mat4(rotation);
+				tbuffer.matrices[index++] = T * R;
+			}
+
+			offset.y += 50.f;
 		}
+			
+		offset.x += 50.f;
+		offset.y = 3000.f;
 	}
 
-	batchmesh->reload(transforms);
+	tbuffer.update();
 }
 
 void Grass::display(const Camera *camera) const
@@ -231,8 +255,12 @@ void Grass::display(const Camera *camera) const
 	glm::mat4 MVP = camera->VP;
 	shader.uniform_mat4("MVP", MVP);
 	shader.uniform_mat4("MODEL", glm::mat4(1.f));
+	shader.uniform_vec3("COLOR", color);
+	shader.uniform_vec3("FOG_COLOR", fogcolor);
+	shader.uniform_float("FOG_FACTOR", fogfactor);
 	texture->bind(GL_TEXTURE0);
-	batchmesh->draw();
+	tbuffer.bind(GL_TEXTURE10);
+	mesh->draw_instanced(20*20*1000);
 	
 	glEnable(GL_CULL_FACE);
 }

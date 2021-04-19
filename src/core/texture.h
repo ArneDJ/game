@@ -36,7 +36,7 @@ public:
 public:
 	void alloc(GLenum use);
 	void update(void);
-	void bind(GLenum unit);
+	void bind(GLenum unit) const;
 	~TransformBuffer(void);
 private:
 	GLsizei size = 0;

@@ -1,14 +1,18 @@
 
 class Grass {
 public:
+	glm::vec3 color;
+	glm::vec3 fogcolor;
+	float fogfactor;
+public:
 	Grass(const Texture *tex);
 	~Grass(void);
 	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
 	void display(const Camera *camera) const;
 private:
+	Mesh *mesh;
+	TransformBuffer tbuffer;
 	const Texture *texture;
-	//Mesh *mesh = nullptr;
-	BatchMesh *batchmesh = nullptr;
 	Shader shader;
 };
 

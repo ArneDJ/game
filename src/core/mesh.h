@@ -14,6 +14,12 @@ struct vertex_data {
 	std::vector<uint8_t> weights;
 };
 
+struct mesh_data {
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec2> texcoords;
+	std::vector<uint16_t> indices;
+};
+
 struct primitive {
 	GLuint firstindex = 0;
 	GLsizei indexcount = 0;
@@ -41,25 +47,4 @@ public:
 	GLuint EBO = 0; // Element Buffer Object
 	GLenum indextype = GL_UNSIGNED_BYTE; // (GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, or GL_UNSIGNED_INT)
 	std::vector<struct primitive> primitives;
-};
-
-class BatchMesh {
-public:
-	BatchMesh(const std::vector<glm::vec3> &posdata, const std::vector<glm::vec2> &texdata, const std::vector<uint16_t> &indexdata);
-	~BatchMesh(void);
-	void reload(const std::vector<glm::mat4> &transforms);
-	void draw(void) const;
-private:
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> texcoords;
-	std::vector<uint16_t> indices;
-private:
-	std::vector<glm::vec3> position_soup;
-	std::vector<glm::vec2> texcoord_soup;
-	std::vector<uint16_t> index_soup;
-private:
-	struct primitive primi;
-	GLuint VAO = 0; // Vertex Array Object
-	GLuint VBO = 0; // Vertex Buffer Object
-	GLuint EBO = 0; // Element Buffer Object
 };

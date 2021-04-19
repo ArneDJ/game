@@ -293,7 +293,7 @@ void TransformBuffer::update(void)
 	glBufferData(GL_TEXTURE_BUFFER, size, matrices.data(), usage);
 }
 
-void TransformBuffer::bind(GLenum unit)
+void TransformBuffer::bind(GLenum unit) const
 {
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_BUFFER, texture);
