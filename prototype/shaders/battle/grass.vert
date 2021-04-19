@@ -6,9 +6,13 @@ layout(location = 2) in vec2 vtexcoords;
 
 out vec3 position;
 out vec2 texcoords;
+out float diffuse;
 
+layout(binding = 1) uniform sampler2D TERRAIN_NORMALMAP;
 layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
+uniform vec3 MAPSCALE;
+uniform vec3 SUN_POS;
 uniform mat4 VP;
 uniform mat4 MODEL;
 
@@ -25,6 +29,14 @@ void main(void)
 	vec4 worldpos = T * vec4(vposition, 1.0);
 
 	position = worldpos.xyz;
+
+	vec2 uv = position.xz / MAPSCALE.xz;
+	vec3 normal = texture(TERRAIN_NORMALMAP, uv).rgb;
+	normal = (normal * 2.0) - 1.0;
+	normal = normalize(normal);
+
+	// terrain lighting
+	diffuse = max(0.0, dot(normal, SUN_POS));
 
 	gl_Position = VP * worldpos;
 }

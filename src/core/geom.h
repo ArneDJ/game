@@ -8,6 +8,11 @@ struct segment {
 	glm::vec2 P0, P1;
 };
 
+struct AABB {
+	glm::vec3 c; // center point of AABB
+	glm::vec3 r; // radius or halfwidth extents (rx, ry, rz)
+};
+
 // in this game if something in 3D is translated to 2D the 3D XZ axis becomes the 2D XY axis
 inline glm::vec2 translate_3D_to_2D(const glm::vec3 &v)
 {

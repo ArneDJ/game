@@ -1,18 +1,32 @@
 
+class GrassBox {
+public:
+	GrassBox(const GLTF::Model *mod, const struct rectangle &bounds);
+	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
+	void display(void) const;
+	const struct AABB* boundbox(void) const { return &box; }
+private:
+	struct AABB box;
+	struct rectangle boundaries;
+	const GLTF::Model *model;
+	TransformBuffer tbuffer;
+};
+
 class Grass {
 public:
 	glm::vec3 color;
 	glm::vec3 fogcolor;
+	glm::vec3 sunpos;
 	float fogfactor;
 public:
 	Grass(const GLTF::Model *mod);
 	~Grass(void);
 	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
-	void display(const Camera *camera) const;
+	void display(const Camera *camera, const glm::vec3 &scale) const;
 private:
-	//Mesh *mesh;
-	const GLTF::Model *model;
-	TransformBuffer tbuffer;
+	//const GLTF::Model *model;
+	//TransformBuffer tbuffer;
+	std::vector<GrassBox*> grassboxes;
 	Shader shader;
 };
 

@@ -2,6 +2,7 @@
 
 in vec2 texcoords;
 in vec3 position;
+in float diffuse;
 
 out vec4 fcolor;
 
@@ -29,6 +30,10 @@ void main(void)
 	color.a *= blending*blending;
 	if (color.a < 0.1) { discard; }
 	if (color.a > 0.6) { color.a = 1.0; }
+
+	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
+	vec3 scatteredlight = lightcolor * diffuse;
+	color.rgb = mix(min(color.rgb * scatteredlight, vec3(1.0)), color.rgb, 0.5);
 	
 	fcolor = vec4(fog(color.rgb, dist), color.a);
 	//fcolor = vec4(1.0, 0.0, 1.0, 1.0);
