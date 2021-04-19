@@ -23,9 +23,13 @@ void main(void)
 	vec4 color = texture(BASEMAP, texcoords);
 	if (color.a < 0.1) { discard; }
 	float dist = distance(CAM_POS, position);
-	color.a = 0.6;
 	color.rgb *= COLOR;
-	//fcolor = vec4(1.0, 0.0, 1.0, 1.0);
+
+	float blending = 1.0 / (0.01*dist);
+	color.a *= blending*blending;
+	if (color.a < 0.1) { discard; }
+	if (color.a > 0.6) { color.a = 1.0; }
 	
-	fcolor = vec4(fog(color.rgb, dist), 1.0);
+	fcolor = vec4(fog(color.rgb, dist), color.a);
+	//fcolor = vec4(1.0, 0.0, 1.0, 1.0);
 }

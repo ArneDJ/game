@@ -18,12 +18,13 @@
 #include "../core/image.h"
 #include "../core/texture.h"
 #include "../core/mesh.h"
+#include "../core/model.h"
 #include "shadow.h"
 #include "terrain.h"
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Texture *grassmat)
+Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const GLTF::Model *grassmodel)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -49,7 +50,7 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	water.compile("shaders/battle/water.frag", GL_FRAGMENT_SHADER);
 	water.link();
 
-	grass = new Grass { grassmat };
+	grass = new Grass { grassmodel };
 }
 
 void Terrain::load_materials(const std::vector<const Texture*> textures)
@@ -128,8 +129,6 @@ void Terrain::display_land(const Camera *camera) const
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	//
-	
-	grass->display(camera);
 }
 
 void Terrain::display_water(const Camera *camera, float time) const
@@ -151,43 +150,16 @@ void Terrain::display_water(const Camera *camera, float time) const
 	patches->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-
-Grass::Grass(const Texture *tex)
+	
+void Terrain::display_grass(const Camera *camera) const
 {
-	texture = tex;
+	grass->display(camera);
+}
 
-	const std::vector<glm::vec3> vertices = {
-		{ 2.0, -0.25, 0.0 },
-		{ -2.0, -0.25, 0.0 },
-		{ -2.0, 2.0, 0.0 },
-		{ 2.0, 2.0, 0.0 },
+Grass::Grass(const GLTF::Model *mod)
+{
+	model = mod;
 
-		{ 0.0, -0.25, 2.0 },
-		{ 0.0, -0.25, -2.0 },
-		{ 0.0, 2.0, -2.0 },
-		{ 0.0, 2.0, 2.0 }
-	};
-
-	const std::vector<glm::vec2> texcoords = {
-		{ 0.95, 0.95 },
-		{ 0.05, 0.95 },
-		{ 0.05, 0.05 },
-		{ 0.95, 0.05 },
-
-		{ 0.95, 0.95 },
-		{ 0.05, 0.95 },
-		{ 0.05, 0.05 },
-		{ 0.95, 0.05 }
-	};
-	// indices
-	const std::vector<uint16_t> indices = {
-		0, 1, 2,
-		0, 2, 3,
-
-		4, 5, 6,
-		4, 6, 7,
-	};
-	mesh = new Mesh { vertices, texcoords, indices };
 	tbuffer.matrices.resize(20*20*1000);
 	tbuffer.alloc(GL_DYNAMIC_DRAW);
 
@@ -198,7 +170,7 @@ Grass::Grass(const Texture *tex)
 
 Grass::~Grass(void)
 {
-	delete mesh;
+	//delete mesh;
 }
 
 void Grass::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
@@ -221,17 +193,18 @@ void Grass::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Ima
 			glm::vec2 min = { offset.x, offset.y };
 			glm::vec2 max = { offset.x + 50.f, offset.y + 50.f };
 			std::uniform_real_distribution<float> map_x(min.x, max.x);
-			std::uniform_real_distribution<float> map_y(-0.5f, 0.5f);
+			std::uniform_real_distribution<float> map_y(-0.25f, 0.25f);
 			std::uniform_real_distribution<float> map_z(min.y, max.y);
 			for (int i = 0; i < 1000; i++) {
 				glm::vec3 position = { map_x(gen), 0.f, map_z(gen) };
 				position.y = scale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
-				position.y += map_y(gen);
+				position.y += map_y(gen) + 0.5f;
 				glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 
 				glm::mat4 T = glm::translate(glm::mat4(1.f), position);
 				glm::mat4 R = glm::mat4(rotation);
-				tbuffer.matrices[index++] = T * R;
+				glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(2.f, 2.f, 2.f));
+				tbuffer.matrices[index++] = T * R * S;
 			}
 
 			offset.y += 50.f;
@@ -258,9 +231,8 @@ void Grass::display(const Camera *camera) const
 	shader.uniform_vec3("COLOR", color);
 	shader.uniform_vec3("FOG_COLOR", fogcolor);
 	shader.uniform_float("FOG_FACTOR", fogfactor);
-	texture->bind(GL_TEXTURE0);
 	tbuffer.bind(GL_TEXTURE10);
-	mesh->draw_instanced(20*20*1000);
+	model->display_instanced(20*20*1000);
 	
 	glEnable(GL_CULL_FACE);
 }

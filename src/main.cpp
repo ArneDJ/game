@@ -456,6 +456,8 @@ void Game::run_battle(void)
 		battle.terrain->display_land(&battle.camera);
 
 		skybox.display(&battle.camera);
+		
+		battle.terrain->display_grass(&battle.camera);
 
 		// copy the current depth buffer
 		framesystem->copy_depthmap();
@@ -492,7 +494,7 @@ void Game::reserve_battle(void)
 
 	battle.landscape = new Landscape { 2048 };
 	
-	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), mediaman.load_texture("foliage/grass.dds") };
+	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), mediaman.load_model("foliage/grass.glb") };
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
