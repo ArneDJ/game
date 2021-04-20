@@ -54,12 +54,6 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	grass = new Grass { grassmodel };
 }
 
-void Terrain::load_materials(const std::vector<const Texture*> textures)
-{
-	materials.clear();
-	materials.insert(materials.begin(), textures.begin(), textures.end());
-}
-
 Terrain::~Terrain(void)
 {
 	materials.clear();
@@ -73,20 +67,28 @@ Terrain::~Terrain(void)
 	delete relief;
 }
 	
+void Terrain::load_materials(const std::vector<const Texture*> textures)
+{
+	materials.clear();
+	materials.insert(materials.begin(), textures.begin(), textures.end());
+}
+
+void Terrain::prepare(void)
+{
+	grass->generate();
+}
+
 void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr)
 {
 	fogcolor = fogclr;
 	fogfactor = fogfctr;
 	sunpos = sun;
-	grass->fogcolor = fogclr;
-	grass->fogfactor = fogfctr;
-	grass->sunpos = sun;
 }
 
 void Terrain::change_grass(const glm::vec3 &color)
 {
 	grasscolor = color;
-	grass->color = color;
+	grass->colorize(color, fogcolor, sunpos, fogfactor);
 }
 
 void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
@@ -95,7 +97,7 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 
 	normals->reload(normalmap);
 	
-	grass->spawn(scale, heightmap, normalmap);
+	grass->place(scale, heightmap, normalmap);
 }
 	
 void Terrain::update_shadow(const Shadow *shadow, bool show_cascades)
@@ -165,59 +167,65 @@ GrassBox::GrassBox(const GLTF::Model *mod, const struct rectangle &bounds)
 	boundaries = bounds;
 	model = mod;
 
+	int nsprites = 100;
+	transforms.resize(nsprites);
+	tbuffer.matrices.resize(nsprites);
+	tbuffer.alloc(GL_STATIC_DRAW);
+
 	glm::vec2 mid = segment_midpoint(bounds.min, bounds.max);
 	box.c = glm::vec3(mid.x, 0.f, mid.y);
 	glm::vec2 dist = { 0.5f * (bounds.max.x - bounds.min.x), 0.5f * (bounds.max.y - bounds.min.y) };
 	box.r = glm::vec3(dist.x, 1.f, dist.y);
-
-	tbuffer.matrices.resize(100);
-	tbuffer.alloc(GL_DYNAMIC_DRAW);
 }
 
-void GrassBox::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
+void GrassBox::generate(void)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
+
+	glm::vec2 min = boundaries.min;
+	glm::vec2 max = boundaries.max;
+	std::uniform_real_distribution<float> map_x(min.x, max.x);
+	std::uniform_real_distribution<float> map_y(-0.05f, 0.05f);
+	std::uniform_real_distribution<float> map_z(min.y, max.y);
+	for (int i = 0; i < transforms.size(); i++) {
+		glm::vec3 position = { map_x(gen), 0.f, map_z(gen) };
+		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+
+		glm::mat4 T = glm::translate(glm::mat4(1.f), position);
+		glm::mat4 R = glm::mat4(rotation);
+		float scale = scale_dist(gen);
+		glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale));
+		transforms[i++] = T * R * S;
+	}
+}
+
+void GrassBox::place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
 {
 	glm::vec2 hmapscale = {
 		float(heightmap->width) / scale.x,
 		float(heightmap->height) / scale.z
 	};
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
-	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
-
-	float min_y = std::numeric_limits<float>::max();
-	float max_y = std::numeric_limits<float>::min();
-	int index = 0;
-	glm::vec2 min = boundaries.min;
-	glm::vec2 max = boundaries.max;
-	std::uniform_real_distribution<float> map_x(min.x, max.x);
-	std::uniform_real_distribution<float> map_y(-0.05f, 0.05f);
-	std::uniform_real_distribution<float> map_z(min.y, max.y);
+	float min = std::numeric_limits<float>::max();
+	float max = std::numeric_limits<float>::min();
 	instance_count = 0;
-	for (int i = 0; i < tbuffer.matrices.size(); i++) {
-		glm::vec3 position = { map_x(gen), 0.f, map_z(gen) };
+	for (int i = 0; i < transforms.size(); i++) {
+		glm::vec4 position = transforms[i][3];
 		float slope = 1.f - (normalmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_GREEN) / 255.f);
 		if (slope > 0.15f) {
 			continue;
 		}
 		position.y = scale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
-		position.y += map_y(gen) + 1.f;
-		if (position.y < min_y) { min_y = position.y; }
-		if (position.y > max_y) { max_y = position.y; }
-		// reset the vertial offset back to 0, we will recalculate it in the vertex shader for better precision
-		position.y = 0.f;
-		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-
-		glm::mat4 T = glm::translate(glm::mat4(1.f), position);
-		glm::mat4 R = glm::mat4(rotation);
-		float scale = scale_dist(gen);
-		glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(2.f*scale, 1.5f*scale, 2.f*scale));
-		tbuffer.matrices[instance_count++] = T * R * S;
+		if (position.y < min) { min = position.y; }
+		if (position.y > max) { max = position.y; }
+		tbuffer.matrices[instance_count++] = transforms[i];
 	}
 
-	box.r.y = 0.5f * (max_y - min_y);
-	box.c.y = box.r.y + min_y;
+	box.r.y = 0.5f * (max - min);
+	box.c.y = box.r.y + min;
 
 	tbuffer.update();
 }
@@ -258,11 +266,26 @@ Grass::~Grass(void)
 		delete grassboxes[i];
 	}
 }
+	
+void Grass::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr)
+{
+	color = colr;
+	fogcolor = fogclr;
+	sunpos = sun;
+	fogfactor = fogfctr;
+}
 
-void Grass::spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
+void Grass::generate(void)
 {
 	for (auto &grassbox : grassboxes) {
-		grassbox->spawn(scale, heightmap, normalmap);
+		grassbox->generate();
+	}
+}
+
+void Grass::place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
+{
+	for (auto &grassbox : grassboxes) {
+		grassbox->place(scale, heightmap, normalmap);
 	}
 }
 

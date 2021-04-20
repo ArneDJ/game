@@ -686,6 +686,9 @@ void Game::run_campaign(void)
 	physicsman.insert_body(campaign.watersurface);
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
+
+	// shared terrain data across campaign (random grass placement)
+	battle.terrain->prepare();
 	
 	while (state == GS_CAMPAIGN) {
 		timer.begin();

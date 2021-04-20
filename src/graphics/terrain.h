@@ -2,7 +2,8 @@
 class GrassBox {
 public:
 	GrassBox(const GLTF::Model *mod, const struct rectangle &bounds);
-	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
+	void generate(void);
+	void place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
 	void display(void) const;
 	const struct AABB* boundbox(void) const { return &box; }
 private:
@@ -11,28 +12,32 @@ private:
 	struct rectangle boundaries;
 	const GLTF::Model *model;
 	TransformBuffer tbuffer;
+	std::vector<glm::mat4> transforms;
 };
 
 class Grass {
 public:
+	Grass(const GLTF::Model *mod);
+	~Grass(void);
+	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr);
+	void generate(void);
+	void place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
+	void display(const Camera *camera, const glm::vec3 &scale) const;
+private:
+	std::vector<GrassBox*> grassboxes;
+private:
+	Shader shader;
 	glm::vec3 color;
 	glm::vec3 fogcolor;
 	glm::vec3 sunpos;
 	float fogfactor;
-public:
-	Grass(const GLTF::Model *mod);
-	~Grass(void);
-	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
-	void display(const Camera *camera, const glm::vec3 &scale) const;
-private:
-	std::vector<GrassBox*> grassboxes;
-	Shader shader;
 };
 
 class Terrain {
 public:
 	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const GLTF::Model *grassmodel);
 	~Terrain(void);
+	void prepare(void);
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *normalmap);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);

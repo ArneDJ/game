@@ -35,7 +35,7 @@ void main(void)
 
 	float height = texture(TERRAIN_HEIGHTMAP, uv).r;
 
-	worldpos.y += vposition.y + (MAPSCALE.y * height) + 1.0;
+	worldpos.y += vposition.y + (MAPSCALE.y * height);
 	position = worldpos.xyz;
 
 	vec3 normal = texture(TERRAIN_NORMALMAP, uv).rgb;
