@@ -75,3 +75,55 @@ static inline float sign(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2
 {
 	return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
 }
+
+// TODO refactor
+void frustum_to_planes(glm::mat4 M, glm::vec4 planes[6])
+{
+	planes[0] = {
+		M[0][3] + M[0][0],
+		M[1][3] + M[1][0],
+		M[2][3] + M[2][0],
+		M[3][3] + M[3][0],
+	};
+	planes[1] = {
+		M[0][3] - M[0][0],
+		M[1][3] - M[1][0],
+		M[2][3] - M[2][0],
+		M[3][3] - M[3][0],
+	};
+	planes[2] = {
+		M[0][3] + M[0][1],
+		M[1][3] + M[1][1],
+		M[2][3] + M[2][1],
+		M[3][3] + M[3][1],
+	};
+	planes[3] = {
+		M[0][3] - M[0][1],
+		M[1][3] - M[1][1],
+		M[2][3] - M[2][1],
+		M[3][3] - M[3][1],
+	};
+	planes[4] = {
+		M[0][2],
+		M[1][2],
+		M[2][2],
+		M[3][2],
+	};
+	planes[5] = {
+		M[0][3] - M[0][2],
+		M[1][3] - M[1][2],
+		M[2][3] - M[2][2],
+		M[3][3] - M[3][2],
+	};
+}
+
+bool AABB_in_frustum(glm::vec3 &min, glm::vec3 &max, glm::vec4 frustum_planes[6])
+{
+	bool inside = true; //test all 6 frustum planes
+	for (int i = 0; i < 6; i++) { //pick closest point to plane and check if it behind the plane //if yes - object outside frustum
+		float d = std::max(min.x * frustum_planes[i].x, max.x * frustum_planes[i].x) + std::max(min.y * frustum_planes[i].y, max.y * frustum_planes[i].y) + std::max(min.z * frustum_planes[i].z, max.z * frustum_planes[i].z) + frustum_planes[i].w;
+		inside &= d > 0; //return false; //with flag works faster
+	}
+
+	return inside;
+}

@@ -30,3 +30,7 @@ bool point_in_circle(const glm::vec2 &point, const glm::vec2 &origin, float radi
 bool triangle_overlaps_point(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &pt);
 
 bool segment_intersects_segment(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d);
+
+void frustum_to_planes(glm::mat4 M, glm::vec4 planes[6]);
+
+bool AABB_in_frustum(glm::vec3 &min, glm::vec3 &max, glm::vec4 frustum_planes[6]);

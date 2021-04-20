@@ -6,6 +6,7 @@ public:
 	void display(void) const;
 	const struct AABB* boundbox(void) const { return &box; }
 private:
+	uint32_t instance_count = 0;
 	struct AABB box;
 	struct rectangle boundaries;
 	const GLTF::Model *model;
@@ -24,8 +25,6 @@ public:
 	void spawn(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
 	void display(const Camera *camera, const glm::vec3 &scale) const;
 private:
-	//const GLTF::Model *model;
-	//TransformBuffer tbuffer;
 	std::vector<GrassBox*> grassboxes;
 	Shader shader;
 };

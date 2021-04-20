@@ -29,7 +29,7 @@ void main(void)
 	float blending = 1.0 / (0.01*dist);
 	color.a *= blending*blending;
 	if (color.a < 0.1) { discard; }
-	if (color.a > 0.6) { color.a = 1.0; }
+	if (color.a > 0.2) { color.a = 1.0; }
 
 	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
 	vec3 scatteredlight = lightcolor * diffuse;

@@ -8,7 +8,8 @@ out vec3 position;
 out vec2 texcoords;
 out float diffuse;
 
-layout(binding = 1) uniform sampler2D TERRAIN_NORMALMAP;
+layout(binding = 1) uniform sampler2D TERRAIN_HEIGHTMAP;
+layout(binding = 2) uniform sampler2D TERRAIN_NORMALMAP;
 layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
 uniform vec3 MAPSCALE;
@@ -29,8 +30,14 @@ void main(void)
 	vec4 worldpos = T * vec4(vposition, 1.0);
 
 	position = worldpos.xyz;
-
+	
 	vec2 uv = position.xz / MAPSCALE.xz;
+
+	float height = texture(TERRAIN_HEIGHTMAP, uv).r;
+
+	worldpos.y += vposition.y + (MAPSCALE.y * height) + 1.0;
+	position = worldpos.xyz;
+
 	vec3 normal = texture(TERRAIN_NORMALMAP, uv).rgb;
 	normal = (normal * 2.0) - 1.0;
 	normal = normalize(normal);
