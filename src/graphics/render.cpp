@@ -35,9 +35,21 @@ RenderGroup::~RenderGroup(void)
 
 void RenderGroup::add_object(const GLTF::Model *mod, const std::vector<const Entity*> &ents)
 {
-	struct RenderObject object;
-	object.model = mod;
-	object.entities.insert(object.entities.begin(), ents.begin(), ents.end());
+	struct RenderObject *object = new RenderObject;
+	object->model = mod;
+	object->entities.insert(object->entities.begin(), ents.begin(), ents.end());
+
+	object->instanced = (ents.size() > 100);
+	if (object->instanced) {
+		for (const auto &ent : ents) {
+			glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
+			glm::mat4 R = glm::mat4(ent->rotation);
+			glm::mat4 M = T * R;
+			object->tbuffer.matrices.push_back(M);
+		}
+		object->tbuffer.alloc(GL_STATIC_DRAW);
+		object->tbuffer.update();
+	}
 
 	objects.push_back(object);
 }
@@ -47,23 +59,31 @@ void RenderGroup::display(const Camera *camera) const
 	shader->use();
 	shader->uniform_mat4("VP", camera->VP);
 
-	shader->uniform_bool("INSTANCED", false);
-
 	for (const auto &obj : objects) {
-		for (const auto &ent : obj.entities) {
-			glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
-			glm::mat4 R = glm::mat4(ent->rotation);
-			glm::mat4 M = T * R;
-			glm::mat4 MVP = camera->VP * M;
-			shader->uniform_mat4("MVP", MVP);
-			shader->uniform_mat4("MODEL", M);
-			obj.model->display();
+		shader->uniform_bool("INSTANCED", obj->instanced);
+
+		if (obj->instanced) {
+			obj->tbuffer.bind(GL_TEXTURE10);
+			obj->model->display_instanced(obj->tbuffer.matrices.size());
+		} else {
+			for (const auto &ent : obj->entities) {
+				glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
+				glm::mat4 R = glm::mat4(ent->rotation);
+				glm::mat4 M = T * R;
+				glm::mat4 MVP = camera->VP * M;
+				shader->uniform_mat4("MVP", MVP);
+				shader->uniform_mat4("MODEL", M);
+				obj->model->display();
+			}
 		}
 	}
 }
 
 void RenderGroup::clear(void)
 {
+	for (int i = 0; i < objects.size(); i++) {
+		delete objects[i];
+	}
 	objects.clear();
 }
 	

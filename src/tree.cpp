@@ -84,7 +84,7 @@ void TreeForest::spawn(const glm::vec3 &mapscale, const FloatImage *heightmap)
 	std::uniform_real_distribution<float> map_x(min.x, max.x);
 	std::uniform_real_distribution<float> map_y(-0.05f, 0.05f);
 	std::uniform_real_distribution<float> map_z(min.y, max.y);
-	for (int i = 0; i < 5000; i++) {
+	for (int i = 0; i < 10000; i++) {
 		glm::vec3 position = { map_x(gen), 0.f, map_z(gen) };
 		position.y = mapscale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));

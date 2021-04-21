@@ -39,6 +39,8 @@ private:
 struct RenderObject {
 	const GLTF::Model *model;
 	std::vector<const Entity*> entities;
+	bool instanced = false;
+	TransformBuffer tbuffer;
 };
 
 class RenderGroup {
@@ -50,7 +52,7 @@ public:
 	void clear(void);
 private:
 	const Shader *shader;
-	std::vector<RenderObject> objects;
+	std::vector<RenderObject*> objects;
 };
 
 class RenderManager {
