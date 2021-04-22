@@ -433,7 +433,9 @@ void Game::run_battle(void)
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
 	battle.shadowcasters->add_object(mediaman.load_model("capsule.glb"), ents);
 
+	battle.forest.colorize(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.forest.spawn(battle.landscape->SCALE, battle.landscape->get_heightmap(), precipitation);
+	/*
 	const TreeKind *pine = battle.forest.get_pine();
 	const std::vector<Entity*> &pines = pine->get_entities();
 	ents.clear();
@@ -441,6 +443,7 @@ void Game::run_battle(void)
 		ents.push_back(pines[i]);
 	}
 	battle.trees->add_object(pine->get_model(), ents);
+	*/
 	//battle.shadowcasters->add_object(pine->get_model(), ents);
 	
 	skybox.pre_step();
@@ -474,12 +477,15 @@ void Game::run_battle(void)
 		battle.ordinary->display(&battle.camera);
 
 		glDisable(GL_CULL_FACE);
+		/*
 		tree_shader.use();
 		tree_shader.uniform_float("FOG_FACTOR", 0.0005f);
 		tree_shader.uniform_vec3("CAM_POS", battle.camera.position);
 		tree_shader.uniform_vec3("SUN_POS", sun_position);
 		tree_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
 		battle.trees->display(&battle.camera);
+		*/
+		battle.forest.display(&battle.camera);
 		glEnable(GL_CULL_FACE);
 
 		battle.terrain->update_shadow(shadow, show_cascades);
@@ -537,7 +543,7 @@ void Game::reserve_battle(void)
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 
-	battle.forest.init(mediaman.load_model("trees/fir.glb"));
+	battle.forest.init(mediaman.load_model("trees/fir.glb"), mediaman.load_model("trees/fir_billboard.glb"));
 }
 
 void Game::reserve_campaign(void)

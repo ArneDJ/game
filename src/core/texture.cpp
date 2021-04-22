@@ -285,6 +285,7 @@ void TransformBuffer::alloc(GLenum use)
 
 void TransformBuffer::update(void)
 {
+	size = matrices.size() * sizeof(glm::mat4);
 	glBindBuffer(GL_TEXTURE_BUFFER, buffer);
 	glBufferData(GL_TEXTURE_BUFFER, size, matrices.data(), usage);
 }
