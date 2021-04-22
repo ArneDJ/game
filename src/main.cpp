@@ -433,7 +433,7 @@ void Game::run_battle(void)
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
 	battle.shadowcasters->add_object(mediaman.load_model("capsule.glb"), ents);
 
-	battle.forest.spawn(battle.landscape->SCALE, battle.landscape->get_heightmap());
+	battle.forest.spawn(battle.landscape->SCALE, battle.landscape->get_heightmap(), precipitation);
 	const TreeKind *pine = battle.forest.get_pine();
 	const std::vector<Entity*> &pines = pine->get_entities();
 	ents.clear();

@@ -18,9 +18,10 @@ public:
 	void init(const GLTF::Model *pinemodel);
 	void teardown(void);
 	void clear(void);
-	void spawn(const glm::vec3 &mapscale, const FloatImage *heightmap);
+	void spawn(const glm::vec3 &mapscale, const FloatImage *heightmap, uint8_t precipitation);
 public:
 	const TreeKind* get_pine(void) const { return pine; };
 private:
 	TreeKind *pine; // testing with hardcoded tree
+	Image *density;
 };

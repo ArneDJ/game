@@ -1,28 +1,28 @@
 {
-    "foliage": [
+    "trees": [
 	{
-		"name": "Oak tree",
-		"type": "TREE",
-		"model": "media/models/trees/oak.glb",
+		"name": "Oak",
+		"type": "FOREST",
+		"model_pool": [
+			"media/models/trees/oak_0.glb",
+			"media/models/trees/oak_1.glb"
+		],
 		"min_temp": 50,
 		"max_temp": 100,
-		"min_rain": 200,
+		"min_rain": 180,
 		"max_rain": 255
 	},
 	{
-		"name": "Pine tree",
-		"type": "TREE",
-		"model": "media/models/trees/pine.glb",
-		"min_temp": 10,
-		"max_temp": 60,
-		"min_rain": 100,
-		"max_rain": 200
-	},
-	{
-		"name": "Bush",
-		"type": "BUSH",
-		"model": "media/models/foliage/bush.glb",
-		"biomes" [ "TEMP_GRASSLAND", WARM_GRASSLAND", "FOREST" ]
+		"name": "Beech",
+		"type": "FIELD",
+		"model_pool": [
+			"media/models/trees/beech_0.glb",
+			"media/models/trees/beech_1.glb"
+		],
+		"min_temp": 50,
+		"max_temp": 100,
+		"min_rain": 220,
+		"max_rain": 255
 	}
     ]
 }
