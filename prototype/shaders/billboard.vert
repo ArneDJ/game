@@ -11,7 +11,10 @@ out vec2 texcoords;
 layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
 uniform bool INSTANCED;
+uniform vec3 CAM_DIR;
 uniform mat4 VP;
+uniform mat4 PROJECT;
+uniform mat4 VIEW;
 uniform mat4 MODEL;
 
 void main(void)
@@ -28,7 +31,26 @@ void main(void)
 		normal = normalize(mat3(transpose(inverse(T))) * normalize(vnormal));
 		vec4 worldpos = T * vec4(vposition, 1.0);
 		position = worldpos.xyz;
-		gl_Position = VP * worldpos;
+		mat4 MV = VIEW * T;
+		// Column 0:
+		MV[0][0] = 1;
+		MV[0][1] = 0;
+		MV[0][2] = 0;
+
+		/*
+		// Column 1:
+		ModelView[1][0] = 0;
+		ModelView[1][1] = 1;
+		ModelView[1][2] = 0;
+		*/
+
+		// Column 2:
+		MV[2][0] = 0;
+		MV[2][1] = 0;
+		MV[2][2] = 1;
+
+		gl_Position = PROJECT * MV * vec4(10.0*vposition.x, 2.0*vposition.y, 10.0*vposition.z, 1.0);
+		//gl_Position = VP * worldpos;
 	} else {
 		normal = normalize(mat3(transpose(inverse(MODEL))) * normalize(vnormal));
 		//gl_Position = VP * MODEL * vec4(vposition, 1.0);

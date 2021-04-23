@@ -252,7 +252,7 @@ void Mesh::draw(void) const
 	}
 }
 
-void Mesh::draw_instanced(GLsizei count) 
+void Mesh::draw_instanced(GLsizei count) const
 {
 	glBindVertexArray(VAO);
 

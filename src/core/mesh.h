@@ -40,7 +40,7 @@ public:
 	Mesh(uint32_t res, const glm::vec2 &min, const glm::vec2 &max);
 	~Mesh(void);
 	void draw(void) const;
-	void draw_instanced(GLsizei count);
+	void draw_instanced(GLsizei count) const;
 public:
 	GLuint VAO = 0; // Vertex Array Object
 	GLuint VBO = 0; // Vertex Buffer Object

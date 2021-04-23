@@ -120,8 +120,8 @@ struct Campaign {
 struct Battle {
 	Camera camera;
 	RenderGroup *ordinary;
-	RenderGroup *trees;
 	RenderGroup *shadowcasters;
+	BillboardGroup *billboards;
 	Terrain *terrain;
 	btRigidBody *surface;
 	Landscape *landscape;
@@ -256,8 +256,8 @@ void Game::load_module(void)
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
 
-	tree_shader.compile("shaders/tree.vert", GL_VERTEX_SHADER);
-	tree_shader.compile("shaders/tree.frag", GL_FRAGMENT_SHADER);
+	tree_shader.compile("shaders/billboard.vert", GL_VERTEX_SHADER);
+	tree_shader.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
 	tree_shader.link();
 
 	depth_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
@@ -323,8 +323,8 @@ void Game::teardown_campaign(void)
 void Game::teardown_battle(void)
 {
 	delete battle.ordinary;
-	delete battle.trees;
 	delete battle.shadowcasters;
+	delete battle.billboards;
 
 	delete battle.landscape;
 
@@ -433,17 +433,14 @@ void Game::run_battle(void)
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
 	battle.shadowcasters->add_object(mediaman.load_model("capsule.glb"), ents);
 
-	battle.forest.colorize(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.forest.spawn(battle.landscape->SCALE, battle.landscape->get_heightmap(), precipitation);
-	/*
 	const TreeKind *pine = battle.forest.get_pine();
-	const std::vector<Entity*> &pines = pine->get_entities();
+	//const std::vector<Entity*> &pines = pine->get_entities();
 	ents.clear();
-	for (int i = 0; i < pines.size(); i++) {
-		ents.push_back(pines[i]);
+	for (int i = 0; i < pine->entities.size(); i++) {
+		ents.push_back(pine->entities[i]);
 	}
-	battle.trees->add_object(pine->get_model(), ents);
-	*/
+	battle.billboards->add_billboard(mediaman.load_texture("trees/fir_billboard.dds"), ents);
 	//battle.shadowcasters->add_object(pine->get_model(), ents);
 	
 	skybox.pre_step();
@@ -477,15 +474,7 @@ void Game::run_battle(void)
 		battle.ordinary->display(&battle.camera);
 
 		glDisable(GL_CULL_FACE);
-		/*
-		tree_shader.use();
-		tree_shader.uniform_float("FOG_FACTOR", 0.0005f);
-		tree_shader.uniform_vec3("CAM_POS", battle.camera.position);
-		tree_shader.uniform_vec3("SUN_POS", sun_position);
-		tree_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
-		battle.trees->display(&battle.camera);
-		*/
-		battle.forest.display(&battle.camera);
+		battle.billboards->display(&battle.camera);
 		glEnable(GL_CULL_FACE);
 
 		battle.terrain->update_shadow(shadow, show_cascades);
@@ -516,7 +505,7 @@ void Game::run_battle(void)
 	
 	battle.ordinary->clear();
 	battle.shadowcasters->clear();
-	battle.trees->clear();
+	battle.billboards->clear();
 	physicsman.remove_body(sphereobject.body);
 	physicsman.remove_body(cubeobject.body);
 	physicsman.remove_body(battle.surface);
@@ -543,7 +532,7 @@ void Game::reserve_battle(void)
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 
-	battle.forest.init(mediaman.load_model("trees/fir.glb"), mediaman.load_model("trees/fir_billboard.glb"));
+	battle.forest.init();
 }
 
 void Game::reserve_campaign(void)
@@ -568,8 +557,9 @@ void Game::reserve_campaign(void)
 	campaign.ordinary = new RenderGroup { &debug_shader };
 	campaign.creatures = new RenderGroup { &object_shader };
 	battle.ordinary = new RenderGroup { &debug_shader };
-	battle.trees = new RenderGroup { &tree_shader };
 	battle.shadowcasters = new RenderGroup { &depth_shader };
+
+	battle.billboards = new BillboardGroup { &tree_shader };
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	campaign.player = new Army { startpos, 20.f };
