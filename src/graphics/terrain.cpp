@@ -20,7 +20,6 @@
 #include "../core/texture.h"
 #include "../core/mesh.h"
 #include "../core/model.h"
-#include "shadow.h"
 #include "terrain.h"
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
@@ -100,16 +99,6 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 	grass->place(scale, heightmap, normalmap);
 }
 	
-void Terrain::update_shadow(const Shadow *shadow, bool show_cascades)
-{
-	land.use();
-	land.uniform_bool("SHOW_CASCADES", show_cascades);
-	land.uniform_vec4("SPLIT", shadow->get_splitdepth());
-	land.uniform_mat4_array("SHADOWSPACE", shadow->get_biased_shadowspaces());
-		
-	shadow->bind_textures(GL_TEXTURE10);
-}
-
 void Terrain::display_land(const Camera *camera) const
 {
 	land.use();

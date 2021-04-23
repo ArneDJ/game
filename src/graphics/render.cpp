@@ -136,8 +136,7 @@ void Billboard::instance(const std::vector<const Entity*> &ents)
 	tbuffer.matrices.resize(ents.size());
 	for (int i = 0; i < ents.size(); i++) {
 		glm::mat4 T = glm::translate(glm::mat4(1.f), ents[i]->position);
-		//glm::mat4 R = glm::mat4(ents[i]->rotation);
-		glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(10.f, 10.f, 10.f));
+		glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(ents[i]->scale));
 		tbuffer.matrices[i] = T * S;
 	}
 
@@ -156,10 +155,10 @@ BillboardGroup::BillboardGroup(const Shader *shady)
 	shader = shady;
 
 	const std::vector<glm::vec3> vertices = {
-		{ 1.0, 0.0, 0.0 },
-		{ -1.0, 0.0, 0.0 },
-		{ -1.0, 1.0, 0.0 },
-		{ 1.0, 1.0, 0.0 },
+		{ 0.5, 0.0, 0.0 },
+		{ -0.5, 0.0, 0.0 },
+		{ -0.5, 1.0, 0.0 },
+		{ 0.5, 1.0, 0.0 },
 	};
 
 	const std::vector<glm::vec2> texcoords = {
@@ -170,8 +169,8 @@ BillboardGroup::BillboardGroup(const Shader *shady)
 	};
 	// indices
 	const std::vector<uint16_t> indices = {
-		0, 1, 2,
-		0, 2, 3,
+		2, 1, 0,
+		3, 2, 0,
 	};
 
 	quad = new Mesh { vertices, texcoords, indices };
@@ -194,6 +193,7 @@ void BillboardGroup::display(const Camera *camera) const
 {
 	shader->use();
 	shader->uniform_vec3("CAM_DIR", camera->direction);
+	shader->uniform_vec3("CAM_POS", camera->position);
 	shader->uniform_mat4("PROJECT", camera->projection);
 	shader->uniform_mat4("VIEW", camera->viewing);
 	shader->uniform_mat4("VP", camera->VP);

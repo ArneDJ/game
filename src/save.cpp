@@ -20,6 +20,7 @@
 
 #include "core/logger.h"
 #include "core/geom.h"
+#include "core/entity.h"
 #include "core/image.h"
 #include "core/voronoi.h"
 #include "core/navigation.h"

@@ -42,7 +42,6 @@ public:
 	void reload(const FloatImage *heightmap, const Image *normalmap);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
 	void change_grass(const glm::vec3 &color);
-	void update_shadow(const Shadow *shadow, bool show_cascades);
 	void display_land(const Camera *camera) const;
 	void display_water(const Camera *camera, float time) const;
 	void display_grass(const Camera *camera) const;

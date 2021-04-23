@@ -69,6 +69,15 @@ Image::~Image(void)
 	}
 }
 	
+void Image::copy(const Image *original)
+{
+	if (original->size != size) {
+		write_log(LogType::ERROR, "Image copy error: size does not match");
+	}
+	
+	std::memcpy(data, original->data, original->size * sizeof(uint8_t));
+}
+
 void Image::clear(void)
 {
 	std::memset(data, 0, size);

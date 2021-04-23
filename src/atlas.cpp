@@ -18,6 +18,8 @@
 
 #include "core/logger.h"
 #include "core/geom.h"
+#include "core/poisson.h"
+#include "core/entity.h"
 #include "core/image.h"
 #include "core/voronoi.h"
 #include "module.h"
@@ -64,11 +66,15 @@ Atlas::Atlas(void)
 
 	mask = new Image { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
 	
-	materialmasks = new Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT};
+	materialmasks = new Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT };
+	
+	vegetation = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
 }
 
 Atlas::~Atlas(void)
 {
+	clear_entities();
+
 	delete terragen;
 	delete worldgraph;
 
@@ -79,6 +85,8 @@ Atlas::~Atlas(void)
 	delete mask;
 	
 	delete materialmasks;
+
+	delete vegetation;
 }
 
 void Atlas::generate(long seedling, const struct worldparams *params)
@@ -112,6 +120,14 @@ auto start = std::chrono::steady_clock::now();
 auto end = std::chrono::steady_clock::now();
 std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign image maps time: " << elapsed_seconds.count() << "s\n";
+}
+	
+void Atlas::clear_entities(void)
+{
+	for (int i = 0; i < trees.size(); i++) {
+		delete trees[i];
+	}
+	trees.clear();
 }
 
 void Atlas::smoothe_heightmap(void)
@@ -519,12 +535,84 @@ void Atlas::create_materialmasks(void)
 	materialmasks->blur(1.f);
 }
 	
-void Atlas::create_mapdata(void)
+void Atlas::create_vegetation(void)
 {
+	vegetation->copy(terragen->rainmap);
+
+	// water and mountain tiles don't have vegetation
+	const glm::vec2 mapscale = {
+		float(vegetation->width) / SCALE.x,
+		float(vegetation->height) / SCALE.z
+	};
+
+	// snow
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.relief == SEABED || t.relief == HIGHLAND) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				vegetation->draw_triangle(a, b, c, CHANNEL_RED, 0);
+			}
+		}
+	}
+	
+	// rivers and coasts don't have vegetation
+	#pragma omp parallel for
+	for (const auto &bord : worldgraph->borders) {
+		if (bord.coast || bord.river) {
+			glm::vec2 a = mapscale * bord.c0->position;
+			glm::vec2 b = mapscale * bord.c1->position;
+			vegetation->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_RED, 0);
+		}
+	}
+}
+
+void Atlas::place_vegetation(long seed)
+{
+	// spawn the forest
+	glm::vec2 hmapscale = {
+		float(terragen->heightmap->width) / SCALE.x,
+		float(terragen->heightmap->height) / SCALE.z
+	};
+
+	std::random_device rd;
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
+	std::uniform_real_distribution<float> density_dist(0.f, 1.f);
+
+	Poisson poisson;
+	poisson.generate(seed, 40000);
+
+	for (const auto &point : poisson.points) {
+		float P = vegetation->sample(point.x * vegetation->width, point.y * vegetation->height, CHANNEL_RED) / 255.f;
+		//P *= rain * rain;
+		//float R = PRNG.randomFloat();
+		float R = density_dist(gen);
+		if ( R > P ) { continue; }
+		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
+		position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+		float scale = 10.f;
+		Entity *ent = new Entity { position, rotation };
+		ent->scale = 20.f;
+		trees.push_back(ent);
+	}
+}
+
+void Atlas::create_mapdata(long seed)
+{
+	clear_entities();
+
 	// create the spatial hash field data for the tiles
 	gen_mapfield();
 
 	create_materialmasks();
+
+	create_vegetation();
+	place_vegetation(seed);
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -541,6 +629,11 @@ const Image* Atlas::get_tempmap(void) const
 {
 	return terragen->tempmap;
 }
+
+const Image* Atlas::get_vegetation(void) const
+{
+	return vegetation;
+}
 	
 const Image* Atlas::get_watermap(void) const
 {
@@ -555,6 +648,11 @@ const Image* Atlas::get_materialmasks(void) const
 const struct navigation_soup* Atlas::get_navsoup(void) const
 {
 	return &navsoup;
+}
+
+const std::vector<Entity*>& Atlas::get_trees(void) const
+{
+	return trees;
 }
 	
 const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const

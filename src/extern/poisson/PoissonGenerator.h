@@ -52,7 +52,7 @@ class DefaultPRNG
 {
 public:
 	DefaultPRNG() = default;
-	explicit DefaultPRNG( uint32_t seed )
+	explicit DefaultPRNG( int32_t seed )
 	: gen_( seed )
 	{}
 

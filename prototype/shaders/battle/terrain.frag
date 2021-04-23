@@ -15,8 +15,6 @@ layout(binding = 3) uniform sampler2D SANDMAP;
 layout(binding = 4) uniform sampler2D GRASSMAP;
 layout(binding = 5) uniform sampler2D DETAILMAP;
 
-layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
-
 uniform vec3 MAP_SCALE;
 // atmosphere
 uniform vec3 CAM_POS;
@@ -26,17 +24,13 @@ uniform float FOG_FACTOR;
 
 uniform vec3 GRASS_COLOR;
 
-// shadows
-uniform vec4 SPLIT;
-uniform mat4 SHADOWSPACE[4];
-uniform bool SHOW_CASCADES;
-
 vec3 fog(vec3 color, float dist)
 {
 	float amount = 1.0 - exp(-dist * FOG_FACTOR);
 	return mix(color, FOG_COLOR, amount );
 }
 
+/*
 float filterPCF(vec4 sc)
 {
 	ivec2 size = textureSize(SHADOWMAP, 0).xy;
@@ -85,6 +79,7 @@ float shadow_coef(void)
 
 	return clamp(shadow, 0.1, 1.0);
 }
+*/
 
 void main(void)
 {
@@ -116,27 +111,11 @@ void main(void)
 	vec3 color = GRASS_COLOR * grass;
 	color = mix(color, stone, slope);
 
-	if (SHOW_CASCADES == true) {
-		vec3 cascade = vec3(0, 0, 0);
-		if (fragment.zclipspace < SPLIT.x) {
-			cascade = vec3(1.0, 0.0, 0.0);
-		} else if (fragment.zclipspace < SPLIT.y) {
-			cascade = vec3(0.0, 1.0, 0.0);
-		} else if (fragment.zclipspace < SPLIT.z) {
-			cascade = vec3(0.0, 0.0, 1.0);
-		} else if (fragment.zclipspace < SPLIT.w) {
-			cascade = vec3(1.0, 0.0, 1.0);
-		}
-		color = mix(color, cascade, 0.5);
-	}
-
 	// terrain lighting
 	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
 	float diffuse = max(0.0, dot(normal, SUN_POS));
 
-	float shadow = shadow_coef();
-
-	vec3 scatteredlight = lightcolor * diffuse * shadow;
+	vec3 scatteredlight = lightcolor * diffuse;
 	color = mix(min(color * scatteredlight, vec3(1.0)), color, 0.5);
 
 	fcolor = vec4(fog(color, distance(CAM_POS, fragment.position)), 1.0);

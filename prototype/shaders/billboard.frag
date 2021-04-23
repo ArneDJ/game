@@ -1,7 +1,6 @@
 #version 430 core
 
 in vec2 texcoords;
-in vec3 normal;
 in vec3 position;
 
 out vec4 fcolor;
@@ -17,7 +16,7 @@ uniform float FOG_FACTOR;
 vec3 fog(vec3 color, float dist)
 {
 	float amount = 1.0 - exp(-dist * FOG_FACTOR);
-	return mix(color, FOG_COLOR, amount );
+	return mix(color, FOG_COLOR, amount);
 }
 
 void main(void)

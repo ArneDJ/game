@@ -9,11 +9,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "core/entity.h"
 #include "core/image.h"
+#include "core/poisson.h"
 #include "landscape.h"
 
 struct landgen_parameters {
-	int seed;
 	// mountain ridge
 	float ridge_freq;
 	float ridge_perturb;
@@ -45,10 +46,13 @@ static const float DETAIL_LACUNARITY = 2.5F;
 static const float MIN_SEDIMENT_BLUR = 20.F;
 static const float MAX_SEDIMENT_BLUR = 25.F;
 
+static const int MAX_TREES = 40000;
+static const uint16_t DENSITY_MAP_RES = 256;
+
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
 
-static struct landgen_parameters random_landgen_parameters(long seed, uint32_t offset);
+static struct landgen_parameters random_landgen_parameters(long seed);
 
 Landscape::Landscape(uint16_t heightres)
 {
@@ -56,26 +60,52 @@ Landscape::Landscape(uint16_t heightres)
 	normalmap = new Image { heightres, heightres, COLORSPACE_RGB };
 
 	container = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
+	
+	density = new Image { DENSITY_MAP_RES, DENSITY_MAP_RES, COLORSPACE_GRAYSCALE };
 }
 
 Landscape::~Landscape(void)
 {
+	clear();
+
+	delete density;
 	delete heightmap;
 	delete normalmap;
 	delete container;
 }
-
-void Landscape::generate(long seed, uint32_t offset, float amplitude)
+	
+void Landscape::clear(void)
 {
-	gen_heightmap(seed, offset, amplitude);
+	heightmap->clear();
+	normalmap->clear();
+	container->clear();
+
+	for (int i = 0; i < trees.size(); i++) {
+		delete trees[i];
+	}
+	trees.clear();
+}
+
+void Landscape::generate(long campaign_seed, int32_t local_seed, float amplitude, uint8_t precipitation)
+{
+	clear();
+
+	gen_heightmap(campaign_seed, local_seed, amplitude);
 
 	// create the normalmap
 	normalmap->create_normalmap(heightmap, 32.f);
+
+	gen_forest(local_seed, precipitation);
 }
 
 const FloatImage* Landscape::get_heightmap(void) const
 {
 	return heightmap;
+}
+	
+const std::vector<Entity*>& Landscape::get_trees(void) const
+{
+	return trees;
 }
 
 const Image* Landscape::get_normalmap(void) const
@@ -83,18 +113,65 @@ const Image* Landscape::get_normalmap(void) const
 	return normalmap;
 }
 
-void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
+void Landscape::gen_forest(int32_t seed, uint8_t precipitation) 
+{
+	// create density map
+	FastNoise fastnoise;
+	fastnoise.SetSeed(seed);
+	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
+	fastnoise.SetFractalType(FastNoise::FBM);
+	fastnoise.SetFrequency(0.01f);
+
+	density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
+	density->write("density.png");
+
+	// spawn the forest
+	glm::vec2 hmapscale = {
+		float(heightmap->width) / SCALE.x,
+		float(heightmap->height) / SCALE.z
+	};
+
+	std::random_device rd;
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
+	std::uniform_real_distribution<float> density_dist(0.f, 1.f);
+
+	printf("precipitation %f\n", precipitation / 255.f);
+
+	float rain = precipitation / 255.f;
+
+	poisson.generate(seed, MAX_TREES);
+
+	for (const auto &point : poisson.points) {
+		float P = density->sample(point.x * density->width, point.y * density->height, CHANNEL_RED) / 255.f;
+		P *= rain * rain;
+		//float R = PRNG.randomFloat();
+		float R = density_dist(gen);
+		if ( R > P ) { continue; }
+		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
+		position.y = SCALE.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+		position.y -= 2.f;
+		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+		//pine->add(position, rotation, scale);
+		Entity *ent = new Entity { position, rotation };
+		ent->scale = 20.f;
+		trees.push_back(ent);
+	}
+}
+
+void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float amplitude)
 {
 	amplitude = glm::clamp(amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
 
 	// random noise config
-	struct landgen_parameters params = random_landgen_parameters(seed, offset);
+	struct landgen_parameters params = random_landgen_parameters(campaign_seed);
 
 	// first we mix two noise maps for the heightmap
 	// the first noise is cellular noise to add mountain ridges
 	// the second noise is fractal noise to add overall detail to the heightmap
 	FastNoise cellnoise;
-	cellnoise.SetSeed(params.seed);
+	cellnoise.SetSeed(local_seed);
 	cellnoise.SetNoiseType(FastNoise::Cellular);
 	cellnoise.SetCellularDistanceFunction(FastNoise::Euclidean);
 	cellnoise.SetFrequency(params.ridge_freq);
@@ -102,7 +179,7 @@ void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 	cellnoise.SetGradientPerturbAmp(params.ridge_perturb);
 
 	FastNoise fractalnoise;
-	fractalnoise.SetSeed(params.seed);
+	fractalnoise.SetSeed(local_seed);
 	fractalnoise.SetNoiseType(FastNoise::SimplexFractal);
 	fractalnoise.SetFractalType(params.detail_type);
 	fractalnoise.SetFrequency(params.detail_freq);
@@ -142,12 +219,9 @@ void Landscape::gen_heightmap(long seed, uint32_t offset, float amplitude)
 	}
 }
 	
-static struct landgen_parameters random_landgen_parameters(long seed, uint32_t offset)
+static struct landgen_parameters random_landgen_parameters(long seed)
 {
 	std::mt19937 gen(seed);
-	gen.discard(offset);
-
-	std::uniform_int_distribution<int> noise_seed_distrib;
 
 	std::uniform_real_distribution<float> mountain_freq_distrib(MIN_MOUNTAIN_FREQ, MAX_MOUNTAIN_FREQ);
 	std::uniform_real_distribution<float> mountain_perturb_distrib(MIN_MOUNTAIN_PERTURB, MAX_MOUNTAIN_PERTURB);
@@ -160,7 +234,7 @@ static struct landgen_parameters random_landgen_parameters(long seed, uint32_t o
 
 	struct landgen_parameters params;
 
-	params.seed = noise_seed_distrib(gen);
+	//params.seed = noise_seed_distrib(gen);
 
 	params.ridge_freq = mountain_freq_distrib(gen);
 	params.ridge_perturb = mountain_perturb_distrib(gen);

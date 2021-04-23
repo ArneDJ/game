@@ -46,6 +46,7 @@
 
 #include "core/logger.h"
 #include "core/geom.h"
+#include "core/poisson.h"
 #include "core/image.h"
 #include "core/entity.h"
 #include "core/camera.h"
@@ -64,7 +65,6 @@
 #include "graphics/clouds.h"
 #include "graphics/sky.h"
 #include "graphics/render.h"
-#include "graphics/shadow.h"
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
 #include "object.h"
@@ -77,7 +77,6 @@
 #include "save.h"
 #include "army.h"
 #include "landscape.h"
-#include "tree.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 //static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
@@ -115,17 +114,16 @@ struct Campaign {
 	Army *player;
 	RenderGroup *ordinary;
 	RenderGroup *creatures;
+	BillboardGroup *billboards;
 };
 
 struct Battle {
 	Camera camera;
-	RenderGroup *ordinary;
-	RenderGroup *shadowcasters;
+	//RenderGroup *ordinary;
 	BillboardGroup *billboards;
 	Terrain *terrain;
 	btRigidBody *surface;
 	Landscape *landscape;
-	TreeForest forest;
 };
 
 class Game {
@@ -152,12 +150,10 @@ private:
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
-	Shader tree_shader;
+	Shader billboard_shader;
 	Shader depth_shader;
 	Shader copy_shader;
-	Shadow *shadow;
 	// temporary assets
-	bool show_cascades = false;
 private:
 	void init(void);
 	void init_settings(void);
@@ -211,7 +207,6 @@ void Game::init(void)
 
 	renderman.init();
 	framesystem = new FrameSystem { settings.window_width, settings.window_height };
-	shadow = new Shadow { 4096 };
 
 	if (debugmode) {
 		// Setup Dear ImGui context
@@ -256,9 +251,9 @@ void Game::load_module(void)
 	object_shader.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	object_shader.link();
 
-	tree_shader.compile("shaders/billboard.vert", GL_VERTEX_SHADER);
-	tree_shader.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
-	tree_shader.link();
+	billboard_shader.compile("shaders/billboard.vert", GL_VERTEX_SHADER);
+	billboard_shader.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
+	billboard_shader.link();
 
 	depth_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
 	depth_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
@@ -280,8 +275,6 @@ void Game::load_module(void)
 void Game::teardown(void)
 {
 	delete framesystem;
-
-	delete shadow;
 
 	teardown_campaign();
 
@@ -309,6 +302,7 @@ void Game::teardown_campaign(void)
 {
 	delete campaign.ordinary;
 	delete campaign.creatures;
+	delete campaign.billboards;
 
 	delete campaign.player;
 
@@ -322,8 +316,7 @@ void Game::teardown_campaign(void)
 
 void Game::teardown_battle(void)
 {
-	delete battle.ordinary;
-	delete battle.shadowcasters;
+	//delete battle.ordinary;
 	delete battle.billboards;
 
 	delete battle.landscape;
@@ -331,8 +324,6 @@ void Game::teardown_battle(void)
 	delete battle.terrain;
 
 	delete battle.surface;
-
-	battle.forest.teardown();
 }
 	
 void Game::update_battle(void)
@@ -362,7 +353,6 @@ void Game::update_battle(void)
 		ImGui::Text("seed: %d", campaign.seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", battle.camera.position.x, battle.camera.position.y, battle.camera.position.z);
-		ImGui::Checkbox("Show Cascades", &show_cascades);
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
 		ImGui::End();
 	}
@@ -386,98 +376,49 @@ void Game::run_battle(void)
 	uint32_t offset = 0;
 	float amp = 0.f;
 	uint8_t precipitation = 0;
+	int32_t local_seed = 0;
 	if (tily) {
 		amp = tily->amp;
 		offset = tily->index;
 		precipitation = tily->precipitation;
+		std::mt19937 gen(campaign.seed);
+		gen.discard(offset);
+		std::uniform_int_distribution<int32_t> local_seed_distrib;
+		local_seed = local_seed_distrib(gen);
 	}
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
-	battle.landscape->generate(campaign.seed, offset, amp);
+	battle.landscape->generate(campaign.seed, local_seed, amp, precipitation);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
 	physicsman.insert_body(battle.surface);
 
-	// testing entities
-	btCollisionShape *sphere_shape = physicsman.add_sphere(1.f);
-	btCollisionShape *cube_shape = physicsman.add_box(glm::vec3(1.f, 1.f, 1.f));
-	btCollisionShape *cylinder_shape = physicsman.add_cylinder(glm::vec3(1.f, 1.f, 1.f));
-	btCollisionShape *capsule_shape = physicsman.add_capsule(0.5f, 1.f);
-	DynamicObject cubeobject = { glm::vec3(3072.f, 215.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cube_shape };
-	DynamicObject cylinderobject = { glm::vec3(3072.f, 220.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), cylinder_shape };
-	DynamicObject capsuleobject = { glm::vec3(3072.f, 225.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), capsule_shape };
-	physicsman.insert_body(cubeobject.body);
-	physicsman.insert_body(cylinderobject.body);
-	physicsman.insert_body(capsuleobject.body);
-
 	std::vector<const Entity*> ents;
-
-	DynamicObject sphereobject = { glm::vec3(3072.f, 210.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), sphere_shape };
-	physicsman.insert_body(sphereobject.body);
-	ents.push_back(&sphereobject);
-	battle.ordinary->add_object(mediaman.load_model("sphere.glb"), ents);
-	battle.shadowcasters->add_object(mediaman.load_model("sphere.glb"), ents);
-
+	const std::vector<Entity*> trees = battle.landscape->get_trees();
 	ents.clear();
-	ents.push_back(&cubeobject);
-	battle.ordinary->add_object(mediaman.load_model("cube.glb"), ents);
-	battle.shadowcasters->add_object(mediaman.load_model("cube.glb"), ents);
-	ents.clear();
-	ents.push_back(&cylinderobject);
-	battle.ordinary->add_object(mediaman.load_model("cylinder.glb"), ents);
-	battle.shadowcasters->add_object(mediaman.load_model("cylinder.glb"), ents);
-	ents.clear();
-	ents.push_back(&capsuleobject);
-	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
-	battle.shadowcasters->add_object(mediaman.load_model("capsule.glb"), ents);
-
-	battle.forest.spawn(battle.landscape->SCALE, battle.landscape->get_heightmap(), precipitation);
-	const TreeKind *pine = battle.forest.get_pine();
-	//const std::vector<Entity*> &pines = pine->get_entities();
-	ents.clear();
-	for (int i = 0; i < pine->entities.size(); i++) {
-		ents.push_back(pine->entities[i]);
+	for (int i = 0; i < trees.size(); i++) {
+		ents.push_back(trees[i]);
 	}
-	battle.billboards->add_billboard(mediaman.load_texture("trees/fir_billboard.dds"), ents);
-	//battle.shadowcasters->add_object(pine->get_model(), ents);
+	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
 	
 	skybox.pre_step();
+
+	billboard_shader.use();
+	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
+	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
 
 	while (state == GS_BATTLE) {
 		timer.begin();
 
 		update_battle();
-		sphereobject.update();
-		cubeobject.update();
-		cylinderobject.update();
-		capsuleobject.update();
-
-		// update cascaded shadows
-		shadow->update(&battle.camera, sun_position);
-		shadow->enable();
-		depth_shader.use();
-		const auto shadowspaces = shadow->get_shadowspaces();
-		for (int i = 0; i < shadowspaces.size(); i++) {
-			// render into shadow depthmap
-			shadow->bind_depthmap(i);
-			depth_shader.uniform_mat4("DEPTH_VP", shadowspaces[i]);
-			battle.shadowcasters->display(&battle.camera);
-		}
-		shadow->disable();
-
-		glViewport(0, 0, settings.window_width, settings.window_height);
 
 		framesystem->bind();
 	
-		battle.ordinary->display(&battle.camera);
+		//battle.ordinary->display(&battle.camera);
 
-		glDisable(GL_CULL_FACE);
 		battle.billboards->display(&battle.camera);
-		glEnable(GL_CULL_FACE);
-
-		battle.terrain->update_shadow(shadow, show_cascades);
 
 		battle.terrain->display_land(&battle.camera);
 
@@ -503,15 +444,8 @@ void Game::run_battle(void)
 		timer.end();
 	}
 	
-	battle.ordinary->clear();
-	battle.shadowcasters->clear();
-	battle.billboards->clear();
-	physicsman.remove_body(sphereobject.body);
-	physicsman.remove_body(cubeobject.body);
 	physicsman.remove_body(battle.surface);
-	physicsman.remove_body(cylinderobject.body);
-	physicsman.remove_body(capsuleobject.body);
-	// TODO shapes need to be deleted
+	battle.billboards->clear();
 }
 
 void Game::reserve_battle(void)
@@ -532,7 +466,8 @@ void Game::reserve_battle(void)
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 
-	battle.forest.init();
+	//battle.ordinary = new RenderGroup { &debug_shader };
+	battle.billboards = new BillboardGroup { &billboard_shader };
 }
 
 void Game::reserve_campaign(void)
@@ -556,10 +491,8 @@ void Game::reserve_campaign(void)
 
 	campaign.ordinary = new RenderGroup { &debug_shader };
 	campaign.creatures = new RenderGroup { &object_shader };
-	battle.ordinary = new RenderGroup { &debug_shader };
-	battle.shadowcasters = new RenderGroup { &depth_shader };
 
-	battle.billboards = new BillboardGroup { &tree_shader };
+	campaign.billboards = new BillboardGroup { &billboard_shader };
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	campaign.player = new Army { startpos, 20.f };
@@ -569,6 +502,7 @@ void Game::cleanup_campaign(void)
 {
 	campaign.ordinary->clear();
 	campaign.creatures->clear();
+	campaign.billboards->clear();
 
 	if (debugmode) {
 		debugger.delete_navmeshes();
@@ -660,7 +594,7 @@ void Game::new_campaign(void)
 
 	campaign.atlas->generate(campaign.seed, &modular.params);
 
-	campaign.atlas->create_mapdata();
+	campaign.atlas->create_mapdata(campaign.seed);
 
 	campaign.atlas->create_land_navigation();
 	const auto land_navsoup = campaign.atlas->get_navsoup();
@@ -683,7 +617,7 @@ void Game::load_campaign(void)
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
-	campaign.atlas->create_mapdata();
+	campaign.atlas->create_mapdata(campaign.seed);
 
 	run_campaign();
 }
@@ -721,6 +655,17 @@ void Game::run_campaign(void)
 	// shared terrain data across campaign (random grass placement)
 	battle.terrain->prepare();
 	
+	const std::vector<Entity*> trees = campaign.atlas->get_trees();
+	ents.clear();
+	for (int i = 0; i < trees.size(); i++) {
+		ents.push_back(trees[i]);
+	}
+	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
+
+	billboard_shader.use();
+	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
+	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
+	
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
 
@@ -731,6 +676,8 @@ void Game::run_campaign(void)
 		campaign.ordinary->display(&campaign.camera);
 
 		campaign.creatures->display(&campaign.camera);
+
+		campaign.billboards->display(&campaign.camera);
 
 		campaign.worldmap->display_land(&campaign.camera);
 

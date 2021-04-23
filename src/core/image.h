@@ -27,6 +27,7 @@ public:
 	Image(const std::string &filepath);
 	Image(uint16_t w, uint16_t h, uint8_t chan);
 	~Image(void);
+	void copy(const Image *original);
 	uint8_t sample(uint16_t x, uint16_t y, uint8_t chan) const;
 	void plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color);
 	// gaussian blur
