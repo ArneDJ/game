@@ -265,6 +265,70 @@ void Mesh::draw_instanced(GLsizei count) const
 	}
 }
 
+CubeMesh::CubeMesh(const glm::vec3 &scale)
+{
+	std::vector<glm::vec3> positions = {
+		{ -0.5f, -0.5f,  0.5f },
+		{ 0.5f, -0.5f,  0.5f },
+		{ 0.5f,  0.5f,  0.5f },
+		{ -0.5f,  0.5f,  0.5f },
+		{ -0.5f, -0.5f, -0.5f },
+		{ 0.5f, -0.5f, -0.5f },
+		{ 0.5f,  0.5f, -0.5f },
+		{ -0.5f,  0.5f, -0.5f }
+	};
+	// indices
+	const std::vector<uint16_t> indices = {
+		0, 1, 2, 2, 3, 0,
+		1, 5, 6, 6, 2, 1,
+		7, 6, 5, 5, 4, 7,
+		4, 0, 3, 3, 7, 4,
+		4, 5, 1, 1, 0, 4,
+		3, 2, 6, 6, 7, 3
+	};
+
+	// scale the cube mesh
+	for (auto &position : positions) {
+		position.x *= scale.x;
+		position.y *= scale.y;
+		position.z *= scale.z;
+	}
+
+	const size_t position_size = sizeof(glm::vec3) * positions.size();
+	const size_t indices_size = sizeof(uint16_t) * indices.size();
+
+	// tell OpenGL how to render the buffer
+	struct primitive primi;
+	primi.firstindex = 0;
+	primi.indexcount = GLsizei(indices.size());
+	primi.firstvertex = 0;
+	primi.vertexcount = GLsizei(positions.size());
+	primi.mode = GL_TRIANGLES;
+	primi.indexed = (indices.size() > 0);
+
+	primitives.push_back(primi);
+
+	// create the OpenGL buffers
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+
+	// add index buffer
+	if (primi.indexed) {
+		glGenBuffers(1, &EBO);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_size, indices.data(), GL_STATIC_DRAW);
+		indextype = GL_UNSIGNED_SHORT;
+	}
+
+	// add position buffer
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, position_size, positions.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+}
+
 static size_t typesize(GLenum type)
 {
 	switch (type) {

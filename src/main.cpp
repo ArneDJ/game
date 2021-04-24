@@ -407,13 +407,19 @@ void Game::run_battle(void)
 	}
 	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
 
+	std::vector<CubeMesh*> debug_boxes;
 	const std::vector<building_t> &houses = battle.landscape->get_houses();
 	for (const auto &house : houses) {
 		std::vector<const Entity*> house_entities;
 		for (int i = 0; i < house.entities.size(); i++) {
 			house_entities.push_back(house.entities[i]);
 		}
-		battle.ordinary->add_object(mediaman.load_model(house.model), house_entities);
+		const GLTF::Model *model = mediaman.load_model(house.model);
+		battle.ordinary->add_object(model, house_entities);
+		// debug model bounding box
+		glm::vec3 size = model->bound_max - model->bound_min;
+		CubeMesh *box = new CubeMesh { size };
+		debug_boxes.push_back(box);
 	}
 	
 	skybox.pre_step();
@@ -430,6 +436,21 @@ void Game::run_battle(void)
 		framesystem->bind();
 	
 		battle.ordinary->display(&battle.camera);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	debug_shader.use();
+	debug_shader.uniform_bool("INSTANCED", false);
+	for (int i = 0; i < houses.size(); i++) {
+		const auto &house = houses[i];
+		for (int j = 0; j < house.entities.size(); j++) {
+			glm::mat4 T = glm::translate(glm::mat4(1.f), house.entities[j]->position);
+			glm::mat4 R = glm::mat4(house.entities[j]->rotation);
+			glm::mat4 M = T * R;
+			debug_shader.uniform_mat4("MODEL", T * R);
+			debug_boxes[i]->draw();
+		}
+	}
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		battle.billboards->display(&battle.camera);
 
@@ -457,6 +478,9 @@ void Game::run_battle(void)
 		timer.end();
 	}
 	
+	for (int i = 0; i < debug_boxes.size(); i++) {
+		delete debug_boxes[i];
+	}
 	physicsman.remove_body(battle.surface);
 	battle.billboards->clear();
 	battle.ordinary->clear();

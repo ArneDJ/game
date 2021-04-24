@@ -53,6 +53,7 @@ Model::Model(const std::string &filepath)
 
 	if (result == cgltf_result_success) {
 		load_data(filepath, data);
+		find_bounds(data);
 	} else {
 		write_log(LogType::ERROR, "GLTF Mesh import error for "  + filepath + ": ");
 		print_gltf_error(result);
@@ -121,6 +122,41 @@ void Model::load_data(const std::string &fpath, const cgltf_data *data)
 			skins[i].joints.push_back(n);
 		}
 	}
+}
+	
+void Model::find_bounds(const cgltf_data *data)
+{
+	bool found = false;
+
+	float min = std::numeric_limits<float>::max();
+	float max = std::numeric_limits<float>::min();
+	bound_min = { min, min, min };
+	bound_max = { max, max, max };
+
+	for (int i = 0; i < data->meshes_count; i++) {
+		const cgltf_mesh *mesh = &data->meshes[i];
+		for (int j = 0; j < mesh->primitives_count; j++) {
+			const cgltf_primitive *primitive = &mesh->primitives[j];
+			for (int k = 0; k < primitive->attributes_count; k++) {
+				const cgltf_attribute *attribute = &primitive->attributes[k];
+				const cgltf_accessor *accessor = attribute->data;
+				if (accessor->has_min && accessor->has_max) {
+					found = true;
+					glm::vec3 min = { accessor->min[0], accessor->min[1], accessor->min[2] };
+					glm::vec3 max = { accessor->max[0], accessor->max[1], accessor->max[2] };
+					bound_min = glm::min(bound_min, min);
+					bound_max = glm::max(bound_max, max);
+				}
+			}
+		}
+	}
+	// default bounding box if not found
+	if (!found) {
+		bound_min = { -1.f, -1.f, -1.f };
+		bound_max = { 1.f, 1.f, 1.f };
+	}
+	printf("min: %f, %f, %f\n", bound_min.x, bound_min.y, bound_min.z);
+	printf("max: %f, %f, %f\n", bound_max.x, bound_max.y, bound_max.z);
 }
 
 void Model::display(void) const

@@ -48,3 +48,8 @@ public:
 	GLenum indextype = GL_UNSIGNED_BYTE; // (GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, or GL_UNSIGNED_INT)
 	std::vector<struct primitive> primitives;
 };
+
+class CubeMesh : public Mesh {
+public:
+	CubeMesh(const glm::vec3 &scale);
+};

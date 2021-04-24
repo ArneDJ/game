@@ -41,6 +41,7 @@ public:
 	std::vector<struct collision_trimesh> collision_trimeshes;
 	std::vector<struct collision_hull> collision_hulls;
 	std::vector<struct skin> skins; 
+	glm::vec3 bound_min, bound_max; // model bounding box
 public:
 	Model(const std::string &filepath);
 	~Model(void);
@@ -53,6 +54,7 @@ private:
 	std::vector<const Texture*> materials;
 	void load_data(const std::string &fpath, const cgltf_data *data);
 	void load_mesh(const cgltf_mesh *gltfmesh);
+	void find_bounds(const cgltf_data *data);
 };
 
 }
