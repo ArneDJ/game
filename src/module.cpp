@@ -21,10 +21,13 @@ void Module::load(const std::string &modname)
 	
 	std::string worldpath = path + "worldgen.json";
 	std::string atmospath = path + "colors.json";
+	std::string buildingpath = path + "buildings.json";
 
 	load_world_parameters(worldpath);
 
 	load_colors(atmospath);
+
+	load_buildings(buildingpath);
 
 	// lowland may not be higher than upland
 	if (params.graph.lowland > params.graph.upland) {
@@ -87,6 +90,50 @@ void Module::save_colors(const std::string &filepath)
 	if (stream.is_open()) {
 		cereal::JSONOutputArchive archive(stream);
 		archive(cereal::make_nvp("colors", colors));
+	} else {
+		write_log(LogType::ERROR, "Module save error: could not save to " + filepath);
+	}
+}
+
+void Module::load_buildings(const std::string &filepath)
+{
+	std::ifstream stream(filepath);
+
+	if (stream.is_open()) {
+		cereal::JSONInputArchive archive(stream);
+		archive(cereal::make_nvp("houses", houses));
+	} else {
+		// file not found 
+		write_log(LogType::ERROR, "Module load error: could not open " + filepath);
+	}
+}
+	
+void Module::save_buildings(const std::string &filepath)
+{
+	MODULE::building small = {
+		"building_small",
+		"buildings/house_small.glb",
+		{ 5.f, 5.f, 10.f }
+	};
+	MODULE::building medium = {
+		"building_medium",
+		"buildings/house_medium.glb",
+		{ 10.f, 10.f, 20.f }
+	};
+	MODULE::building large = {
+		"building_large",
+		"buildings/house_large.glb",
+		{ 20.f, 20.f, 40.f }
+	};
+	houses.push_back(small);
+	houses.push_back(medium);
+	houses.push_back(large);
+
+	std::ofstream stream(filepath);
+
+	if (stream.is_open()) {
+		cereal::JSONOutputArchive archive(stream);
+		archive(cereal::make_nvp("houses", houses));
 	} else {
 		write_log(LogType::ERROR, "Module save error: could not save to " + filepath);
 	}

@@ -76,10 +76,10 @@
 #include "atlas.h"
 #include "save.h"
 #include "army.h"
+#include "sitegen.h"
 #include "landscape.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
-//static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.5f, 0.5f));
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
 
 enum game_state {
@@ -119,7 +119,7 @@ struct Campaign {
 
 struct Battle {
 	Camera camera;
-	//RenderGroup *ordinary;
+	RenderGroup *ordinary;
 	BillboardGroup *billboards;
 	Terrain *terrain;
 	btRigidBody *surface;
@@ -316,7 +316,7 @@ void Game::teardown_campaign(void)
 
 void Game::teardown_battle(void)
 {
-	//delete battle.ordinary;
+	delete battle.ordinary;
 	delete battle.billboards;
 
 	delete battle.landscape;
@@ -373,22 +373,22 @@ void Game::run_battle(void)
 
 	glm::vec2 position = translate_3D_to_2D(campaign.player->position);
 	const struct tile *tily = campaign.atlas->tile_at_position(position);
-	uint32_t offset = 0;
+	uint32_t tileref = 0;
 	float amp = 0.f;
 	uint8_t precipitation = 0;
 	int32_t local_seed = 0;
 	if (tily) {
 		amp = tily->amp;
-		offset = tily->index;
+		tileref = tily->index;
 		precipitation = tily->precipitation;
 		std::mt19937 gen(campaign.seed);
-		gen.discard(offset);
+		gen.discard(tileref);
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
 		local_seed = local_seed_distrib(gen);
 	}
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
-	battle.landscape->generate(campaign.seed, local_seed, amp, precipitation);
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
@@ -402,6 +402,20 @@ void Game::run_battle(void)
 		ents.push_back(trees[i]);
 	}
 	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
+
+	ents.clear();
+	Entity dragon = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	ents.push_back(&dragon);
+	battle.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
+
+	const std::vector<building_t> &houses = battle.landscape->get_houses();
+	for (const auto &house : houses) {
+		std::vector<const Entity*> house_entities;
+		for (int i = 0; i < house.entities.size(); i++) {
+			house_entities.push_back(house.entities[i]);
+		}
+		battle.ordinary->add_object(mediaman.load_model(house.model), house_entities);
+	}
 	
 	skybox.pre_step();
 
@@ -416,7 +430,7 @@ void Game::run_battle(void)
 
 		framesystem->bind();
 	
-		//battle.ordinary->display(&battle.camera);
+		battle.ordinary->display(&battle.camera);
 
 		battle.billboards->display(&battle.camera);
 
@@ -446,6 +460,7 @@ void Game::run_battle(void)
 	
 	physicsman.remove_body(battle.surface);
 	battle.billboards->clear();
+	battle.ordinary->clear();
 }
 
 void Game::reserve_battle(void)
@@ -453,7 +468,15 @@ void Game::reserve_battle(void)
 	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battle.camera.project();
 
-	battle.landscape = new Landscape { 2048 };
+	std::vector<struct model_info> house_templates;
+	for (const auto &house : modular.houses) {
+		struct model_info house_info = {
+			house.model,
+			house.bounds
+		};
+		house_templates.push_back(house_info);
+	}
+	battle.landscape = new Landscape { 2048, house_templates };
 	
 	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), mediaman.load_model("foliage/grass.glb") };
 	std::vector<const Texture*> materials;
@@ -466,8 +489,8 @@ void Game::reserve_battle(void)
 
 	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 
-	//battle.ordinary = new RenderGroup { &debug_shader };
 	battle.billboards = new BillboardGroup { &billboard_shader };
+	battle.ordinary = new RenderGroup { &debug_shader };
 }
 
 void Game::reserve_campaign(void)

@@ -1,26 +1,25 @@
 {
     "houses": [
-	{
-		"name": "Dwarven House",
-		"creatures": "dwarves",
-		"type": "HOUSE",
-		"model": "media/models/houses/dwarven.glb",
-		"min_temp": 50,
-		"max_temp": 100,
-		"min_rain": 200,
-		"max_rain": 255,
-		"x": 20, "y": 25, "z": 25
-	},
-	{
-		"name": "Human House",
-		"creatures": "humans",
-		"type": "HOUSE",
-		"model": "media/models/houses/human.glb",
-		"min_temp": 50,
-		"max_temp": 100,
-		"min_rain": 200,
-		"max_rain": 255,
-		"x": 20, "y": 25, "z": 25
-	}
+        {
+            "name": "building_small",
+            "model": "buildings/house_small.glb",
+            "bounds_x": 5.0,
+            "bounds_y": 5.0,
+            "bounds_z": 10.0
+        },
+        {
+            "name": "building_medium",
+            "model": "buildings/house_medium.glb",
+            "bounds_x": 10.0,
+            "bounds_y": 10.0,
+            "bounds_z": 20.0
+        },
+        {
+            "name": "building_large",
+            "model": "buildings/house_large.glb",
+            "bounds_x": 20.0,
+            "bounds_y": 20.0,
+            "bounds_z": 40.0
+        }
     ]
 }

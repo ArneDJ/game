@@ -595,9 +595,8 @@ void Atlas::place_vegetation(long seed)
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
 		position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-		float scale = 10.f;
 		Entity *ent = new Entity { position, rotation };
-		ent->scale = 20.f;
+		ent->scale = 10.f;
 		trees.push_back(ent);
 	}
 }

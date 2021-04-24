@@ -9,9 +9,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "core/geom.h"
 #include "core/entity.h"
 #include "core/image.h"
 #include "core/poisson.h"
+#include "sitegen.h"
 #include "landscape.h"
 
 struct landgen_parameters {
@@ -49,12 +51,23 @@ static const float MAX_SEDIMENT_BLUR = 25.F;
 static const int MAX_TREES = 40000;
 static const uint16_t DENSITY_MAP_RES = 256;
 
+// TODO pass this
+static const struct rectangle PLAYABLE_AREA = {
+	.min = { 0.F, 0.F },
+	.max = { 2048.F, 2048.F }
+};
+static const glm::vec2 OFFSET = {2048.F, 2048.F};
+
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
 
 static struct landgen_parameters random_landgen_parameters(long seed);
 
-Landscape::Landscape(uint16_t heightres)
+static bool larger_building(const struct building_t &a, const struct building_t &b);
+
+static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
+
+Landscape::Landscape(uint16_t heightres, const std::vector<struct model_info> &house_templates)
 {
 	heightmap = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
 	normalmap = new Image { heightres, heightres, COLORSPACE_RGB };
@@ -62,6 +75,16 @@ Landscape::Landscape(uint16_t heightres)
 	container = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
 	
 	density = new Image { DENSITY_MAP_RES, DENSITY_MAP_RES, COLORSPACE_GRAYSCALE };
+
+	for (const auto &house_template : house_templates) {
+		struct building_t house = {
+			house_template.model,
+			house_template.bounds
+		};
+		houses.push_back(house);
+	}
+	// sort house types from largest to smallest
+	std::sort(houses.begin(), houses.end(), larger_building);
 }
 
 Landscape::~Landscape(void)
@@ -84,9 +107,16 @@ void Landscape::clear(void)
 		delete trees[i];
 	}
 	trees.clear();
+
+	for (auto &building : houses) {
+		for (int i = 0; i < building.entities.size(); i++) {
+			delete building.entities[i];
+		}
+		building.entities.clear();
+	}
 }
 
-void Landscape::generate(long campaign_seed, int32_t local_seed, float amplitude, uint8_t precipitation)
+void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation)
 {
 	clear();
 
@@ -94,6 +124,11 @@ void Landscape::generate(long campaign_seed, int32_t local_seed, float amplitude
 
 	// create the normalmap
 	normalmap->create_normalmap(heightmap, 32.f);
+
+	// if scene is a town generate the site
+	sitegen.generate(campaign_seed, tileref, PLAYABLE_AREA, 1);
+
+	place_houses();
 
 	gen_forest(local_seed, precipitation);
 }
@@ -106,6 +141,11 @@ const FloatImage* Landscape::get_heightmap(void) const
 const std::vector<Entity*>& Landscape::get_trees(void) const
 {
 	return trees;
+}
+
+const std::vector<building_t>& Landscape::get_houses(void) const
+{
+	return houses;
 }
 
 const Image* Landscape::get_normalmap(void) const
@@ -150,10 +190,13 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 		float R = density_dist(gen);
 		if ( R > P ) { continue; }
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
-		position.y = SCALE.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+		float slope = 1.f - (normalmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_GREEN) / 255.f);
+		if (slope > 0.15f) {
+			continue;
+		}
+		position.y = sample_heightmap(glm::vec2(position.x,  position.z));
 		position.y -= 2.f;
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-		//pine->add(position, rotation, scale);
 		Entity *ent = new Entity { position, rotation };
 		ent->scale = 20.f;
 		trees.push_back(ent);
@@ -219,6 +262,75 @@ void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float ampl
 	}
 }
 	
+void Landscape::place_houses(void)
+{
+	// create wall cull quads so houses don't go through city walls
+	std::vector<struct quadrilateral> wall_boxes;
+	for (const auto &d : sitegen.districts) {
+		for (const auto &sect : d.sections) {
+			if (sect->wall) {
+				struct segment S = {sect->d0->center, sect->d1->center};
+				glm::vec2 mid = segment_midpoint(S.P0, S.P1);
+				glm::vec2 direction = glm::normalize(S.P1 - S.P0);
+				float angle = atan2(direction.x, direction.y);
+				glm::vec2 halfwidths = {10.f, glm::distance(mid, S.P1)};
+				struct quadrilateral box = building_box(mid, halfwidths, angle);
+				wall_boxes.push_back(box);
+			}
+		}
+	}
+
+	// place the houses
+	for (const auto &d : sitegen.districts) {
+		for (const auto &parc : d.parcels) {
+			float front = glm::distance(parc.quad.b, parc.quad.a);
+			float back = glm::distance(parc.quad.c, parc.quad.d);
+			float left = glm::distance(parc.quad.b, parc.quad.c);
+			float right = glm::distance(parc.quad.a, parc.quad.d);
+			float angle = atan2(parc.direction.x, parc.direction.y);
+			glm::quat rotation = glm::angleAxis(angle, glm::vec3(0.f, 1.f, 0.f));
+			float height = sample_heightmap(parc.centroid+OFFSET);
+			glm::vec3 position = {parc.centroid.x+OFFSET.x, height, parc.centroid.y+OFFSET.y};
+			for (auto &house : houses) {
+				if ((front > house.bounds.x && back > house.bounds.x) && (left > house.bounds.z && right > house.bounds.z)) {
+					//struct translation t = {position, rotation};
+					glm::vec2 halfwidths = {0.5f*house.bounds.x, 0.5f*house.bounds.z};
+					struct quadrilateral box = building_box(parc.centroid, halfwidths, angle);
+					bool valid = true;
+					for (auto &wallbox : wall_boxes) {
+						if (quad_quad_intersection(box, wallbox)) {
+							valid = false;
+							break;
+						}
+					}
+					if (valid) {
+						//house.translations.push_back(t);
+						Entity *entity = new Entity { position, rotation };
+						house.entities.push_back(entity);
+					}
+
+					break;
+				}
+			}
+		}
+	}
+
+	/*
+	for (int i = 0; i < houses.size(); i++) {
+	buildings.push_back(houses[i]);
+	}
+	*/
+}
+
+float Landscape::sample_heightmap(const glm::vec2 &real) const
+{
+	glm::vec2 imagespace = {
+		heightmap->width * (real.x / SCALE.x),
+		heightmap->height * (real.y / SCALE.z)
+	};
+	return SCALE.y * heightmap->sample(roundf(imagespace.x), roundf(imagespace.y), CHANNEL_RED);
+}
+	
 static struct landgen_parameters random_landgen_parameters(long seed)
 {
 	std::mt19937 gen(seed);
@@ -250,4 +362,31 @@ static struct landgen_parameters random_landgen_parameters(long seed)
 	params.sediment_blur = sediment_blur_distrib(gen);
 
 	return params;
+}
+
+static bool larger_building(const struct building_t &a, const struct building_t &b)
+{
+	return (a.bounds.x * a.bounds.z) > (b.bounds.x * b.bounds.z);
+}
+
+static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle)
+{
+	glm::vec2 a = {-halfwidths.x, halfwidths.y};
+	glm::vec2 b = {-halfwidths.x, -halfwidths.y};
+	glm::vec2 c = {halfwidths.x, -halfwidths.y};
+	glm::vec2 d = {halfwidths.x, halfwidths.y};
+
+	glm::mat2 R = {
+		cos(angle), -sin(angle),
+		sin(angle), cos(angle)
+	};
+
+	struct quadrilateral quad = {
+		.a = center + R * a,
+		.b = center + R * b,
+		.c = center + R * c,
+		.d = center + R * d
+	};
+
+	return quad;
 }

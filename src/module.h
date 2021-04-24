@@ -126,6 +126,28 @@ struct colorization {
 	}
 };
 
+namespace MODULE {
+
+struct building {
+	std::string name;
+	std::string model;
+	glm::vec3 bounds; // TODO calculate bounds automatically based on mesh
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			cereal::make_nvp("name", name), 
+			cereal::make_nvp("model", model), 
+			cereal::make_nvp("bounds_x", bounds.x),
+			cereal::make_nvp("bounds_y", bounds.y),
+			cereal::make_nvp("bounds_z", bounds.z)
+		);
+	}
+};
+
+}
+
 class Module {
 public:
 	// the world generation settings
@@ -134,11 +156,15 @@ public:
 	std::string path;
 	std::string name;
 public:
+	std::vector<MODULE::building> houses;
+public:
 	void load(const std::string &modname);
 private:
 	void load_world_parameters(const std::string &filepath);
 	void load_colors(const std::string &filepath);
+	void load_buildings(const std::string &filepath);
 	// only used when the file is missing
 	void save_world_parameters(const std::string &filepath);
 	void save_colors(const std::string &filepath);
+	void save_buildings(const std::string &filepath);
 };
