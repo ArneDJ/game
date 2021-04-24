@@ -17,7 +17,7 @@ public:
 	Landscape(uint16_t heightres, const std::vector<struct model_info> &house_templates);
 	~Landscape(void);
 	void clear(void);
-	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation);
+	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled);
 public:
 	const FloatImage* get_heightmap(void) const;
 	const Image* get_normalmap(void) const;
@@ -37,5 +37,5 @@ private:
 private:
 	void gen_heightmap(long campaign_seed, int32_t local_seed, float amplitude);
 	void gen_forest(int32_t seed, uint8_t precipitation);
-	void place_houses(void);
+	void place_houses(bool walled);
 };

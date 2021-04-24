@@ -107,34 +107,3 @@ void Module::load_buildings(const std::string &filepath)
 		write_log(LogType::ERROR, "Module load error: could not open " + filepath);
 	}
 }
-	
-void Module::save_buildings(const std::string &filepath)
-{
-	MODULE::building small = {
-		"building_small",
-		"buildings/house_small.glb",
-		{ 5.f, 5.f, 10.f }
-	};
-	MODULE::building medium = {
-		"building_medium",
-		"buildings/house_medium.glb",
-		{ 10.f, 10.f, 20.f }
-	};
-	MODULE::building large = {
-		"building_large",
-		"buildings/house_large.glb",
-		{ 20.f, 20.f, 40.f }
-	};
-	houses.push_back(small);
-	houses.push_back(medium);
-	houses.push_back(large);
-
-	std::ofstream stream(filepath);
-
-	if (stream.is_open()) {
-		cereal::JSONOutputArchive archive(stream);
-		archive(cereal::make_nvp("houses", houses));
-	} else {
-		write_log(LogType::ERROR, "Module save error: could not save to " + filepath);
-	}
-}

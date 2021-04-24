@@ -31,6 +31,7 @@
 enum material_channels {
 	CHANNEL_SNOW = 0,
 	CHANNEL_GRASS,
+	CHANNEL_FARMS,
 	CHANNEL_COUNT
 };
 
@@ -529,6 +530,19 @@ void Atlas::create_materialmasks(void)
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
 			materialmasks->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
+		}
+	}
+
+	// farm lands
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.site == CASTLE || t.site == TOWN) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				materialmasks->draw_triangle(a, b, c, CHANNEL_FARMS, 255);
+			}
 		}
 	}
 	

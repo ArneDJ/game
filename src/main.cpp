@@ -350,7 +350,6 @@ void Game::update_battle(void)
 		ImGui::NewFrame();
 		ImGui::Begin("Battle Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
-		ImGui::Text("seed: %d", campaign.seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", battle.camera.position.x, battle.camera.position.y, battle.camera.position.z);
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
@@ -377,6 +376,7 @@ void Game::run_battle(void)
 	float amp = 0.f;
 	uint8_t precipitation = 0;
 	int32_t local_seed = 0;
+	uint8_t site_radius = 0;
 	if (tily) {
 		amp = tily->amp;
 		tileref = tily->index;
@@ -385,10 +385,14 @@ void Game::run_battle(void)
 		gen.discard(tileref);
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
 		local_seed = local_seed_distrib(gen);
+		switch (tily->site) {
+		case CASTLE: site_radius = 1; break;
+		case TOWN: site_radius = 2; break;
+		}
 	}
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
-	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation);
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
@@ -402,11 +406,6 @@ void Game::run_battle(void)
 		ents.push_back(trees[i]);
 	}
 	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
-
-	ents.clear();
-	Entity dragon = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
-	ents.push_back(&dragon);
-	battle.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
 
 	const std::vector<building_t> &houses = battle.landscape->get_houses();
 	for (const auto &house : houses) {
@@ -581,7 +580,6 @@ void Game::update_campaign(void)
 		ImGui::NewFrame();
 		ImGui::Begin("Campaign Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
-		ImGui::Text("seed: %d", campaign.seed);
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", campaign.camera.position.x, campaign.camera.position.y, campaign.camera.position.z);
 		ImGui::Text("player position: %f, %f, %f", campaign.player->position.x, campaign.player->position.y, campaign.player->position.z);
@@ -612,6 +610,7 @@ void Game::new_campaign(void)
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
 	//campaign.seed = 4998651408012010310;
+	campaign.seed = 8038877013446859113;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
 

@@ -166,5 +166,4 @@ private:
 	// only used when the file is missing
 	void save_world_parameters(const std::string &filepath);
 	void save_colors(const std::string &filepath);
-	void save_buildings(const std::string &filepath);
 };

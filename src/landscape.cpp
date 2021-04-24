@@ -116,7 +116,7 @@ void Landscape::clear(void)
 	}
 }
 
-void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation)
+void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled)
 {
 	clear();
 
@@ -126,9 +126,11 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	normalmap->create_normalmap(heightmap, 32.f);
 
 	// if scene is a town generate the site
-	sitegen.generate(campaign_seed, tileref, PLAYABLE_AREA, 1);
+	if (site_radius > 0) {
+		sitegen.generate(campaign_seed, tileref, PLAYABLE_AREA, site_radius);
+		place_houses(walled);
+	}
 
-	place_houses();
 
 	gen_forest(local_seed, precipitation);
 }
@@ -262,23 +264,28 @@ void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float ampl
 	}
 }
 	
-void Landscape::place_houses(void)
+void Landscape::place_houses(bool walled)
 {
 	// create wall cull quads so houses don't go through city walls
 	std::vector<struct quadrilateral> wall_boxes;
-	for (const auto &d : sitegen.districts) {
-		for (const auto &sect : d.sections) {
-			if (sect->wall) {
-				struct segment S = {sect->d0->center, sect->d1->center};
-				glm::vec2 mid = segment_midpoint(S.P0, S.P1);
-				glm::vec2 direction = glm::normalize(S.P1 - S.P0);
-				float angle = atan2(direction.x, direction.y);
-				glm::vec2 halfwidths = {10.f, glm::distance(mid, S.P1)};
-				struct quadrilateral box = building_box(mid, halfwidths, angle);
-				wall_boxes.push_back(box);
+
+	if (walled) {
+		for (const auto &d : sitegen.districts) {
+			for (const auto &sect : d.sections) {
+				if (sect->wall) {
+					struct segment S = { sect->d0->center, sect->d1->center };
+					glm::vec2 mid = segment_midpoint(S.P0, S.P1);
+					glm::vec2 direction = glm::normalize(S.P1 - S.P0);
+					float angle = atan2(direction.x, direction.y);
+					glm::vec2 halfwidths = { 10.f, glm::distance(mid, S.P1) };
+					struct quadrilateral box = building_box(mid, halfwidths, angle);
+					wall_boxes.push_back(box);
+				}
 			}
 		}
 	}
+
+	printf("n house templates %d\n", houses.size());
 
 	// place the houses
 	for (const auto &d : sitegen.districts) {
@@ -290,21 +297,21 @@ void Landscape::place_houses(void)
 			float angle = atan2(parc.direction.x, parc.direction.y);
 			glm::quat rotation = glm::angleAxis(angle, glm::vec3(0.f, 1.f, 0.f));
 			float height = sample_heightmap(parc.centroid+OFFSET);
-			glm::vec3 position = {parc.centroid.x+OFFSET.x, height, parc.centroid.y+OFFSET.y};
+			glm::vec3 position = { parc.centroid.x+OFFSET.x, height, parc.centroid.y+OFFSET.y };
 			for (auto &house : houses) {
 				if ((front > house.bounds.x && back > house.bounds.x) && (left > house.bounds.z && right > house.bounds.z)) {
-					//struct translation t = {position, rotation};
-					glm::vec2 halfwidths = {0.5f*house.bounds.x, 0.5f*house.bounds.z};
+					glm::vec2 halfwidths = {  0.5f*house.bounds.x, 0.5f*house.bounds.z };
 					struct quadrilateral box = building_box(parc.centroid, halfwidths, angle);
 					bool valid = true;
-					for (auto &wallbox : wall_boxes) {
-						if (quad_quad_intersection(box, wallbox)) {
-							valid = false;
-							break;
+					if (walled) {
+						for (auto &wallbox : wall_boxes) {
+							if (quad_quad_intersection(box, wallbox)) {
+								valid = false;
+								break;
+							}
 						}
 					}
 					if (valid) {
-						//house.translations.push_back(t);
 						Entity *entity = new Entity { position, rotation };
 						house.entities.push_back(entity);
 					}
