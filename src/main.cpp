@@ -414,11 +414,10 @@ void Game::run_battle(void)
 		for (int i = 0; i < house.entities.size(); i++) {
 			house_entities.push_back(house.entities[i]);
 		}
-		const GLTF::Model *model = mediaman.load_model(house.model);
+		const GLTF::Model *model = house.model;
 		battle.ordinary->add_object(model, house_entities);
 		// debug model bounding box
-		glm::vec3 size = model->bound_max - model->bound_min;
-		CubeMesh *box = new CubeMesh { size };
+		CubeMesh *box = new CubeMesh { model->bound_min, model->bound_max };
 		debug_boxes.push_back(box);
 	}
 	
@@ -491,15 +490,11 @@ void Game::reserve_battle(void)
 	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battle.camera.project();
 
-	std::vector<struct model_info> house_templates;
+	std::vector<const GLTF::Model*> house_models;
 	for (const auto &house : modular.houses) {
-		struct model_info house_info = {
-			house.model,
-			house.bounds
-		};
-		house_templates.push_back(house_info);
+		house_models.push_back(mediaman.load_model(house.model));
 	}
-	battle.landscape = new Landscape { 2048, house_templates };
+	battle.landscape = new Landscape { 2048, house_models };
 	
 	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), mediaman.load_model("foliage/grass.glb") };
 	std::vector<const Texture*> materials;

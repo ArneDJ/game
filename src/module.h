@@ -131,17 +131,13 @@ namespace MODULE {
 struct building {
 	std::string name;
 	std::string model;
-	glm::vec3 bounds; // TODO calculate bounds automatically based on mesh
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
 		archive(
 			cereal::make_nvp("name", name), 
-			cereal::make_nvp("model", model), 
-			cereal::make_nvp("bounds_x", bounds.x),
-			cereal::make_nvp("bounds_y", bounds.y),
-			cereal::make_nvp("bounds_z", bounds.z)
+			cereal::make_nvp("model", model)
 		);
 	}
 };

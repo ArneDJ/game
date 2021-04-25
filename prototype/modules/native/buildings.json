@@ -2,24 +2,15 @@
     "houses": [
         {
             "name": "building_small",
-            "model": "buildings/house_small.glb",
-            "bounds_x": 5.0,
-            "bounds_y": 5.0,
-            "bounds_z": 10.0
+            "model": "buildings/house_small.glb"
         },
         {
             "name": "building_medium",
-            "model": "buildings/house_medium.glb",
-            "bounds_x": 10.0,
-            "bounds_y": 10.0,
-            "bounds_z": 20.0
+            "model": "buildings/house_medium.glb"
         },
         {
             "name": "building_large",
-            "model": "buildings/house_large.glb",
-            "bounds_x": 20.0,
-            "bounds_y": 20.0,
-            "bounds_z": 40.0
+            "model": "buildings/house_large.glb"
         }
     ]
 }

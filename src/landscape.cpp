@@ -6,6 +6,9 @@
 #include <map>
 #include <chrono>
 
+#include <GL/glew.h>
+#include <GL/gl.h>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -13,6 +16,9 @@
 #include "core/entity.h"
 #include "core/image.h"
 #include "core/poisson.h"
+#include "core/texture.h"
+#include "core/mesh.h"
+#include "core/model.h"
 #include "sitegen.h"
 #include "landscape.h"
 
@@ -67,7 +73,7 @@ static bool larger_building(const struct building_t &a, const struct building_t 
 
 static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
-Landscape::Landscape(uint16_t heightres, const std::vector<struct model_info> &house_templates)
+Landscape::Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &house_models)
 {
 	heightmap = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
 	normalmap = new Image { heightres, heightres, COLORSPACE_RGB };
@@ -76,10 +82,11 @@ Landscape::Landscape(uint16_t heightres, const std::vector<struct model_info> &h
 	
 	density = new Image { DENSITY_MAP_RES, DENSITY_MAP_RES, COLORSPACE_GRAYSCALE };
 
-	for (const auto &house_template : house_templates) {
+	for (const auto &model : house_models) {
+		glm::vec3 size = model->bound_max - model->bound_min;
 		struct building_t house = {
-			house_template.model,
-			house_template.bounds
+			model,
+			size
 		};
 		houses.push_back(house);
 	}

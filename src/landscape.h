@@ -1,11 +1,6 @@
 
-struct model_info {
-	std::string model;
-	glm::vec3 bounds;
-};
-
 struct building_t {
-	std::string model;
+	const GLTF::Model *model;
 	glm::vec3 bounds;
 	std::vector<Entity*> entities;
 };
@@ -14,7 +9,7 @@ class Landscape {
 public:
 	glm::vec3 SCALE = { 6144.F, 512.F, 6144.F };
 public:
-	Landscape(uint16_t heightres, const std::vector<struct model_info> &house_templates);
+	Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &house_models);
 	~Landscape(void);
 	void clear(void);
 	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled);

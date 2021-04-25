@@ -51,5 +51,5 @@ public:
 
 class CubeMesh : public Mesh {
 public:
-	CubeMesh(const glm::vec3 &scale);
+	CubeMesh(const glm::vec3 &min, const glm::vec3 &max);
 };

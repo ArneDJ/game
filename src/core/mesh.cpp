@@ -265,17 +265,17 @@ void Mesh::draw_instanced(GLsizei count) const
 	}
 }
 
-CubeMesh::CubeMesh(const glm::vec3 &scale)
+CubeMesh::CubeMesh(const glm::vec3 &min, const glm::vec3 &max)
 {
 	std::vector<glm::vec3> positions = {
-		{ -0.5f, -0.5f,  0.5f },
-		{ 0.5f, -0.5f,  0.5f },
-		{ 0.5f,  0.5f,  0.5f },
-		{ -0.5f,  0.5f,  0.5f },
-		{ -0.5f, -0.5f, -0.5f },
-		{ 0.5f, -0.5f, -0.5f },
-		{ 0.5f,  0.5f, -0.5f },
-		{ -0.5f,  0.5f, -0.5f }
+		{ min.x, min.y, max.z },
+		{ max.x, min.y, max.z },
+		{ max.x, max.y, max.z },
+		{ min.x, max.y, max.z },
+		{ min.x, min.y, min.z },
+		{ max.x, min.y, min.z },
+		{ max.x, max.y, min.z },
+		{ min.x, max.y, min.z }
 	};
 	// indices
 	const std::vector<uint16_t> indices = {
@@ -286,13 +286,6 @@ CubeMesh::CubeMesh(const glm::vec3 &scale)
 		4, 5, 1, 1, 0, 4,
 		3, 2, 6, 6, 7, 3
 	};
-
-	// scale the cube mesh
-	for (auto &position : positions) {
-		position.x *= scale.x;
-		position.y *= scale.y;
-		position.z *= scale.z;
-	}
 
 	const size_t position_size = sizeof(glm::vec3) * positions.size();
 	const size_t indices_size = sizeof(uint16_t) * indices.size();
