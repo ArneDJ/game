@@ -194,8 +194,8 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 
 	for (const auto &point : poisson.points) {
 		float P = density->sample(point.x * density->width, point.y * density->height, CHANNEL_RED) / 255.f;
+		if (P > 0.8f) { P = 1.f; }
 		P *= rain * rain;
-		//float R = PRNG.randomFloat();
 		float R = density_dist(gen);
 		if ( R > P ) { continue; }
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
@@ -328,12 +328,6 @@ void Landscape::place_houses(bool walled)
 			}
 		}
 	}
-
-	/*
-	for (int i = 0; i < houses.size(); i++) {
-	buildings.push_back(houses[i]);
-	}
-	*/
 }
 
 float Landscape::sample_heightmap(const glm::vec2 &real) const

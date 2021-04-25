@@ -51,6 +51,7 @@ private:
 	FloatImage *container;
 	FloatImage *detail;
 	Image *mask;
+	Image *tree_density;
 	struct navigation_soup navsoup;
 	std::vector<Entity*> trees;
 private:

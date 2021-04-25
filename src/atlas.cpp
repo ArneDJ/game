@@ -70,6 +70,7 @@ Atlas::Atlas(void)
 	materialmasks = new Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT };
 	
 	vegetation = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
+	tree_density = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
 }
 
 Atlas::~Atlas(void)
@@ -88,6 +89,7 @@ Atlas::~Atlas(void)
 	delete materialmasks;
 
 	delete vegetation;
+	delete tree_density;
 }
 
 void Atlas::generate(long seedling, const struct worldparams *params)
@@ -598,12 +600,25 @@ void Atlas::place_vegetation(long seed)
 	std::uniform_real_distribution<float> density_dist(0.f, 1.f);
 
 	Poisson poisson;
-	poisson.generate(seed, 40000);
+	poisson.generate(seed, 100000);
+
+	// density map
+	FastNoise fastnoise;
+	fastnoise.SetSeed(seed);
+	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
+	fastnoise.SetFractalType(FastNoise::FBM);
+	fastnoise.SetFractalOctaves(2);
+	fastnoise.SetFrequency(0.05f);
+
+	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
 	for (const auto &point : poisson.points) {
+		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, CHANNEL_RED) / 255.f;
+		if (N < 0.5f) { continue; }
+
 		float P = vegetation->sample(point.x * vegetation->width, point.y * vegetation->height, CHANNEL_RED) / 255.f;
+
 		//P *= rain * rain;
-		//float R = PRNG.randomFloat();
 		float R = density_dist(gen);
 		if ( R > P ) { continue; }
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
