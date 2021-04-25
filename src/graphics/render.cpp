@@ -87,7 +87,7 @@ void RenderGroup::clear(void)
 	objects.clear();
 }
 	
-void RenderManager::init(void)
+void RenderManager::init(uint16_t w, uint16_t h)
 {
 	// set OpenGL states
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -99,19 +99,37 @@ void RenderManager::init(void)
 	glBlendEquation(GL_FUNC_ADD);
 	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-
 	glLineWidth(5.f);
+	
+	framesystem = new FrameSystem { w, h };
 }
 	
-/*
 void RenderManager::teardown(void)
 {
+	delete framesystem;
 }
-*/
 
-void RenderManager::prepare_to_render(void)
+void RenderManager::bind_FBO(void)
 {
+	framesystem->bind();
+}
+
+void RenderManager::bind_depthmap(GLuint unit)
+{
+	framesystem->copy_depthmap();
+
+	glActiveTexture(unit);
+	glBindTexture(GL_TEXTURE_2D, framesystem->get_depthmap_copy());
+}
+
+void RenderManager::final_render(void)
+{
+	// default framebuffer
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	framesystem->display();
 }
 
 Billboard::Billboard(const Texture *tex, const Mesh *mesh)

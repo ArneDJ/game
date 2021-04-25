@@ -155,8 +155,6 @@ void Model::find_bounds(const cgltf_data *data)
 		bound_min = { -1.f, -1.f, -1.f };
 		bound_max = { 1.f, 1.f, 1.f };
 	}
-	printf("min: %f, %f, %f\n", bound_min.x, bound_min.y, bound_min.z);
-	printf("max: %f, %f, %f\n", bound_max.x, bound_max.y, bound_max.z);
 }
 
 void Model::display(void) const

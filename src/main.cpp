@@ -92,6 +92,7 @@ enum game_state {
 };
 
 struct game_settings {
+	std::string module_name;
 	uint16_t window_width;
 	uint16_t window_height;
 	bool fullscreen;
@@ -146,7 +147,6 @@ private:
 	// graphics
 	MediaManager mediaman;
 	RenderManager renderman;
-	FrameSystem *framesystem;
 	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
@@ -156,23 +156,28 @@ private:
 	// temporary assets
 private:
 	void init(void);
-	void init_settings(void);
+	void load_settings(void);
 	void load_module(void);
-	void reserve_battle(void);
-	void run_battle(void);
-	void update_battle(void);
-	void reserve_campaign(void);
-	void new_campaign(void);
-	void load_campaign(void);
+	void teardown(void);
+private:
+	void init_campaign(void);
+	void prepare_campaign(void);
 	void run_campaign(void);
+	void teardown_campaign(void);
 	void update_campaign(void);
 	void cleanup_campaign(void);
-	void teardown(void);
-	void teardown_campaign(void);
+	void new_campaign(void);
+	void load_campaign(void);
+private:
+	void init_battle(void);
+	void prepare_battle(void);
+	void run_battle(void);
+	void update_battle(void);
+	void cleanup_battle(void);
 	void teardown_battle(void);
 };
 
-void Game::init_settings(void)
+void Game::load_settings(void)
 {
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
 	INIReader reader = { INI_SETTINGS_PATH.c_str() };
@@ -188,12 +193,15 @@ void Game::init_settings(void)
 	
 	// graphics settings
 	settings.clouds_enabled = reader.GetBoolean("", "CLOUDS_ENABLED", false);
+
+	// module name
+	settings.module_name = reader.Get("", "MODULE", "native");
 }
 
 void Game::init(void)
 {
 	// load settings
-	init_settings();
+	load_settings();
 
 	if (!windowman.init(settings.window_width, settings.window_height)) {
 		exit(EXIT_FAILURE);
@@ -205,8 +213,7 @@ void Game::init(void)
 	
 	SDL_SetRelativeMouseMode(SDL_FALSE);
 
-	renderman.init();
-	framesystem = new FrameSystem { settings.window_width, settings.window_height };
+	renderman.init(settings.window_width, settings.window_height);
 
 	if (debugmode) {
 		// Setup Dear ImGui context
@@ -234,9 +241,7 @@ void Game::init(void)
 	
 void Game::load_module(void)
 {
-	std::string modulename = "native";
-
-	modular.load(modulename);
+	modular.load(settings.module_name);
 
 	mediaman.change_path(modular.path);
 
@@ -265,17 +270,13 @@ void Game::load_module(void)
 	skybox.init(windowman.width, windowman.height);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-	reserve_campaign();
-
-	reserve_battle();
-
-	physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
+	if (debugmode) {
+		debugger.init(&debug_shader);
+	}
 }
 
 void Game::teardown(void)
 {
-	delete framesystem;
-
 	teardown_campaign();
 
 	teardown_battle();
@@ -291,7 +292,7 @@ void Game::teardown(void)
 	}
 
 	skybox.teardown();
-	//renderman.teardown();
+	renderman.teardown();
 
 	physicsman.clear();
 
@@ -361,11 +362,11 @@ void Game::update_battle(void)
 	physicsman.update(timer.delta);
 	
 	// update atmosphere
-	skybox.change_atmosphere(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
+	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
 	skybox.update(&battle.camera, timer.elapsed);
 }
-
-void Game::run_battle(void)
+	
+void Game::prepare_battle(void)
 {
 	battle.camera.position = { 3072.f, 200.f, 3072.f };
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
@@ -399,6 +400,7 @@ void Game::run_battle(void)
 
 	physicsman.insert_body(battle.surface);
 
+	// add tree models
 	std::vector<const Entity*> ents;
 	const std::vector<Entity*> trees = battle.landscape->get_trees();
 	ents.clear();
@@ -407,7 +409,12 @@ void Game::run_battle(void)
 	}
 	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
 
-	std::vector<CubeMesh*> debug_boxes;
+	billboard_shader.use();
+	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
+	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
+
+	skybox.prepare();
+
 	const std::vector<building_t> &houses = battle.landscape->get_houses();
 	for (const auto &house : houses) {
 		std::vector<const Entity*> house_entities;
@@ -415,41 +422,31 @@ void Game::run_battle(void)
 			house_entities.push_back(house.entities[i]);
 		}
 		const GLTF::Model *model = house.model;
+
 		battle.ordinary->add_object(model, house_entities);
 		// debug model bounding box
-		CubeMesh *box = new CubeMesh { model->bound_min, model->bound_max };
-		debug_boxes.push_back(box);
+		if (debugmode) {
+			debugger.add_bbox(model->bound_min, model->bound_max, house_entities);
+		}
 	}
-	
-	skybox.pre_step();
+}
 
-	billboard_shader.use();
-	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
-	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
+void Game::run_battle(void)
+{
+	prepare_battle();
 
 	while (state == GS_BATTLE) {
 		timer.begin();
 
 		update_battle();
 
-		framesystem->bind();
+		renderman.bind_FBO();
 	
 		battle.ordinary->display(&battle.camera);
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	debug_shader.use();
-	debug_shader.uniform_bool("INSTANCED", false);
-	for (int i = 0; i < houses.size(); i++) {
-		const auto &house = houses[i];
-		for (int j = 0; j < house.entities.size(); j++) {
-			glm::mat4 T = glm::translate(glm::mat4(1.f), house.entities[j]->position);
-			glm::mat4 R = glm::mat4(house.entities[j]->rotation);
-			glm::mat4 M = T * R;
-			debug_shader.uniform_mat4("MODEL", T * R);
-			debug_boxes[i]->draw();
+		if (debugmode) {
+			debugger.render_bboxes(&battle.camera);
 		}
-	}
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 		battle.billboards->display(&battle.camera);
 
@@ -459,14 +456,7 @@ void Game::run_battle(void)
 		
 		battle.terrain->display_grass(&battle.camera);
 
-		// copy the current depth buffer
-		framesystem->copy_depthmap();
-
-		framesystem->unbind();
-
-		renderman.prepare_to_render();
-
-		framesystem->display();
+		renderman.final_render();
 
 		if (debugmode) {
 			ImGui::Render();
@@ -477,15 +467,21 @@ void Game::run_battle(void)
 		timer.end();
 	}
 	
-	for (int i = 0; i < debug_boxes.size(); i++) {
-		delete debug_boxes[i];
+	cleanup_battle();
+}
+	
+void Game::cleanup_battle(void)
+{
+	if (debugmode) {
+		debugger.delete_bboxes();
 	}
+
 	physicsman.remove_body(battle.surface);
 	battle.billboards->clear();
 	battle.ordinary->clear();
 }
 
-void Game::reserve_battle(void)
+void Game::init_battle(void)
 {
 	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battle.camera.project();
@@ -509,9 +505,11 @@ void Game::reserve_battle(void)
 
 	battle.billboards = new BillboardGroup { &billboard_shader };
 	battle.ordinary = new RenderGroup { &debug_shader };
+
+	physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
 }
 
-void Game::reserve_campaign(void)
+void Game::init_campaign(void)
 {
 	campaign.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	campaign.camera.project();
@@ -616,7 +614,7 @@ void Game::update_campaign(void)
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
-	skybox.change_atmosphere(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
+	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
 	skybox.update(&campaign.camera, timer.elapsed);
 }
 	
@@ -635,8 +633,6 @@ void Game::new_campaign(void)
 
 	campaign.atlas->generate(campaign.seed, &modular.params);
 
-	campaign.atlas->create_mapdata(campaign.seed);
-
 	campaign.atlas->create_land_navigation();
 	const auto land_navsoup = campaign.atlas->get_navsoup();
 	campaign.landnav.build(land_navsoup->vertices, land_navsoup->indices);
@@ -647,6 +643,7 @@ void Game::new_campaign(void)
 
 	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	
+	prepare_campaign();
 	run_campaign();
 }
 	
@@ -658,26 +655,13 @@ void Game::load_campaign(void)
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
 
-	campaign.atlas->create_mapdata(campaign.seed);
-
+	prepare_campaign();
 	run_campaign();
 }
 
-void Game::run_campaign(void)
+void Game::prepare_campaign(void)
 {
-	state = GS_CAMPAIGN;
-
-	std::vector<const Entity*> ents;
-	ents.push_back(campaign.player);
-	campaign.creatures->add_object(mediaman.load_model("duck.glb"), ents);
-
-	Entity dragon = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
-	ents.clear();
-	ents.push_back(&campaign.marker);
-	campaign.ordinary->add_object(mediaman.load_model("cone.glb"), ents);
-	ents.clear();
-	ents.push_back(&dragon);
-	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
+	campaign.atlas->create_mapdata(campaign.seed);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
@@ -696,45 +680,54 @@ void Game::run_campaign(void)
 	// shared terrain data across campaign (random grass placement)
 	battle.terrain->prepare();
 	
+	billboard_shader.use();
+	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
+	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
+
+	std::vector<const Entity*> ents;
+
+	ents.push_back(campaign.player);
+	campaign.creatures->add_object(mediaman.load_model("duck.glb"), ents);
+
+	Entity dragon = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	ents.clear();
+	ents.push_back(&campaign.marker);
+	campaign.ordinary->add_object(mediaman.load_model("cone.glb"), ents);
+	ents.clear();
+	ents.push_back(&dragon);
+	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
+
 	const std::vector<Entity*> trees = campaign.atlas->get_trees();
 	ents.clear();
 	for (int i = 0; i < trees.size(); i++) {
 		ents.push_back(trees[i]);
 	}
 	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
+}
 
-	billboard_shader.use();
-	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
-	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
-	
+void Game::run_campaign(void)
+{
+	state = GS_CAMPAIGN;
+
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
 
 		update_campaign();
 
-		framesystem->bind();
+		renderman.bind_FBO();
 	
 		campaign.ordinary->display(&campaign.camera);
-
 		campaign.creatures->display(&campaign.camera);
-
 		campaign.billboards->display(&campaign.camera);
 
 		campaign.worldmap->display_land(&campaign.camera);
 
 		skybox.display(&campaign.camera);
 
-		framesystem->copy_depthmap();
-		
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, framesystem->get_depthmap_copy());
+		renderman.bind_depthmap(GL_TEXTURE2);
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
 
-		framesystem->unbind();
-
-		renderman.prepare_to_render();
-		
-		framesystem->display();
+		renderman.final_render();
 
 		if (debugmode) {
 			ImGui::Render();
@@ -758,11 +751,14 @@ void Game::run_campaign(void)
 
 void Game::run(void)
 {
-	state = GS_TITLE;
-
 	init();
 	load_module();
+
+	init_campaign();
+	init_battle();
 	
+	state = GS_TITLE;
+
 	while (state == GS_TITLE) {
 		inputman.update();
 		if (inputman.exit_request()) {
@@ -786,7 +782,7 @@ void Game::run(void)
 			ImGui::End();
 		}
 		
-		renderman.prepare_to_render();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (debugmode) {
 			ImGui::Render();

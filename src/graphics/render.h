@@ -84,7 +84,11 @@ private:
 
 class RenderManager {
 public:
-	void init(void);
+	void init(uint16_t w, uint16_t h);
 	void teardown(void);
-	void prepare_to_render(void);
+	void bind_FBO(void);
+	void bind_depthmap(GLuint unit);
+	void final_render(void);
+private:
+	FrameSystem *framesystem;
 };

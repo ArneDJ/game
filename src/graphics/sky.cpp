@@ -56,7 +56,7 @@ void Skybox::teardown(void)
 	delete cubemap;
 }
 
-void Skybox::pre_step(void)
+void Skybox::prepare(void)
 {
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -69,7 +69,7 @@ void Skybox::pre_step(void)
 	clouded = (coverage > MIN_COVERAGE);
 }
 	
-void Skybox::change_atmosphere(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled)
+void Skybox::colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled)
 {
 	zenith = top;
 	horizon = bottom;

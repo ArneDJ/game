@@ -24,8 +24,22 @@
 #include "extern/imgui/imgui_impl_sdl.h"
 #include "extern/imgui/imgui_impl_opengl3.h"
 
+#include "core/entity.h"
+#include "core/camera.h"
+#include "core/shader.h"
 #include "core/mesh.h"
 #include "debugger.h"
+
+void Debugger::init(const Shader *shady)
+{
+	shader = shady;
+}
+
+void Debugger::teardown(void)
+{
+	delete_navmeshes();
+	delete_bboxes();
+}
 
 void Debugger::render_navmeshes(void)
 {
@@ -90,7 +104,44 @@ void Debugger::delete_navmeshes(void)
 	navmeshes.clear();
 }
 	
-void Debugger::teardown(void)
+void Debugger::add_bbox(const glm::vec3 &min, const glm::vec3 &max, const std::vector<const Entity*> &entities)
 {
-	delete_navmeshes();
+	struct debug_box box;
+	box.mesh = new CubeMesh { min, max };
+	for (const auto &ent : entities) {
+		box.entities.push_back(ent);
+	}
+	bboxes.push_back(box);
+}
+
+void Debugger::render_bboxes(const Camera *camera)
+{
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	shader->use();
+	shader->uniform_bool("INSTANCED", false);
+	shader->uniform_mat4("VP", camera->VP);
+
+	for (const auto &box : bboxes) {
+		for (const auto &ent : box.entities) {
+			glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
+			glm::mat4 R = glm::mat4(ent->rotation);
+			glm::mat4 M = T * R;
+			glm::mat4 MVP = camera->VP * M;
+			shader->uniform_mat4("MVP", MVP);
+			shader->uniform_mat4("MODEL", M);
+			box.mesh->draw();
+		}
+	}
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+}
+
+void Debugger::delete_bboxes(void)
+{
+	for (auto &box : bboxes) {
+		delete box.mesh;
+		box.entities.clear();
+	}
+	bboxes.clear();
 }
