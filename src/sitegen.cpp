@@ -165,7 +165,7 @@ void Sitegen::make_diagram(uint32_t tileref)
 
 	std::vector<glm::vec2> locations;
 	for (int i = 0; i < MAX_CELLS; i++) {
-		locations.push_back((glm::vec2) {dist_x(gen), dist_y(gen)});
+		locations.push_back(glm::vec2(dist_x(gen), dist_y(gen)));
 	}
 
 	Voronoi voronoi;
@@ -190,18 +190,17 @@ void Sitegen::make_diagram(uint32_t tileref)
 			dsections.push_back(&sections[edge->index]);
 	}
 
-		struct district d = {
-			.index = cell.index,
-			.center = cell.center,
-			.neighbors = dneighbors,
-			.junctions = djunctions,
-			.sections = dsections,
-			.border = false,
-			.radius = 0,
-			.area = 0.f,
-			.tower = false,
-			.centroid = {0.f, 0.f},
-		};
+		struct district d;
+		d.index = cell.index;
+		d.center = cell.center;
+		d.neighbors = dneighbors;
+		d.junctions = djunctions;
+		d.sections = dsections;
+		d.border = false;
+		d.radius = 0;
+		d.area = 0.f;
+		d.tower = false;
+		d.centroid = { 0.f, 0.f };
 
 		districts[cell.index] = d;
 	}
@@ -217,14 +216,13 @@ void Sitegen::make_diagram(uint32_t tileref)
 			touches.push_back(&districts[cell->index]);
 		}
 
-		struct junction c = {
-			.index = vertex.index,
-			.position = vertex.position,
-			.adjacent = adjacent,
-			.districts = touches,
-			.border = false,
-			.street = false
-		};
+		struct junction c;
+		c.index = vertex.index;
+		c.position = vertex.position;
+		c.adjacent = adjacent;
+		c.districts = touches;
+		c.border = false;
+		c.street = false;
 
 		junctions[vertex.index] = c;
 	}
@@ -516,7 +514,8 @@ void Sitegen::make_highways(void)
 	// highway from gateway to town core
 	for (auto &sect : sections) {
 		if (sect.gateway) {
-			highways.push_back((struct segment){sect.j0->position, sect.j1->position});
+			struct segment S = { sect.j0->position, sect.j1->position };
+			highways.push_back(S);
 			struct junction *start = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
 			std::queue<struct junction*> queue;
 			queue.push(start);
@@ -526,7 +525,8 @@ void Sitegen::make_highways(void)
 				for (auto neighbor : node->adjacent) {
 					if (neighbor->radius < node->radius) {
 						queue.push(neighbor);
-						highways.push_back((struct segment){node->position, neighbor->position});
+						struct segment highway = { node->position, neighbor->position };
+						highways.push_back(highway);
 						break;
 					}
 				}
@@ -587,7 +587,8 @@ void Sitegen::make_highways(void)
 				}
 				if (next != nullptr) {
 					queue.push(next);
-					highways.push_back((struct segment) {node->position, next->position});
+					struct segment S = { node->position, next->position };
+					highways.push_back(S);
 					node->street = true;
 					next->street = true;
 				}
@@ -681,7 +682,8 @@ static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
 			for (std::list<glm::vec2>::iterator it = polygon.begin(); it != polygon.end(); ++it) {
 				std::list<glm::vec2>::iterator next = std::next(it);
 				if (next == polygon.end()) { next = polygon.begin(); }
-				chainseg.push_back((struct chainsegment){it, next, glm::distance(*it, *next)});
+				struct chainsegment seg = { it, next, glm::distance(*it, *next) };
+				chainseg.push_back(seg);
 			}
 			std::sort(chainseg.begin(), chainseg.end(), longest_segment);
 

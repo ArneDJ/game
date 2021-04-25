@@ -59,8 +59,8 @@ static const uint16_t DENSITY_MAP_RES = 256;
 
 // TODO pass this
 static const struct rectangle PLAYABLE_AREA = {
-	.min = { 0.F, 0.F },
-	.max = { 2048.F, 2048.F }
+	{ 0.F, 0.F },
+	{ 2048.F, 2048.F }
 };
 static const glm::vec2 OFFSET = {2048.F, 2048.F};
 
@@ -292,7 +292,7 @@ void Landscape::place_houses(bool walled)
 		}
 	}
 
-	printf("n house templates %d\n", houses.size());
+	//printf("n house templates %d\n", houses.size());
 
 	// place the houses
 	for (const auto &d : sitegen.districts) {
@@ -396,10 +396,10 @@ static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths,
 	};
 
 	struct quadrilateral quad = {
-		.a = center + R * a,
-		.b = center + R * b,
-		.c = center + R * c,
-		.d = center + R * d
+		center + R * a,
+		center + R * b,
+		center + R * c,
+		center + R * d
 	};
 
 	return quad;
