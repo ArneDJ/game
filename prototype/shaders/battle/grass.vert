@@ -39,7 +39,14 @@ void main(void)
 	translation.z += ROOT_OFFSET.y;
 	T[3] = translation;
 
+	float slope = 1.0 - texture(TERRAIN_NORMALMAP, translation.xz / MAPSCALE.xz).y;
+
 	vec4 worldpos = T * vec4(vposition, 1.0);
+
+	// if slope is too steep grass won't grow on it
+	if (slope > 0.15) {
+		worldpos = vec4(0.0); // dirty way of not showing a vertex
+	}
 
 	position = worldpos.xyz;
 	
