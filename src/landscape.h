@@ -24,7 +24,6 @@ private:
 	FloatImage *container = nullptr;
 	Image *normalmap = nullptr;
 	Image *density = nullptr;
-	Poisson poisson;
 	Sitegen sitegen;
 private:
 	std::vector<Entity*> trees;

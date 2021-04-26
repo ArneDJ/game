@@ -46,7 +46,6 @@
 
 #include "core/logger.h"
 #include "core/geom.h"
-#include "core/poisson.h"
 #include "core/image.h"
 #include "core/entity.h"
 #include "core/camera.h"
@@ -102,13 +101,15 @@ struct game_settings {
 	bool clouds_enabled;
 };
 
-struct Campaign {
+class Campaign {
+public:
 	long seed;
 	Navigation landnav;
 	Navigation seanav;
 	Camera camera;
 	btRigidBody *surface;
 	btRigidBody *watersurface;
+	PhysicsManager collisionman;
 	Atlas *atlas;
 	Entity marker;
 	Worldmap *worldmap;
@@ -118,13 +119,15 @@ struct Campaign {
 	BillboardGroup *billboards;
 };
 
-struct Battle {
+class Battle {
+public:
 	Camera camera;
 	RenderGroup *ordinary;
 	BillboardGroup *billboards;
 	Terrain *terrain;
 	btRigidBody *surface;
 	Landscape *landscape;
+	PhysicsManager physicsman;
 };
 
 class Game {
@@ -139,11 +142,10 @@ private:
 	Saver saver;
 	WindowManager windowman;
 	InputManager inputman;
-	PhysicsManager physicsman;
 	Timer timer;
 	Debugger debugger;
-	struct Campaign campaign;
-	struct Battle battle;
+	Campaign campaign;
+	Battle battle;
 	// graphics
 	MediaManager mediaman;
 	RenderManager renderman;
@@ -294,13 +296,13 @@ void Game::teardown(void)
 	skybox.teardown();
 	renderman.teardown();
 
-	physicsman.clear();
-
 	windowman.teardown();
 }
 
 void Game::teardown_campaign(void)
 {
+	campaign.collisionman.clear();
+
 	delete campaign.ordinary;
 	delete campaign.creatures;
 	delete campaign.billboards;
@@ -317,6 +319,8 @@ void Game::teardown_campaign(void)
 
 void Game::teardown_battle(void)
 {
+	battle.physicsman.clear();
+
 	delete battle.ordinary;
 	delete battle.billboards;
 
@@ -359,7 +363,7 @@ void Game::update_battle(void)
 
 	inputman.update_keymap();
 	
-	physicsman.update(timer.delta);
+	battle.physicsman.update(timer.delta);
 	
 	// update atmosphere
 	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
@@ -398,7 +402,7 @@ void Game::prepare_battle(void)
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
-	physicsman.insert_body(battle.surface);
+	battle.physicsman.insert_body(battle.surface);
 
 	// add tree models
 	std::vector<const Entity*> ents;
@@ -476,7 +480,7 @@ void Game::cleanup_battle(void)
 		debugger.delete_bboxes();
 	}
 
-	physicsman.remove_body(battle.surface);
+	battle.physicsman.remove_body(battle.surface);
 	battle.billboards->clear();
 	battle.ordinary->clear();
 }
@@ -501,12 +505,12 @@ void Game::init_battle(void)
 	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
 	battle.terrain->load_materials(materials);
 
-	battle.surface = physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
+	battle.surface = battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 
 	battle.billboards = new BillboardGroup { &billboard_shader };
 	battle.ordinary = new RenderGroup { &debug_shader };
 
-	physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
+	battle.physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
 }
 
 void Game::init_campaign(void)
@@ -525,8 +529,8 @@ void Game::init_campaign(void)
 	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
 	campaign.worldmap->load_materials(materials);
 
-	campaign.surface = physicsman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
-	campaign.watersurface = physicsman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE);
+	campaign.surface = campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
+	campaign.watersurface = campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE);
 
 	campaign.ordinary = new RenderGroup { &debug_shader };
 	campaign.creatures = new RenderGroup { &object_shader };
@@ -546,8 +550,8 @@ void Game::cleanup_campaign(void)
 	if (debugmode) {
 		debugger.delete_navmeshes();
 	}
-	physicsman.remove_body(campaign.surface);
-	physicsman.remove_body(campaign.watersurface);
+	campaign.collisionman.remove_body(campaign.surface);
+	campaign.collisionman.remove_body(campaign.watersurface);
 	campaign.landnav.cleanup();
 	campaign.seanav.cleanup();
 }
@@ -570,7 +574,7 @@ void Game::update_campaign(void)
 
 	campaign.camera.update();
 		
-	struct ray_result camresult = physicsman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z));
+	struct ray_result camresult = campaign.collisionman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z));
 	if (camresult.hit) {
 		float yoffset = camresult.point.y + 10;
 		if (campaign.camera.position.y < yoffset) {
@@ -580,7 +584,7 @@ void Game::update_campaign(void)
 
 	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
 		glm::vec3 ray = campaign.camera.ndc_to_ray(inputman.abs_mousecoords());
-		struct ray_result result = physicsman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
+		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
 		if (result.hit) {
 			campaign.marker.position = result.point;
 			std::list<glm::vec2> waypoints;
@@ -610,7 +614,7 @@ void Game::update_campaign(void)
 
 	glm::vec3 origin = { campaign.player->position.x, campaign.atlas->SCALE.y, campaign.player->position.z };
 	glm::vec3 end = { campaign.player->position.x, 0.f, campaign.player->position.z };
-	struct ray_result result = physicsman.cast_ray(origin, end);
+	struct ray_result result = campaign.collisionman.cast_ray(origin, end);
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
@@ -626,8 +630,8 @@ void Game::new_campaign(void)
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
-	//campaign.seed = 4998651408012010310;
-	campaign.seed = 8038877013446859113;
+	campaign.seed = 4998651408012010310;
+	//campaign.seed = 8038877013446859113;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
 
@@ -672,13 +676,17 @@ void Game::prepare_campaign(void)
 	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, sun_position);
 	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
-	physicsman.insert_body(campaign.surface);
-	physicsman.insert_body(campaign.watersurface);
+	campaign.collisionman.insert_body(campaign.surface);
+	campaign.collisionman.insert_body(campaign.watersurface);
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 
 	// shared terrain data across campaign (random grass placement)
+	auto start = std::chrono::steady_clock::now();
 	battle.terrain->prepare();
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "grass elapsed time: " << elapsed_seconds.count() << "s\n";
 	
 	billboard_shader.use();
 	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
@@ -738,11 +746,7 @@ void Game::run_campaign(void)
 		timer.end();
 
 		if (state == GS_BATTLE) {
-			physicsman.remove_body(campaign.surface);
-			physicsman.remove_body(campaign.watersurface);
 			run_battle();
-			physicsman.insert_body(campaign.surface);
-			physicsman.insert_body(campaign.watersurface);
 		}
 	}
 

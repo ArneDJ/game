@@ -46,8 +46,6 @@
 namespace PoissonGenerator
 {
 
-const char* Version = "1.3.0 (14/03/2021)";
-
 class DefaultPRNG
 {
 public:
@@ -108,12 +106,12 @@ struct GridPoint
 	int y;
 };
 
-float getDistance( const Point& P1, const Point& P2 )
+inline float getDistance( const Point& P1, const Point& P2 )
 {
 	return sqrt( ( P1.x - P2.x ) * ( P1.x - P2.x ) + ( P1.y - P2.y ) * ( P1.y - P2.y ) );
 }
 
-GridPoint imageToGrid( const Point& P, float cellSize )
+inline GridPoint imageToGrid( const Point& P, float cellSize )
 {
 	return GridPoint( ( int )( P.x / cellSize ), ( int )( P.y / cellSize ) );
 }

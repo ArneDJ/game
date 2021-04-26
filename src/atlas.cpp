@@ -16,9 +16,10 @@
 
 #include "extern/cdt/CDT.h"
 
+#include "extern/poisson/PoissonGenerator.h"
+
 #include "core/logger.h"
 #include "core/geom.h"
-#include "core/poisson.h"
 #include "core/entity.h"
 #include "core/image.h"
 #include "core/voronoi.h"
@@ -599,8 +600,8 @@ void Atlas::place_vegetation(long seed)
 	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
 	std::uniform_real_distribution<float> density_dist(0.f, 1.f);
 
-	Poisson poisson;
-	poisson.generate(seed, 100000);
+	PoissonGenerator::DefaultPRNG PRNG(seed);
+	const auto positions = PoissonGenerator::generatePoissonPoints(100000, PRNG, false);
 
 	// density map
 	FastNoise fastnoise;
@@ -612,7 +613,7 @@ void Atlas::place_vegetation(long seed)
 
 	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
-	for (const auto &point : poisson.points) {
+	for (const auto &point : positions) {
 		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, CHANNEL_RED) / 255.f;
 		if (N < 0.5f) { continue; }
 

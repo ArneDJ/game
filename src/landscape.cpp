@@ -12,10 +12,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "extern/poisson/PoissonGenerator.h"
+
 #include "core/geom.h"
 #include "core/entity.h"
 #include "core/image.h"
-#include "core/poisson.h"
 #include "core/texture.h"
 #include "core/mesh.h"
 #include "core/model.h"
@@ -190,9 +191,10 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 
 	float rain = precipitation / 255.f;
 
-	poisson.generate(seed, MAX_TREES);
+	PoissonGenerator::DefaultPRNG PRNG(seed);
+	const auto positions = PoissonGenerator::generatePoissonPoints(MAX_TREES, PRNG, false);
 
-	for (const auto &point : poisson.points) {
+	for (const auto &point : positions) {
 		float P = density->sample(point.x * density->width, point.y * density->height, CHANNEL_RED) / 255.f;
 		if (P > 0.8f) { P = 1.f; }
 		P *= rain * rain;
