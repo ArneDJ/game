@@ -18,9 +18,14 @@ struct segment {
 	glm::vec2 P0, P1;
 };
 
-struct AABB {
+struct AABB_old {
 	glm::vec3 c; // center point of AABB
 	glm::vec3 r; // radius or halfwidth extents (rx, ry, rz)
+};
+
+struct AABB {
+	glm::vec3 min;
+	glm::vec3 max;
 };
 
 struct segment_intersection {
@@ -39,6 +44,8 @@ bool clockwise(glm::vec2 a, glm::vec2 b, glm::vec2 c);
 int orient(float x0, float y0, float x1, float y1, float x2, float y2);
 
 glm::vec2 segment_midpoint(const glm::vec2 &a, const glm::vec2 &b);
+
+glm::vec3 segment_midpoint(const glm::vec3 &a, const glm::vec3 &b);
 
 bool point_in_circle(const glm::vec2 &point, const glm::vec2 &origin, float radius);
 

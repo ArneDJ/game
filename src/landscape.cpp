@@ -58,13 +58,6 @@ static const float MAX_SEDIMENT_BLUR = 25.F;
 static const int MAX_TREES = 40000;
 static const uint16_t DENSITY_MAP_RES = 256;
 
-// TODO pass this
-static const struct rectangle PLAYABLE_AREA = {
-	{ 0.F, 0.F },
-	{ 2048.F, 2048.F }
-};
-static const glm::vec2 OFFSET = {2048.F, 2048.F};
-
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
 
@@ -134,8 +127,14 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	normalmap->create_normalmap(heightmap, 32.f);
 
 	// if scene is a town generate the site
+	struct rectangle site_area = {
+	};
+	struct rectangle site_scale = {
+		{ 0.F, 0.F },
+		SITE_BOUNDS.max - SITE_BOUNDS.min
+	};
 	if (site_radius > 0) {
-		sitegen.generate(campaign_seed, tileref, PLAYABLE_AREA, site_radius);
+		sitegen.generate(campaign_seed, tileref, site_scale, site_radius);
 		place_houses(walled);
 	}
 
@@ -305,8 +304,8 @@ void Landscape::place_houses(bool walled)
 			float right = glm::distance(parc.quad.a, parc.quad.d);
 			float angle = atan2(parc.direction.x, parc.direction.y);
 			glm::quat rotation = glm::angleAxis(angle, glm::vec3(0.f, 1.f, 0.f));
-			float height = sample_heightmap(parc.centroid+OFFSET);
-			glm::vec3 position = { parc.centroid.x+OFFSET.x, height, parc.centroid.y+OFFSET.y };
+			float height = sample_heightmap(parc.centroid + SITE_BOUNDS.min);
+			glm::vec3 position = { parc.centroid.x+SITE_BOUNDS.min.x, height, parc.centroid.y+SITE_BOUNDS.min.y };
 			for (auto &house : houses) {
 				if ((front > house.bounds.x && back > house.bounds.x) && (left > house.bounds.z && right > house.bounds.z)) {
 					glm::vec2 halfwidths = {  0.5f*house.bounds.x, 0.5f*house.bounds.z };

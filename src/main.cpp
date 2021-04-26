@@ -681,13 +681,6 @@ void Game::prepare_campaign(void)
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 
-	// shared terrain data across campaign (random grass placement)
-	auto start = std::chrono::steady_clock::now();
-	battle.terrain->prepare();
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "grass elapsed time: " << elapsed_seconds.count() << "s\n";
-	
 	billboard_shader.use();
 	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
 	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);

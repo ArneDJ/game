@@ -34,6 +34,11 @@ glm::vec2 segment_midpoint(const glm::vec2 &a, const glm::vec2 &b)
 	return glm::vec2(0.5f * (a.x + b.x), 0.5f * (a.y + b.y));
 }
 
+glm::vec3 segment_midpoint(const glm::vec3 &a, const glm::vec3 &b)
+{
+	return glm::vec3(0.5f * (a.x + b.x), 0.5f * (a.y + b.y), 0.5 * (a.z + b.z));
+}
+
 bool point_in_circle(const glm::vec2 &point, const glm::vec2 &origin, float radius)
 {
 	return ((point.x - origin.x) * (point.x - origin.x)) + ((point.y - origin.y) * (point.y - origin.y)) <= (radius * radius);
@@ -77,7 +82,6 @@ static inline float sign(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2
 	return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
 }
 
-// TODO refactor
 void frustum_to_planes(glm::mat4 M, glm::vec4 planes[6])
 {
 	planes[0] = {

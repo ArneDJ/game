@@ -12,6 +12,9 @@ layout(binding = 1) uniform sampler2D TERRAIN_HEIGHTMAP;
 layout(binding = 2) uniform sampler2D TERRAIN_NORMALMAP;
 layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
+uniform vec2 ROOT_OFFSET;
+uniform vec2 CHUNK_SCALE;
+
 uniform vec3 MAPSCALE;
 uniform vec3 SUN_POS;
 uniform mat4 VP;
@@ -27,6 +30,15 @@ void main(void)
 	col[2] = texelFetch(TRANSFORMS, gl_InstanceID * 4 + 2);
 	col[3] = texelFetch(TRANSFORMS, gl_InstanceID * 4 + 3);
 	mat4 T = mat4(col[0], col[1], col[2], col[3]);
+
+	// the position of the grass is normalized so we first have to rescale it on the scale of the grass chunk
+	vec4 translation = col[3];
+	translation.x *= CHUNK_SCALE.x;
+	translation.z *= CHUNK_SCALE.y;
+	translation.x += ROOT_OFFSET.x;
+	translation.z += ROOT_OFFSET.y;
+	T[3] = translation;
+
 	vec4 worldpos = T * vec4(vposition, 1.0);
 
 	position = worldpos.xyz;

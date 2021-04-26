@@ -37,7 +37,6 @@ struct collision_hull {
 
 class Model {
 public:
-	// TODO make private
 	std::vector<struct collision_trimesh> collision_trimeshes;
 	std::vector<struct collision_hull> collision_hulls;
 	std::vector<struct skin> skins; 

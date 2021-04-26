@@ -8,6 +8,10 @@ struct building_t {
 class Landscape {
 public:
 	glm::vec3 SCALE = { 6144.F, 512.F, 6144.F };
+	const struct rectangle SITE_BOUNDS = {
+		{ 2048.F, 2048.F },
+		{ 4096.F, 4096.F }
+	};
 public:
 	Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &house_models);
 	~Landscape(void);

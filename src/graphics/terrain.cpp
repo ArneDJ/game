@@ -3,6 +3,7 @@
 #include <string>
 #include <map>
 #include <random>
+#include <chrono>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -50,7 +51,13 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	water.compile("shaders/battle/water.frag", GL_FRAGMENT_SHADER);
 	water.link();
 
-	grass = new Grass { grassmodel };
+	//grass = new Grass { grassmodel };
+	auto start = std::chrono::steady_clock::now();
+	grass = new GrassSystem { grassmodel };
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "grass elapsed time: " << elapsed_seconds.count() << "s\n";
+	
 }
 
 Terrain::~Terrain(void)
@@ -72,11 +79,6 @@ void Terrain::load_materials(const std::vector<const Texture*> textures)
 	materials.insert(materials.begin(), textures.begin(), textures.end());
 }
 
-void Terrain::prepare(void)
-{
-	grass->generate();
-}
-
 void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr)
 {
 	fogcolor = fogclr;
@@ -96,7 +98,11 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
 
 	normals->reload(normalmap);
 	
-	grass->place(scale, heightmap, normalmap);
+	auto start = std::chrono::steady_clock::now();
+	grass->refresh(heightmap, scale);
+	auto end = std::chrono::steady_clock::now();
+	std::chrono::duration<double> elapsed_seconds = end-start;
+	std::cout << "grass refresh time: " << elapsed_seconds.count() << "s\n";
 }
 	
 void Terrain::display_land(const Camera *camera) const
@@ -151,35 +157,20 @@ void Terrain::display_grass(const Camera *camera) const
 	grass->display(camera, scale);
 }
 
-GrassBox::GrassBox(const GLTF::Model *mod, const struct rectangle &bounds)
+GrassRoots::GrassRoots(const GLTF::Model *mod, uint32_t count)
 {
-	boundaries = bounds;
 	model = mod;
 
-	int nsprites = 100;
-	transforms.resize(nsprites);
-	tbuffer.matrices.resize(nsprites);
-	tbuffer.alloc(GL_STATIC_DRAW);
-
-	glm::vec2 mid = segment_midpoint(bounds.min, bounds.max);
-	box.c = glm::vec3(mid.x, 0.f, mid.y);
-	glm::vec2 dist = { 0.5f * (bounds.max.x - bounds.min.x), 0.5f * (bounds.max.y - bounds.min.y) };
-	box.r = glm::vec3(dist.x, 1.f, dist.y);
-}
-
-void GrassBox::generate(void)
-{
+	// generate random points
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
 	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
 
-	glm::vec2 min = boundaries.min;
-	glm::vec2 max = boundaries.max;
-	std::uniform_real_distribution<float> map_x(min.x, max.x);
-	std::uniform_real_distribution<float> map_y(-0.05f, 0.05f);
-	std::uniform_real_distribution<float> map_z(min.y, max.y);
-	for (int i = 0; i < transforms.size(); i++) {
+	std::uniform_real_distribution<float> map_x(0.f, 1.f);
+	std::uniform_real_distribution<float> map_z(0.f, 1.f);
+
+	for (int i = 0; i < count; i++) {
 		glm::vec3 position = { map_x(gen), 0.f, map_z(gen) };
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 
@@ -187,76 +178,121 @@ void GrassBox::generate(void)
 		glm::mat4 R = glm::mat4(rotation);
 		float scale = scale_dist(gen);
 		glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(scale, scale, scale));
-		transforms[i++] = T * R * S;
+		tbuffer.matrices.push_back(T * R * S);
 	}
-}
-
-void GrassBox::place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
-{
-	glm::vec2 hmapscale = {
-		float(heightmap->width) / scale.x,
-		float(heightmap->height) / scale.z
-	};
-
-	float min = std::numeric_limits<float>::max();
-	float max = std::numeric_limits<float>::min();
-	instance_count = 0;
-	for (int i = 0; i < transforms.size(); i++) {
-		glm::vec4 position = transforms[i][3];
-		float slope = 1.f - (normalmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_GREEN) / 255.f);
-		if (slope > 0.15f) {
-			continue;
-		}
-		position.y = scale.y * heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
-		if (position.y < min) { min = position.y; }
-		if (position.y > max) { max = position.y; }
-		tbuffer.matrices[instance_count++] = transforms[i];
-	}
-
-	box.r.y = 0.5f * (max - min);
-	box.c.y = box.r.y + min;
-
+	
+	tbuffer.alloc(GL_STATIC_DRAW);
 	tbuffer.update();
 }
 
-void GrassBox::display(void) const
+void GrassRoots::display(void) const
 {
 	tbuffer.bind(GL_TEXTURE10);
-	model->display_instanced(instance_count);
+	model->display_instanced(tbuffer.matrices.size());
+}
+	
+GrassChunk::GrassChunk(const GrassRoots *grassroots, const glm::vec3 &min, const glm::vec3 &max)
+{
+	roots = grassroots;
+
+	bbox.min = min;
+	bbox.max = max;
+
+	offset = translate_3D_to_2D(min);
+	scale = translate_3D_to_2D(max) - translate_3D_to_2D(min);
 }
 
-Grass::Grass(const GLTF::Model *mod)
+GrassSystem::GrassSystem(const GLTF::Model *mod)
 {
+	// generate grass roots
+	int root_res = 8;
+	for (int i = 0; i < root_res; i++) {
+		for (int j = 0; j < root_res; j++) {
+			GrassRoots *root = new GrassRoots { mod, 200 };
+			roots.push_back(root);
+		}
+	}
+
+	// create grass chunks
 	uint16_t width = 64;
 	uint16_t height = 64;
-	glm::vec2 min = { 2560.f, 2560.f };
-	glm::vec2 max = { 3584.f, 3584.f };
+	glm::vec2 min = { 2048.f, 2048.f };
+	glm::vec2 max = { 4096.f, 4096.f };
 	glm::vec2 spacing = { (max.x - min.x) / float(width), (max.y - min.y) / float(height) };
 	glm::vec2 offset = min;
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
-			struct rectangle rect = { offset, offset + spacing };
-			GrassBox *grassbox = new GrassBox { mod, rect };
-			grassboxes.push_back(grassbox);
+			// default bounding box
+			glm::vec3 min = { offset.x, 0.f, offset.y };
+			glm::vec3 max = { offset.x + spacing.x, 0.f, offset.y + spacing.y };
+			// find tiling grass roots
+			int x_coord = x % root_res;
+			int y_coord = y % root_res;
+			int index = y_coord * root_res + x_coord;
+			if (index >= 0 && index < roots.size()) {
+				GrassChunk *chunk = new GrassChunk { roots[index], min, max };
+				chunks.push_back(chunk);	
+			}
 			offset.y += spacing.y;
 		}
 		offset.x += spacing.x;
 		offset.y = min.y;
 	}
 
+	printf("total grass chunks %d\n", chunks.size());
+
 	shader.compile("shaders/battle/grass.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/battle/grass.frag", GL_FRAGMENT_SHADER);
 	shader.link();
 }
 
-Grass::~Grass(void)
+GrassSystem::~GrassSystem(void)
 {
-	for (int i = 0; i < grassboxes.size(); i++) {
-		delete grassboxes[i];
+	for (int i = 0; i < chunks.size(); i++) {
+		delete chunks[i];
+	}
+	chunks.clear();
+
+	for (int i = 0; i < roots.size(); i++) {
+		delete roots[i];
+	}
+	roots.clear();
+}
+
+void GrassSystem::refresh(const FloatImage *heightmap, const glm::vec3 &scale)
+{
+	// update bounding boxes based on new heightmap
+	for (auto &chunk : chunks) {
+		// find lowest and highest pixel in terrain heightmap to create bounding box
+		float min_height = std::numeric_limits<float>::max();
+		float max_height = std::numeric_limits<float>::min();
+
+		glm::vec2 min = translate_3D_to_2D(chunk->bbox.min) / translate_3D_to_2D(scale);
+		glm::vec2 max = translate_3D_to_2D(chunk->bbox.max) / translate_3D_to_2D(scale);
+		
+		int rect_min_x = floorf(min.x * heightmap->width);
+		int rect_min_y = floorf(min.y * heightmap->height);
+		int rect_max_x = floorf(max.x * heightmap->width);
+		int rect_max_y = floorf(max.y * heightmap->height);
+
+		for (int i = rect_min_x; i < rect_max_x; i++) {
+			for (int j = rect_min_y; j < rect_max_y; j++) {
+				float height = heightmap->sample(i, j, CHANNEL_RED);
+				if (height < min_height) { min_height = height; }
+				if (height > max_height) { max_height = height; }
+			}
+		}
+
+		if (min_height > 0.f && min_height < scale.y)  {
+			chunk->bbox.min.y = scale.y * min_height;
+		}
+		if (max_height > 0.f && max_height < scale.y) {
+			chunk->bbox.max.y = scale.y * max_height;
+		}
 	}
 }
-	
-void Grass::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr)
+
+void GrassSystem::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr)
 {
 	color = colr;
 	fogcolor = fogclr;
@@ -264,21 +300,7 @@ void Grass::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::
 	fogfactor = fogfctr;
 }
 
-void Grass::generate(void)
-{
-	for (auto &grassbox : grassboxes) {
-		grassbox->generate();
-	}
-}
-
-void Grass::place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap)
-{
-	for (auto &grassbox : grassboxes) {
-		grassbox->place(scale, heightmap, normalmap);
-	}
-}
-
-void Grass::display(const Camera *camera, const glm::vec3 &scale) const
+void GrassSystem::display(const Camera *camera, const glm::vec3 &scale) const
 {
 	glDisable(GL_CULL_FACE);
 
@@ -299,12 +321,12 @@ void Grass::display(const Camera *camera, const glm::vec3 &scale) const
 	// frustum culling first attempt
 	glm::vec4 planes[6];
 	frustum_to_planes(projection * camera->viewing, planes);
-	for (const auto &grassbox : grassboxes) {
-		const struct AABB *bbox = grassbox->boundbox();
-		glm::vec3 min = bbox->c - bbox->r;
-		glm::vec3 max = bbox->c + bbox->r;
-		if (AABB_in_frustum(min, max, planes)) {
-			grassbox->display();
+
+	for (const auto &chunk : chunks) {
+		if (AABB_in_frustum(chunk->bbox.min, chunk->bbox.max, planes)) {
+			shader.uniform_vec2("ROOT_OFFSET", chunk->offset);
+			shader.uniform_vec2("CHUNK_SCALE", chunk->scale);
+			chunk->roots->display();
 		}
 	}
 	

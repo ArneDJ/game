@@ -1,30 +1,34 @@
 
-class GrassBox {
+// contains a set of random normalized points to be transformed for warparound grass
+class GrassRoots {
 public:
-	GrassBox(const GLTF::Model *mod, const struct rectangle &bounds);
-	void generate(void);
-	void place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
+	GrassRoots(const GLTF::Model *mod, uint32_t count);
 	void display(void) const;
-	const struct AABB* boundbox(void) const { return &box; }
-private:
-	uint32_t instance_count = 0;
-	struct AABB box;
-	struct rectangle boundaries;
+public:
 	const GLTF::Model *model;
 	TransformBuffer tbuffer;
-	std::vector<glm::mat4> transforms;
 };
 
-class Grass {
+class GrassChunk {
 public:
-	Grass(const GLTF::Model *mod);
-	~Grass(void);
+	GrassChunk(const GrassRoots *grassroots, const glm::vec3 &min, const glm::vec3 &max);
+public:
+	const GrassRoots *roots;
+	struct AABB bbox;
+	glm::vec2 offset;
+	glm::vec2 scale;
+};
+
+class GrassSystem {
+public:
+	GrassSystem(const GLTF::Model *mod);
+	~GrassSystem(void);
+	void refresh(const FloatImage *heightmap, const glm::vec3 &scale);
 	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr);
-	void generate(void);
-	void place(const glm::vec3 &scale, const FloatImage *heightmap, const Image *normalmap);
 	void display(const Camera *camera, const glm::vec3 &scale) const;
 private:
-	std::vector<GrassBox*> grassboxes;
+	std::vector<GrassRoots*> roots;
+	std::vector<GrassChunk*> chunks;
 private:
 	Shader shader;
 	glm::vec3 color;
@@ -37,7 +41,6 @@ class Terrain {
 public:
 	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const GLTF::Model *grassmodel);
 	~Terrain(void);
-	void prepare(void);
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *normalmap);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
@@ -59,5 +62,6 @@ private:
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
 	//
-	Grass *grass = nullptr;
+	//Grass *grass = nullptr;
+	GrassSystem *grass = nullptr;
 };
