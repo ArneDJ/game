@@ -27,6 +27,7 @@ public:
 	void move_backward(float modifier);
 	void move_left(float modifier);
 	void move_right(float modifier);
+	void translate(const glm::vec3 &translation);
 	// update view matrix
 	void update(void);
 	// normalized device coordinate position to world ray

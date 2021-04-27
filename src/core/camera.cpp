@@ -6,6 +6,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "entity.h"
 #include "camera.h"
 
 static const glm::vec3 UP_VECTOR = {0.F, 1.F, 0.F};
@@ -105,4 +106,9 @@ glm::vec3 Camera::ndc_to_ray(const glm::vec2 &ndc) const
 	glm::vec3 ray = glm::vec3(glm::inverse(viewing) * eye);
 
 	return glm::normalize(ray);
+}
+	
+void Camera::translate(const glm::vec3 &translation)
+{
+	position = translation;
 }

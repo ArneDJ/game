@@ -67,6 +67,7 @@
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
 #include "object.h"
+#include "creature.h"
 #include "debugger.h"
 #include "module.h"
 #include "terragen.h"
@@ -128,6 +129,8 @@ public:
 	btRigidBody *surface;
 	Landscape *landscape;
 	PhysicsManager physicsman;
+	Creature *player;
+	std::vector<StationaryObject*> stationaries;
 };
 
 class Game {
@@ -178,6 +181,32 @@ private:
 	void cleanup_battle(void);
 	void teardown_battle(void);
 };
+
+glm::vec2 player_direction(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
+{
+	const Uint8 *keystates = SDL_GetKeyboardState(NULL);
+	glm::vec2 velocity = {0.f, 0.f};
+	glm::vec2 dir = glm::normalize(glm::vec2(view.x, view.z));
+	if (forward) {
+		velocity.x += dir.x;
+		velocity.y += dir.y;
+	}
+	if (backward) {
+		velocity.x -= dir.x;
+		velocity.y -= dir.y;
+	}
+	if (right) {
+		glm::vec3 tmp(glm::normalize(glm::cross(view, glm::vec3(0.f, 1.f, 0.f))));
+		velocity.x += tmp.x;
+		velocity.y += tmp.z;
+	}
+	if (left) {
+		glm::vec3 tmp(glm::normalize(glm::cross(view, glm::vec3(0.f, 1.f, 0.f))));
+		velocity.x -= tmp.x;
+		velocity.y -= tmp.z;
+	}
+	return velocity;
+}
 
 void Game::load_settings(void)
 {
@@ -333,6 +362,7 @@ void Game::teardown_battle(void)
 	
 void Game::update_battle(void)
 {
+	// input
 	inputman.update();
 	if (inputman.exit_request()) {
 		state = GS_EXIT;
@@ -347,8 +377,6 @@ void Game::update_battle(void)
 	if (inputman.key_down(SDLK_d)) { battle.camera.move_right(modifier); }
 	if (inputman.key_down(SDLK_a)) { battle.camera.move_left(modifier); }
 
-	battle.camera.update();
-
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplSDL2_NewFrame(windowman.window);
@@ -361,9 +389,19 @@ void Game::update_battle(void)
 		ImGui::End();
 	}
 
+	battle.player->move(player_direction(battle.camera.direction, inputman.key_down(SDLK_w), inputman.key_down(SDLK_s), inputman.key_down(SDLK_d), inputman.key_down(SDLK_a)));
+
 	inputman.update_keymap();
-	
+
+	// update creatures
+	battle.player->update();
+
 	battle.physicsman.update(timer.delta);
+
+	battle.player->sync();
+
+	battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.f, 0.f));
+	battle.camera.update();
 	
 	// update atmosphere
 	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
@@ -417,15 +455,31 @@ void Game::prepare_battle(void)
 	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
 	billboard_shader.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
 
-	skybox.prepare();
-
+	// add houses
 	const std::vector<building_t> &houses = battle.landscape->get_houses();
 	for (const auto &house : houses) {
 		std::vector<const Entity*> house_entities;
-		for (int i = 0; i < house.entities.size(); i++) {
-			house_entities.push_back(house.entities[i]);
-		}
 		const GLTF::Model *model = house.model;
+		// get collision shape
+		std::vector<glm::vec3> positions;
+		std::vector<uint16_t> indices;
+		uint16_t offset = 0;
+		for (const auto &mesh : model->collision_trimeshes) {
+			for (const auto &pos : mesh.positions) {
+				positions.push_back(pos);
+			}
+			for (const auto &index : mesh.indices) {
+				indices.push_back(index + offset);
+			}
+			offset = positions.size();
+		}
+		btCollisionShape *shape = battle.physicsman.add_mesh(positions, indices);
+		// create entities
+		for (int i = 0; i < house.entities.size(); i++) {
+			StationaryObject *stationary = new StationaryObject { house.entities[i]->position, house.entities[i]->rotation, shape };
+			battle.stationaries.push_back(stationary);
+			house_entities.push_back(stationary);
+		}
 
 		battle.ordinary->add_object(model, house_entities);
 		// debug model bounding box
@@ -433,6 +487,19 @@ void Game::prepare_battle(void)
 			debugger.add_bbox(model->bound_min, model->bound_max, house_entities);
 		}
 	}
+	// add stationary objects to physics
+	for (const auto &stationary : battle.stationaries) {
+		battle.physicsman.insert_body(stationary->body);
+	}
+
+	// add creatures
+	battle.player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	battle.physicsman.insert_body(battle.player->body);
+	ents.clear();
+	ents.push_back(battle.player);
+	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
+
+	skybox.prepare();
 }
 
 void Game::run_battle(void)
@@ -476,6 +543,14 @@ void Game::run_battle(void)
 	
 void Game::cleanup_battle(void)
 {
+	// remove stationary objects from physics
+	for (const auto &stationary : battle.stationaries) {
+		battle.physicsman.remove_body(stationary->body);
+	}
+
+	battle.physicsman.remove_body(battle.player->body);
+	delete battle.player;
+
 	if (debugmode) {
 		debugger.delete_bboxes();
 	}
@@ -483,6 +558,12 @@ void Game::cleanup_battle(void)
 	battle.physicsman.remove_body(battle.surface);
 	battle.billboards->clear();
 	battle.ordinary->clear();
+
+	// delete stationaries
+	for (int i = 0; i < battle.stationaries.size(); i++) {
+		delete battle.stationaries[i];
+	}
+	battle.stationaries.clear();
 }
 
 void Game::init_battle(void)
@@ -630,8 +711,8 @@ void Game::new_campaign(void)
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
-	campaign.seed = 4998651408012010310;
-	//campaign.seed = 8038877013446859113;
+	//campaign.seed = 4998651408012010310;
+	campaign.seed = 8038877013446859113;
 
 	write_log(LogType::RUN, "seed: " + std::to_string(campaign.seed));
 
