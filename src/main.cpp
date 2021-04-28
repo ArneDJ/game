@@ -394,13 +394,13 @@ void Game::update_battle(void)
 	inputman.update_keymap();
 
 	// update creatures
-	battle.player->update();
+	battle.player->update(battle.physicsman.get_world());
 
 	battle.physicsman.update(timer.delta);
 
 	battle.player->sync();
 
-	battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.f, 0.f));
+	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.8f, 0.f));
 	battle.camera.update();
 	
 	// update atmosphere
@@ -436,7 +436,7 @@ void Game::prepare_battle(void)
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false);
-	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap());
+	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
@@ -494,7 +494,7 @@ void Game::prepare_battle(void)
 
 	// add creatures
 	battle.player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
-	battle.physicsman.insert_body(battle.player->body);
+	battle.physicsman.insert_body(battle.player->get_body());
 	ents.clear();
 	ents.push_back(battle.player);
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
@@ -548,7 +548,7 @@ void Game::cleanup_battle(void)
 		battle.physicsman.remove_body(stationary->body);
 	}
 
-	battle.physicsman.remove_body(battle.player->body);
+	battle.physicsman.remove_body(battle.player->get_body());
 	delete battle.player;
 
 	if (debugmode) {
@@ -577,11 +577,12 @@ void Game::init_battle(void)
 	}
 	battle.landscape = new Landscape { 2048, house_models };
 	
-	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), mediaman.load_model("foliage/grass.glb") };
+	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks(), mediaman.load_model("foliage/grass.glb") };
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	materials.push_back(mediaman.load_texture("ground/grass.dds"));
+	materials.push_back(mediaman.load_texture("ground/gravel.dds"));
 	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
 	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
 	battle.terrain->load_materials(materials);

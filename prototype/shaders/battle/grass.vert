@@ -10,6 +10,7 @@ out float diffuse;
 
 layout(binding = 1) uniform sampler2D TERRAIN_HEIGHTMAP;
 layout(binding = 2) uniform sampler2D TERRAIN_NORMALMAP;
+layout(binding = 3) uniform sampler2D TERRAIN_SITEMASKS;
 layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
 uniform vec2 ROOT_OFFSET;
@@ -40,11 +41,14 @@ void main(void)
 	T[3] = translation;
 
 	float slope = 1.0 - texture(TERRAIN_NORMALMAP, translation.xz / MAPSCALE.xz).y;
+	//float dirt = texture(TERRAIN_SITEMASKS, translation.xz / MAPSCALE.xz).r;
+	vec2 sitecoord = translation.xz - vec2(2048.0, 2048.0);
+	float dirt = texture(TERRAIN_SITEMASKS, sitecoord / vec2(2048.0, 2048.0)).r;
 
 	vec4 worldpos = T * vec4(vposition, 1.0);
 
 	// if slope is too steep grass won't grow on it
-	if (slope > 0.15) {
+	if (slope > 0.15 || dirt > 0.5) {
 		worldpos = vec4(0.0); // dirty way of not showing a vertex
 	}
 

@@ -34,7 +34,6 @@ struct junction {
 	std::vector<struct district*> districts;
 	bool border;
 	int radius;
-	bool wallcandidate;
 	bool street;
 };
 

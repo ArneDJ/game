@@ -20,14 +20,18 @@ public:
 public:
 	const FloatImage* get_heightmap(void) const;
 	const Image* get_normalmap(void) const;
+	const Image* get_sitemasks(void) const;
 	const std::vector<Entity*>& get_trees(void) const;
 	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
 	FloatImage *heightmap = nullptr;
 	FloatImage *container = nullptr;
+	Image *valleymap = nullptr;
+private:
 	Image *normalmap = nullptr;
 	Image *density = nullptr;
+	Image *sitemasks = nullptr;
 	Sitegen sitegen;
 private:
 	std::vector<Entity*> trees;
@@ -36,4 +40,6 @@ private:
 	void gen_heightmap(long campaign_seed, int32_t local_seed, float amplitude);
 	void gen_forest(int32_t seed, uint8_t precipitation);
 	void place_houses(bool walled);
+	void create_sitemasks(void);
+	void create_valleymap(void);
 };

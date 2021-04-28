@@ -13,12 +13,28 @@
 #include "core/physics.h"
 #include "creature.h"
 
+class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback {
+public:
+	ClosestNotMe(btRigidBody *body) : btCollisionWorld::ClosestRayResultCallback(btVector3(0.0, 0.0, 0.0), btVector3(0.0, 0.0, 0.0))
+	{
+		me = body;
+	}
+	virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult &rayResult, bool normalInWorldSpace)
+	{
+		if (rayResult.m_collisionObject == me) { return 1.0; }
+
+		return ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
+	}
+protected:
+	btRigidBody *me;
+};
+
 Creature::Creature(const glm::vec3 &pos, const glm::quat &rot)
 {
 	position = pos;
 	rotation = rot;
 
-	speed = 8.f;
+	speed = 6.f;
 	velocity = { 0.f, 0.f, 0.f };
 
 	transform.setIdentity();
@@ -28,7 +44,8 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot)
 	//rigidbody is dynamic if and only if mass is non zero, otherwise static
 	bool dynamic = (mass != 0.f);
 
-	shape = new btCapsuleShape(0.5f, 0.5f);
+	// The total height is height+2*radius, so the height is just the height between the center of each 'sphere' of the capsule caps
+	shape = new btCapsuleShape(0.25f, 1.3f);
 
 	btVector3 inertia(0, 0, 0);
 	if (dynamic) {
@@ -59,6 +76,11 @@ Creature::~Creature(void)
 	delete body;
 	delete shape;
 }
+	
+btRigidBody* Creature::get_body(void) const
+{
+	return body;
+}
 
 void Creature::move(const glm::vec2 &direction)
 {
@@ -66,9 +88,25 @@ void Creature::move(const glm::vec2 &direction)
 	velocity.z = speed * direction.y;
 }
 
-void Creature::update(void)
+void Creature::update(const btDynamicsWorld *world)
 {
-	velocity.y = body->getLinearVelocity().getY();
+	ClosestNotMe ray_callback(body);
+
+	world->rayTest(body->getWorldTransform().getOrigin(), body->getWorldTransform().getOrigin() - btVector3(0.0f, 1.f, 0.0f), ray_callback);
+	if (ray_callback.hasHit()) {
+		float fraction = ray_callback.m_closestHitFraction;
+		glm::vec3 current_pos = bt_to_vec3(body->getWorldTransform().getOrigin());
+		float hit_pos = current_pos.y - fraction * 1.f; 
+
+		body->getWorldTransform().getOrigin().setX(current_pos.x);
+		body->getWorldTransform().getOrigin().setY(hit_pos+1.f);
+		body->getWorldTransform().getOrigin().setZ(current_pos.z);
+
+		velocity.y = 0.f;
+	} else {
+		velocity.y = body->getLinearVelocity().getY();
+	}
+
 	body->setLinearVelocity(vec3_to_bt(velocity));
 
 	velocity.x = 0.f;

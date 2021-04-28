@@ -8,6 +8,7 @@ class PhysicsManager {
 public:
 	PhysicsManager(void);
 	~PhysicsManager(void);
+	const btDynamicsWorld* get_world(void) const;
 	void update(float timestep);
 	void add_ground_plane(const glm::vec3 &position);
 	btRigidBody* add_heightfield(const FloatImage *image, const glm::vec3 &scale);

@@ -26,7 +26,7 @@
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const GLTF::Model *grassmodel)
+Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre, const GLTF::Model *grassmodel)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -39,6 +39,9 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 
 	normals = new Texture { normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
+	
+	sitemasks = new Texture { cadastre };
+	sitemasks->change_wrapping(GL_CLAMP_TO_BORDER);
 
 	land.compile("shaders/battle/terrain.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/battle/terrain.tesc", GL_TESS_CONTROL_SHADER);
@@ -58,7 +61,6 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
 	std::cout << "grass elapsed time: " << elapsed_seconds.count() << "s\n";
-	
 }
 
 Terrain::~Terrain(void)
@@ -68,6 +70,8 @@ Terrain::~Terrain(void)
 	delete grass;
 
 	delete patches;
+
+	delete sitemasks;
 
 	delete normals;
 	
@@ -93,11 +97,13 @@ void Terrain::change_grass(const glm::vec3 &color)
 	grass->colorize(color, fogcolor, sunpos, fogfactor);
 }
 
-void Terrain::reload(const FloatImage *heightmap, const Image *normalmap)
+void Terrain::reload(const FloatImage *heightmap, const Image *normalmap, const Image *cadastre)
 {
 	relief->reload(heightmap);
 
 	normals->reload(normalmap);
+
+	sitemasks->reload(cadastre);
 	
 	auto start = std::chrono::steady_clock::now();
 	grass->refresh(heightmap, scale);
@@ -119,9 +125,10 @@ void Terrain::display_land(const Camera *camera) const
 
 	relief->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
+	sitemasks->bind(GL_TEXTURE2);
 
 	for (int i = 0; i < materials.size(); i++) {
-		materials[i]->bind(GL_TEXTURE2 + i);
+		materials[i]->bind(GL_TEXTURE3 + i);
 	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -155,6 +162,7 @@ void Terrain::display_grass(const Camera *camera) const
 {
 	relief->bind(GL_TEXTURE1);
 	normals->bind(GL_TEXTURE2);
+	sitemasks->bind(GL_TEXTURE3);
 	grass->display(camera, scale);
 }
 

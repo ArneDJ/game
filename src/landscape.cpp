@@ -58,6 +58,8 @@ static const float MAX_SEDIMENT_BLUR = 25.F;
 static const int MAX_TREES = 40000;
 static const uint16_t DENSITY_MAP_RES = 256;
 
+static const uint16_t SITEMASK_RES = 2048;
+
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
 
@@ -71,10 +73,13 @@ Landscape::Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &
 {
 	heightmap = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
 	normalmap = new Image { heightres, heightres, COLORSPACE_RGB };
+	valleymap = new Image { heightres, heightres, COLORSPACE_RGB };
 
 	container = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
 	
 	density = new Image { DENSITY_MAP_RES, DENSITY_MAP_RES, COLORSPACE_GRAYSCALE };
+
+	sitemasks = new Image { SITEMASK_RES, SITEMASK_RES, COLORSPACE_GRAYSCALE };
 
 	for (const auto &model : house_models) {
 		glm::vec3 size = model->bound_max - model->bound_min;
@@ -92,8 +97,10 @@ Landscape::~Landscape(void)
 {
 	clear();
 
+	delete sitemasks;
 	delete density;
 	delete heightmap;
+	delete valleymap;
 	delete normalmap;
 	delete container;
 }
@@ -102,7 +109,9 @@ void Landscape::clear(void)
 {
 	heightmap->clear();
 	normalmap->clear();
+	valleymap->clear();
 	container->clear();
+	sitemasks->clear();
 
 	for (int i = 0; i < trees.size(); i++) {
 		delete trees[i];
@@ -121,23 +130,24 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 {
 	clear();
 
+	struct rectangle site_scale = {
+		{ 0.F, 0.F },
+		SITE_BOUNDS.max - SITE_BOUNDS.min
+	};
+	sitegen.generate(campaign_seed, tileref, site_scale, site_radius);
+
+	create_valleymap();
+
 	gen_heightmap(campaign_seed, local_seed, amplitude);
 
 	// create the normalmap
 	normalmap->create_normalmap(heightmap, 32.f);
 
 	// if scene is a town generate the site
-	struct rectangle site_area = {
-	};
-	struct rectangle site_scale = {
-		{ 0.F, 0.F },
-		SITE_BOUNDS.max - SITE_BOUNDS.min
-	};
 	if (site_radius > 0) {
-		sitegen.generate(campaign_seed, tileref, site_scale, site_radius);
+		create_sitemasks();
 		place_houses(walled);
 	}
-
 
 	gen_forest(local_seed, precipitation);
 }
@@ -160,6 +170,11 @@ const std::vector<building_t>& Landscape::get_houses(void) const
 const Image* Landscape::get_normalmap(void) const
 {
 	return normalmap;
+}
+
+const Image* Landscape::get_sitemasks(void) const
+{
+	return sitemasks;
 }
 
 void Landscape::gen_forest(int32_t seed, uint8_t precipitation) 
@@ -212,6 +227,37 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 		trees.push_back(ent);
 	}
 }
+	
+void Landscape::create_valleymap(void)
+{
+	glm::vec2 scale = SITE_BOUNDS.max - SITE_BOUNDS.min;
+	glm::vec2 imagescale = { valleymap->width, valleymap->height };
+
+	for (const auto &district : sitegen.districts) {
+		uint8_t amp = 255;
+		bool near_road = false;
+		for (const auto &junction : district.junctions) {
+			if (junction->street) {
+				near_road = true;
+				break;
+			}
+		}
+
+		if (district.radius == 0) {
+			amp = 160;
+		} else if (district.radius < 3 || near_road == true) {
+			amp = 64;
+		}
+		glm::vec2 a = district.center / scale;
+		for (const auto &section : district.sections) {
+			glm::vec2 b = section->j0->position / scale;
+			glm::vec2 c = section->j1->position / scale;
+			valleymap->draw_triangle(imagescale * a, imagescale * b, imagescale * c, CHANNEL_RED, amp);
+		}
+	}
+
+	valleymap->blur(5.f);
+}
 
 void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float amplitude)
 {
@@ -256,6 +302,15 @@ void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float ampl
 
 	// apply mask
 	// apply a mask to lower the amplitude in the center of the map so two armies can fight eachother without having to climb steep cliffs
+	for (int x = 0; x < heightmap->width; x++) {
+		for (int y = 0; y < heightmap->height; y++) {
+			uint8_t valley = valleymap->sample(x, y, CHANNEL_RED);
+			float height = heightmap->sample(x, y, CHANNEL_RED);
+			height = (valley / 255.f) * height;
+			//height = glm::mix(height, 0.5f*height, masker / 255.f);
+			heightmap->plot(x, y, CHANNEL_RED, height);
+		}
+	}
 
 	// apply blur
 	// to simulate erosion and sediment we mix a blurred image with the original heightmap based on the height (lower areas receive more blur, higher areas less)
@@ -329,6 +384,50 @@ void Landscape::place_houses(bool walled)
 			}
 		}
 	}
+}
+	
+void Landscape::create_sitemasks(void)
+{
+	glm::vec2 scale = SITE_BOUNDS.max - SITE_BOUNDS.min;
+
+	// houses mask
+	for (const auto &district : sitegen.districts) {
+		for (const auto &parcel : district.parcels) {
+			glm::vec2 street = parcel.centroid + parcel.direction;
+			float min = std::numeric_limits<float>::max();
+			for (const auto &edge : district.sections) {
+				glm::vec2 p = closest_point_segment(parcel.centroid, edge->j0->position, edge->j1->position);
+				float dist = glm::distance(p, parcel.centroid);
+				if (dist < min) {
+					min = dist;
+					street = p;
+				}
+			}
+			glm::vec2 a = parcel.centroid / scale;
+			glm::vec2 b = street / scale;
+			sitemasks->draw_thick_line(a.x * sitemasks->width, a.y * sitemasks->height, b.x * sitemasks->width, b.y * sitemasks->height, 6, CHANNEL_RED, 200);
+		}
+	}
+	sitemasks->blur(5.f);
+	
+	// site road mask
+	for (const auto &road : sitegen.highways) {
+		glm::vec2 a = road.P0 / scale;
+		glm::vec2 b = road.P1 / scale;
+		sitemasks->draw_thick_line(a.x * sitemasks->width, a.y * sitemasks->height, b.x * sitemasks->width, b.y * sitemasks->height, 3, CHANNEL_RED, 255);
+	}
+
+	for (const auto &sect : sitegen.sections) {
+		if (sect.j0->radius < 3 && sect.j1->radius < 3) {
+			if (sect.j0->border == false && sect.j1->border == false) {
+				glm::vec2 a = sect.j0->position / scale;
+				glm::vec2 b = sect.j1->position / scale;
+				sitemasks->draw_thick_line(a.x * sitemasks->width, a.y * sitemasks->height, b.x * sitemasks->width, b.y * sitemasks->height, 3, CHANNEL_RED, 210);
+			}
+		}
+	}
+
+	sitemasks->blur(1.f);
 }
 
 float Landscape::sample_heightmap(const glm::vec2 &real) const

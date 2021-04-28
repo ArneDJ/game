@@ -73,6 +73,11 @@ void PhysicsManager::update(float timestep)
 	world->stepSimulation(timestep, MAX_SUB_STEPS);
 }
 	
+const btDynamicsWorld* PhysicsManager::get_world(void) const
+{
+	return world;
+}
+
 btCollisionShape* PhysicsManager::add_box(const glm::vec3 &halfextents)
 {
 	btCollisionShape *shape = new btBoxShape(vec3_to_bt(halfextents));

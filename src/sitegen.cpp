@@ -576,7 +576,7 @@ void Sitegen::make_highways(void)
 				struct junction *next = nullptr;
 				float maxdot = -1.f;
 				for (auto neighbor : node->adjacent) {
-					if (depth[neighbor->index] < depth[node->index] && neighbor->wallcandidate == false) {
+					if (depth[neighbor->index] < depth[node->index]) {
 						glm::vec2 nextdir = glm::normalize(neighbor->position - node->position);
 						float dotp = glm::dot(nextdir, dir);
 						if (dotp > maxdot) {
