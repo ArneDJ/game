@@ -31,6 +31,7 @@ public:
 	const Image* get_materialmasks(void) const;
 	const Image* get_vegetation(void) const;
 	const std::vector<Entity*>& get_trees(void) const;
+	const std::vector<Entity*>& get_settlements(void) const;
 	const struct navigation_soup* get_navsoup(void) const;
 public:
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
@@ -54,6 +55,7 @@ private:
 	Image *tree_density;
 	struct navigation_soup navsoup;
 	std::vector<Entity*> trees;
+	std::vector<Entity*> settlements;
 private:
 	void gen_holds(void);
 	void smoothe_heightmap(void);
@@ -67,5 +69,6 @@ private:
 	void create_vegetation(void);
 	void place_vegetation(long seed);
 	void clear_entities(void);
+	void place_settlements(long seed);
 };
 

@@ -187,7 +187,6 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 	fastnoise.SetFrequency(0.01f);
 
 	density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
-	density->write("density.png");
 
 	// spawn the forest
 	glm::vec2 hmapscale = {
@@ -313,7 +312,7 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 
 	// apply mask
 	// apply a mask to lower the amplitude in the center of the map so two armies can fight eachother without having to climb steep cliffs
-	printf("amp %f\n", amplitude);
+	//printf("amp %f\n", amplitude);
 	if (amplitude > 0.5f) {
 		for (int x = 0; x < heightmap->width; x++) {
 			for (int y = 0; y < heightmap->height; y++) {
@@ -452,7 +451,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 	}
 
 	for (const auto &sect : sitegen.sections) {
-		if (sect.j0->radius < 3 && sect.j1->radius < 3) {
+		if (sect.j0->radius < radius && sect.j1->radius < radius) {
 			if (sect.j0->border == false && sect.j1->border == false) {
 				glm::vec2 a = sect.j0->position / scale;
 				glm::vec2 b = sect.j1->position / scale;

@@ -132,6 +132,11 @@ void Atlas::clear_entities(void)
 		delete trees[i];
 	}
 	trees.clear();
+
+	for (int i = 0; i < settlements.size(); i++) {
+		delete settlements[i];
+	}
+	settlements.clear();
 }
 
 void Atlas::smoothe_heightmap(void)
@@ -630,6 +635,28 @@ void Atlas::place_vegetation(long seed)
 		trees.push_back(ent);
 	}
 }
+	
+void Atlas::place_settlements(long seed)
+{
+	std::random_device rd;
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+
+	glm::vec2 hmapscale = {
+		float(terragen->heightmap->width) / SCALE.x,
+		float(terragen->heightmap->height) / SCALE.z
+	};
+
+	for (const auto &tile : worldgraph->tiles) {
+		if (tile.site == CASTLE || tile.site == TOWN) {
+			glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
+			position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+			Entity *ent = new Entity { position, rotation };
+			settlements.push_back(ent);
+		}
+	}
+}
 
 void Atlas::create_mapdata(long seed)
 {
@@ -642,6 +669,8 @@ void Atlas::create_mapdata(long seed)
 
 	create_vegetation();
 	place_vegetation(seed);
+
+	place_settlements(seed);
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -682,6 +711,11 @@ const struct navigation_soup* Atlas::get_navsoup(void) const
 const std::vector<Entity*>& Atlas::get_trees(void) const
 {
 	return trees;
+}
+
+const std::vector<Entity*>& Atlas::get_settlements(void) const
+{
+	return settlements;
 }
 	
 const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const

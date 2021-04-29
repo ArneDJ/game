@@ -786,6 +786,13 @@ void Game::prepare_campaign(void)
 		ents.push_back(trees[i]);
 	}
 	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
+
+	ents.clear();
+	const std::vector<Entity*> settlements = campaign.atlas->get_settlements();
+	for (int i = 0; i < settlements.size(); i++) {
+		ents.push_back(settlements[i]);
+	}
+	campaign.ordinary->add_object(mediaman.load_model("map/fort.glb"), ents);
 }
 
 void Game::run_campaign(void)
