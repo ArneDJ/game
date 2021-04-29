@@ -660,9 +660,9 @@ static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
 			glm::vec2 c= polygon.front(); polygon.pop_front();
 			glm::vec2 d = polygon.front(); polygon.pop_front();
 			struct parcel parc = make_parcel(c, d, a, b);
-			//if (convex_quadrilateral(&parc.quad)) {
+			if (convex_quadrilateral(&parc.quad)) {
 				cell->parcels.push_back(parc);
-			//}
+			}
 		} else if (polygon.size() > 4) {
 			// remove duplicates
 			for (std::list<glm::vec2>::iterator it = polygon.begin(); it != polygon.end(); ++it) {

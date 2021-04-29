@@ -66,3 +66,5 @@ struct segment_intersection segment_segment_intersection(const glm::vec2 &a, con
 glm::vec2 closest_point_segment(const glm::vec2 &c, const glm::vec2 &a, const glm::vec2 &b);
 
 bool quad_quad_intersection(const struct quadrilateral &A, const struct quadrilateral &B);
+
+bool convex_quadrilateral(const quadrilateral *quad);

@@ -281,3 +281,19 @@ static bool projected_axis_test(glm::vec2 b1, glm::vec2 b2, glm::vec2 p1, glm::v
 	return true;
 }
 
+bool convex_quadrilateral(const quadrilateral *quad)
+{
+	glm::vec3 a = {quad->a.x, 0.f, quad->a.y};
+	glm::vec3 b = {quad->b.x, 0.f, quad->b.y};
+	glm::vec3 c = {quad->c.x, 0.f, quad->c.y};
+	glm::vec3 d = {quad->d.x, 0.f, quad->d.y};
+	// Quad is nonconvex if Dot(Cross(bd, ba), Cross(bd, bc)) >= 0
+	glm::vec2 bda = glm::cross(d - b, a - b);
+	glm::vec2 bdc = glm::cross(d - b, c - b);
+	if (glm::dot(bda, bdc) >= 0.0f) { return false; }
+	// Quad is now convex iff Dot(Cross(ac, ad), Cross(ac, ab)) < 0
+	glm::vec2 acd = glm::cross(c - a, d - a);
+	glm::vec2 acb = glm::cross(c - a, b - a);
+
+	return glm::dot(acd, acb) < 0.0f;
+}

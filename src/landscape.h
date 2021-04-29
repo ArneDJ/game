@@ -37,9 +37,9 @@ private:
 	std::vector<Entity*> trees;
 	std::vector<building_t> houses;
 private:
-	void gen_heightmap(long campaign_seed, int32_t local_seed, float amplitude);
+	void gen_heightmap(int32_t local_seed, float amplitude);
 	void gen_forest(int32_t seed, uint8_t precipitation);
-	void place_houses(bool walled);
-	void create_sitemasks(void);
+	void place_houses(bool walled, uint8_t radius, int32_t seed);
+	void create_sitemasks(uint8_t radius);
 	void create_valleymap(void);
 };

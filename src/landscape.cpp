@@ -63,7 +63,7 @@ static const uint16_t SITEMASK_RES = 2048;
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
 
-static struct landgen_parameters random_landgen_parameters(long seed);
+static struct landgen_parameters random_landgen_parameters(int32_t seed);
 
 static bool larger_building(const struct building_t &a, const struct building_t &b);
 
@@ -138,15 +138,15 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 
 	create_valleymap();
 
-	gen_heightmap(campaign_seed, local_seed, amplitude);
+	gen_heightmap(local_seed, amplitude);
 
 	// create the normalmap
 	normalmap->create_normalmap(heightmap, 32.f);
 
 	// if scene is a town generate the site
 	if (site_radius > 0) {
-		create_sitemasks();
-		place_houses(walled);
+		create_sitemasks(site_radius);
+		place_houses(walled, site_radius, local_seed);
 	}
 
 	gen_forest(local_seed, precipitation);
@@ -243,9 +243,7 @@ void Landscape::create_valleymap(void)
 			}
 		}
 
-		if (district.radius == 0) {
-			amp = 160;
-		} else if (district.radius < 3 || near_road == true) {
+		if (district.radius < 3 || near_road == true) {
 			amp = 64;
 		}
 		glm::vec2 a = district.center / scale;
@@ -255,22 +253,35 @@ void Landscape::create_valleymap(void)
 			valleymap->draw_triangle(imagescale * a, imagescale * b, imagescale * c, CHANNEL_RED, amp);
 		}
 	}
+	
+	// central part of settlement has higher elevation
+	glm::vec2 realscale = glm::vec2(SCALE.x, SCALE.z);
+	for (const auto &district : sitegen.districts) {
+		if (district.radius < 2) {
+			glm::vec2 a = (district.center + SITE_BOUNDS.min) / realscale;
+			for (const auto &section : district.sections) {
+				glm::vec2 b = (section->j0->position + SITE_BOUNDS.min) / realscale;
+				glm::vec2 c = (section->j1->position + SITE_BOUNDS.min) / realscale;
+				valleymap->draw_triangle(imagescale * a, imagescale * b, imagescale * c, CHANNEL_RED, 128);
+			}
+		}
+	}
 
 	valleymap->blur(5.f);
 }
 
-void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float amplitude)
+void Landscape::gen_heightmap(int32_t seed, float amplitude)
 {
 	amplitude = glm::clamp(amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
 
 	// random noise config
-	struct landgen_parameters params = random_landgen_parameters(campaign_seed);
+	struct landgen_parameters params = random_landgen_parameters(seed);
 
 	// first we mix two noise maps for the heightmap
 	// the first noise is cellular noise to add mountain ridges
 	// the second noise is fractal noise to add overall detail to the heightmap
 	FastNoise cellnoise;
-	cellnoise.SetSeed(local_seed);
+	cellnoise.SetSeed(seed);
 	cellnoise.SetNoiseType(FastNoise::Cellular);
 	cellnoise.SetCellularDistanceFunction(FastNoise::Euclidean);
 	cellnoise.SetFrequency(params.ridge_freq);
@@ -278,7 +289,7 @@ void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float ampl
 	cellnoise.SetGradientPerturbAmp(params.ridge_perturb);
 
 	FastNoise fractalnoise;
-	fractalnoise.SetSeed(local_seed);
+	fractalnoise.SetSeed(seed);
 	fractalnoise.SetNoiseType(FastNoise::SimplexFractal);
 	fractalnoise.SetFractalType(params.detail_type);
 	fractalnoise.SetFrequency(params.detail_freq);
@@ -302,13 +313,16 @@ void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float ampl
 
 	// apply mask
 	// apply a mask to lower the amplitude in the center of the map so two armies can fight eachother without having to climb steep cliffs
-	for (int x = 0; x < heightmap->width; x++) {
-		for (int y = 0; y < heightmap->height; y++) {
-			uint8_t valley = valleymap->sample(x, y, CHANNEL_RED);
-			float height = heightmap->sample(x, y, CHANNEL_RED);
-			height = (valley / 255.f) * height;
-			//height = glm::mix(height, 0.5f*height, masker / 255.f);
-			heightmap->plot(x, y, CHANNEL_RED, height);
+	printf("amp %f\n", amplitude);
+	if (amplitude > 0.5f) {
+		for (int x = 0; x < heightmap->width; x++) {
+			for (int y = 0; y < heightmap->height; y++) {
+				uint8_t valley = valleymap->sample(x, y, CHANNEL_RED);
+				float height = heightmap->sample(x, y, CHANNEL_RED);
+				height = (valley / 255.f) * height;
+				//height = glm::mix(height, 0.5f*height, masker / 255.f);
+				heightmap->plot(x, y, CHANNEL_RED, height);
+			}
 		}
 	}
 
@@ -327,7 +341,7 @@ void Landscape::gen_heightmap(long campaign_seed, int32_t local_seed, float ampl
 	}
 }
 	
-void Landscape::place_houses(bool walled)
+void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 {
 	// create wall cull quads so houses don't go through city walls
 	std::vector<struct quadrilateral> wall_boxes;
@@ -350,7 +364,7 @@ void Landscape::place_houses(bool walled)
 
 	//printf("n house templates %d\n", houses.size());
 
-	// place the houses
+	// place the town houses
 	for (const auto &d : sitegen.districts) {
 		for (const auto &parc : d.parcels) {
 			float front = glm::distance(parc.quad.b, parc.quad.a);
@@ -384,13 +398,33 @@ void Landscape::place_houses(bool walled)
 			}
 		}
 	}
+
+	// place some farm houses outside walls
+	std::random_device rd;
+	std::mt19937 gen(seed);
+	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+	std::uniform_int_distribution<uint32_t> house_type_dist(0, houses.size()-1);
+
+	std::bernoulli_distribution bern(0.25f);
+
+	for (const auto &district : sitegen.districts) {
+		if (district.radius > radius && bern(gen) == true) {
+			float height = sample_heightmap(district.center + SITE_BOUNDS.min);
+			glm::vec3 position = { district.center.x+SITE_BOUNDS.min.x, height, district.center.y+SITE_BOUNDS.min.y };
+			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+			// pick a random house
+			auto &house = houses[house_type_dist(gen)];
+			Entity *entity = new Entity { position, rotation };
+			house.entities.push_back(entity);
+		}
+	}
 }
 	
-void Landscape::create_sitemasks(void)
+void Landscape::create_sitemasks(uint8_t radius)
 {
 	glm::vec2 scale = SITE_BOUNDS.max - SITE_BOUNDS.min;
+	glm::vec2 imagescale = { sitemasks->width, sitemasks->height };
 
-	// houses mask
 	for (const auto &district : sitegen.districts) {
 		for (const auto &parcel : district.parcels) {
 			glm::vec2 street = parcel.centroid + parcel.direction;
@@ -439,7 +473,7 @@ float Landscape::sample_heightmap(const glm::vec2 &real) const
 	return SCALE.y * heightmap->sample(roundf(imagespace.x), roundf(imagespace.y), CHANNEL_RED);
 }
 	
-static struct landgen_parameters random_landgen_parameters(long seed)
+static struct landgen_parameters random_landgen_parameters(int32_t seed)
 {
 	std::mt19937 gen(seed);
 
