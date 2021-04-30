@@ -734,7 +734,7 @@ void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<fl
 	if (width == terragen->heightmap->width && height == terragen->heightmap->height && data.size() == terragen->heightmap->size) {
 		std::copy(data.begin(), data.end(), terragen->heightmap->data);
 	} else {
-		write_log(LogType::LOG_ERROR, "World error: could not load height map");
+		write_error_log("World error: could not load height map");
 	}
 }
 
@@ -743,7 +743,7 @@ void Atlas::load_rainmap(uint16_t width, uint16_t height, const std::vector<uint
 	if (width == terragen->rainmap->width && height == terragen->rainmap->height && data.size() == terragen->rainmap->size) {
 		std::copy(data.begin(), data.end(), terragen->rainmap->data);
 	} else {
-		write_log(LogType::LOG_ERROR, "World error: could not load rain map");
+		write_error_log("World error: could not load rain map");
 	}
 }
 
@@ -752,7 +752,7 @@ void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint
 	if (width == terragen->tempmap->width && height == terragen->tempmap->height && data.size() == terragen->tempmap->size) {
 		std::copy(data.begin(), data.end(), terragen->tempmap->data);
 	} else {
-		write_log(LogType::LOG_ERROR, "World error: could not load temperature map");
+		write_error_log("World error: could not load temperature map");
 	}
 }
 
@@ -761,7 +761,7 @@ void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<uin
 	if (width == watermap->width && height == watermap->height && data.size() == watermap->size) {
 		std::copy(data.begin(), data.end(), watermap->data);
 	} else {
-		write_log(LogType::LOG_ERROR, "World error: could not load water map");
+		write_error_log("World error: could not load water map");
 	}
 }
 

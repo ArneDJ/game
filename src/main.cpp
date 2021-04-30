@@ -218,7 +218,7 @@ void Game::load_settings(void)
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
 	INIReader reader = { INI_SETTINGS_PATH.c_str() };
 	if (reader.ParseError() != 0) { 
-		write_log(LogType::LOG_ERROR, std::string("Could not load ini file: " + INI_SETTINGS_PATH));
+		write_error_log(std::string("Could not load ini file: " + INI_SETTINGS_PATH));
 	}
 	settings.window_width = reader.GetInteger("", "WINDOW_WIDTH", 1920);
 	settings.window_height = reader.GetInteger("", "WINDOW_HEIGHT", 1080);
@@ -271,7 +271,7 @@ void Game::init(void)
 		saver.change_directory(savepath);
 		SDL_free(savepath);
 	} else {
-		write_log(LogType::LOG_ERROR, "Save error: could not find user pref path");
+		write_error_log("Save error: could not find user pref path");
 	}
 
 	textman = new TextManager { "modules/native/fonts/exocet.ttf", 40 };
@@ -729,7 +729,7 @@ void Game::new_campaign(void)
 	//campaign.seed = 4998651408012010310;
 	campaign.seed = 8038877013446859113;
 
-	write_log(LogType::LOG_RUN, "seed: " + std::to_string(campaign.seed));
+	write_runtime_log("seed: " + std::to_string(campaign.seed));
 
 	campaign.atlas->generate(campaign.seed, &modular.params);
 

@@ -35,12 +35,12 @@ bool AnimationSampler::load(const std::string &filepath)
 	ozz::io::File file(filepath.c_str(), "rb");
 	if (!file.opened()) {
 		std::string err = "Animation error: cannot open animation file " + filepath;
-		write_log(LogType::LOG_ERROR, err);
+		write_error_log(err);
 		return false;
 	}
 	ozz::io::IArchive archive(&file);
 	if (!archive.TestTag<ozz::animation::Animation>()) {
-		write_log(LogType::LOG_ERROR, "Animation error: failed to load animation instance from file");
+		write_error_log("Animation error: failed to load animation instance from file");
 		return false;
 	}
 
@@ -60,7 +60,7 @@ Animator::Animator(const std::string &skeletonpath, const std::vector<std::strin
 		AnimationSampler *sampler = new AnimationSampler;
 		sampler->load(animationpaths[i]);
 		if (num_joints != sampler->animation.num_tracks()) {
-			write_log(LogType::LOG_ERROR, "Animation error: skeleton joints of " + skeletonpath + " and animation tracks of " + animationpaths[i] + " mismatch\n");
+			write_error_log("Animation error: skeleton joints of " + skeletonpath + " and animation tracks of " + animationpaths[i] + " mismatch\n");
 		}
 		// Allocates sampler runtime buffers.
 		sampler->locals.resize(num_soa_joints);
@@ -160,14 +160,14 @@ bool Animator::load_skeleton(const std::string &filepath)
 	// Checks file status, which can be closed if filepath.c_str() is invalid.
 	if (!file.opened()) {
 		std::string err = "Animation error: cannot open skeleton file " + filepath;
-		write_log(LogType::LOG_ERROR, err);
+		write_error_log(err);
 		return false;
 	}
 
 	ozz::io::IArchive archive(&file);
 
 	if (!archive.TestTag<ozz::animation::Skeleton>()) {
-		write_log(LogType::LOG_ERROR, "Animation error: archive doesn't contain the expected object type");
+		write_error_log("Animation error: archive doesn't contain the expected object type");
 		return false;
 	}
 
