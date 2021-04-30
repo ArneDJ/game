@@ -17,6 +17,9 @@ uniform vec2 ROOT_OFFSET;
 uniform vec2 CHUNK_SCALE;
 
 uniform vec3 MAPSCALE;
+uniform vec2 SITE_SCALE;
+uniform vec2 SITE_OFFSET;
+
 uniform vec3 SUN_POS;
 uniform mat4 VP;
 uniform mat4 MODEL;
@@ -41,9 +44,8 @@ void main(void)
 	T[3] = translation;
 
 	float slope = 1.0 - texture(TERRAIN_NORMALMAP, translation.xz / MAPSCALE.xz).y;
-	//float dirt = texture(TERRAIN_SITEMASKS, translation.xz / MAPSCALE.xz).r;
-	vec2 sitecoord = translation.xz - vec2(2048.0, 2048.0);
-	float dirt = texture(TERRAIN_SITEMASKS, sitecoord / vec2(2048.0, 2048.0)).r;
+	vec2 sitecoord = translation.xz - SITE_OFFSET;
+	float dirt = texture(TERRAIN_SITEMASKS, sitecoord / SITE_SCALE).r;
 
 	vec4 worldpos = T * vec4(vposition, 1.0);
 

@@ -608,6 +608,7 @@ void Game::init_campaign(void)
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
 	materials.push_back(mediaman.load_texture("ground/snow.dds"));
 	materials.push_back(mediaman.load_texture("ground/grass.dds"));
+	materials.push_back(mediaman.load_texture("ground/farmland.dds"));
 	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
 	campaign.worldmap->load_materials(materials);
 

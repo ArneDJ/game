@@ -50,6 +50,7 @@ public:
 	void display_grass(const Camera *camera) const;
 private:
 	Mesh *patches = nullptr;
+	GrassSystem *grass = nullptr;
 	Texture *relief = nullptr;
 	Texture *normals = nullptr;
 	Texture *sitemasks = nullptr;
@@ -57,12 +58,10 @@ private:
 	Shader land;
 	Shader water;
 	glm::vec3 scale;
+private:
 	// atmosphere
 	glm::vec3 sunpos;
 	float fogfactor;
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
-	//
-	//Grass *grass = nullptr;
-	GrassSystem *grass = nullptr;
 };

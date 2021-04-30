@@ -10,7 +10,7 @@ out vec4 fcolor;
 
 layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 2) uniform sampler2D DEPTHMAP;
-layout(binding = 8) uniform sampler2D NORMALMAP;
+layout(binding = 9) uniform sampler2D NORMALMAP;
 
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;

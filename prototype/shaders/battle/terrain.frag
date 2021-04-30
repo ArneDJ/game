@@ -18,6 +18,8 @@ layout(binding = 6) uniform sampler2D GRAVELMAP;
 layout(binding = 7) uniform sampler2D DETAILMAP;
 
 uniform vec3 MAP_SCALE;
+uniform vec2 SITE_OFFSET;
+uniform vec2 SITE_SCALE;
 // atmosphere
 uniform vec3 CAM_POS;
 uniform vec3 SUN_POS;
@@ -104,8 +106,8 @@ void main(void)
 	
 	normal = mix(normal, detail_normal, slope);
 
-	vec2 sitecoord = fragment.position.xz - vec2(2048.0, 2048.0);
-	float dirtlevel = texture(SITEMASKS, sitecoord / vec2(2048.0, 2048.0)).r;
+	vec2 sitecoord = fragment.position.xz - SITE_OFFSET;
+	float dirtlevel = texture(SITEMASKS, sitecoord / SITE_SCALE).r;
 	
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;

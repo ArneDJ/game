@@ -16,6 +16,7 @@ layout(binding = 4) uniform sampler2D STONEMAP;
 layout(binding = 5) uniform sampler2D SANDMAP;
 layout(binding = 6) uniform sampler2D SNOWMAP;
 layout(binding = 7) uniform sampler2D GRASSMAP;
+layout(binding = 8) uniform sampler2D FARMMAP;
 
 uniform vec3 CAM_POS;
 uniform vec3 FOG_COLOR;
@@ -108,7 +109,7 @@ void main(void)
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
 	vec3 snow = texture(SNOWMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 grass = texture(GRASSMAP, 200.0 * fragment.texcoord).rgb;
-	vec3 farms = vec3(1.0, 0.0, 1.0);
+	vec3 farms = texture(FARMMAP, 200.0 * fragment.texcoord).rgb;
 	
 	vec4 mask = texture(MASKMAP, fragment.texcoord);
 	float snowlevel = mask.r;
@@ -122,7 +123,7 @@ void main(void)
 
 	vec3 color = mix(sand, grass, grasslevel);
 
-	color = mix(color, farms, farmlevel);
+	color = mix(color, farms * grassness, farmlevel);
 	color = mix(color, snow, snowlevel);
 	color = mix(color, stone, slope);
 

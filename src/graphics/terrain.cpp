@@ -118,6 +118,8 @@ void Terrain::display_land(const Camera *camera) const
 	land.uniform_mat4("VP", camera->VP);
 	land.uniform_vec3("CAM_POS", camera->position);
 	land.uniform_vec3("MAP_SCALE", scale);
+	land.uniform_vec2("SITE_SCALE", glm::vec2(2048.f, 2048.f));
+	land.uniform_vec2("SITE_OFFSET", glm::vec2(2048.f, 2048.f));
 	land.uniform_vec3("SUN_POS", sunpos);
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
@@ -320,7 +322,11 @@ void GrassSystem::display(const Camera *camera, const glm::vec3 &scale) const
 	glm::mat4 MVP = camera->VP;
 	shader.uniform_mat4("MVP", MVP);
 	shader.uniform_mat4("MODEL", glm::mat4(1.f));
+
 	shader.uniform_vec3("MAPSCALE", scale);
+	shader.uniform_vec2("SITE_SCALE", glm::vec2(2048.f, 2048.f));
+	shader.uniform_vec2("SITE_OFFSET", glm::vec2(2048.f, 2048.f));
+
 	shader.uniform_vec3("COLOR", color);
 	shader.uniform_vec3("SUN_POS", sunpos);
 	shader.uniform_vec3("FOG_COLOR", fogcolor);
