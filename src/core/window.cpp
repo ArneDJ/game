@@ -16,25 +16,25 @@ bool WindowManager::init(uint16_t w, uint16_t h)
 	// open the SDL window
 	window = SDL_CreateWindow("game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
 	if (window == nullptr) {
-		write_log(LogType::ERROR, std::string("SDL Window could not be created!"));
+		write_log(LogType::LOG_ERROR, std::string("SDL Window could not be created!"));
 		return false;
 	}
 
 	// create OpenGL context
 	glcontext = SDL_GL_CreateContext(window);
 	if (glcontext == nullptr) {
-		write_log(LogType::ERROR, std::string("SDL_GL context could not be created!"));
+		write_log(LogType::LOG_ERROR, std::string("SDL_GL context could not be created!"));
 		return false;
 	}
 	// set up GLEW
 	GLenum error = glewInit();
 	if (error != GLEW_OK) {
-		write_log(LogType::ERROR, std::string("Could not initialize glew!"));
+		write_log(LogType::LOG_ERROR, std::string("Could not initialize glew!"));
 		return false;
 	}
 
 	std::string glversion = (const char*)glGetString(GL_VERSION);
-	write_log(LogType::RUN, "*** OpenGL Version: " + glversion + "***");
+	write_log(LogType::LOG_RUN, "*** OpenGL Version: " + glversion + "***");
 
 	// VSYNC
 	//if (winflags & VSYNC) { SDL_GL_SetSwapInterval(1); }

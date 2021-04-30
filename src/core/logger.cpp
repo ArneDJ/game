@@ -9,13 +9,13 @@ extern void write_log(LogType type, const std::string &message)
 	std::ofstream runtime("runtime.log", std::ios::app);
 
 	switch (type) {
-	case LogType::ERROR:
+	case LogType::LOG_ERROR:
 		error << message.c_str() << std::endl;
 		error.close();
 		// print to terminal
 		std::cout << message.c_str() << std::endl;
 		break;
-	case LogType::RUN:
+	case LogType::LOG_RUN:
 		runtime << message.c_str() << std::endl;
 		runtime.close();
 		// print to terminal
@@ -26,10 +26,10 @@ extern void write_log(LogType type, const std::string &message)
 
 void write_start_log(void)
 {
-	write_log(LogType::ERROR, "********** Starting new game (this is not an error) **********\n");
+	write_log(LogType::LOG_ERROR, "********** Starting new game (this is not an error) **********\n");
 }
 
 void write_exit_log(void)
 {
-	write_log(LogType::ERROR, "********** Exiting game (this is not an error) **********\n\n");
+	write_log(LogType::LOG_ERROR, "********** Exiting game (this is not an error) **********\n\n");
 }

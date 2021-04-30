@@ -31,7 +31,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 	std::ifstream file(filepath);
         if (file.fail()) {
 		std::string err = "Shader compile error: failed to open file " + filepath;
-		write_log(LogType::ERROR, err);
+		write_log(LogType::LOG_ERROR, err);
 		return;
         }
 
@@ -57,7 +57,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 		std::vector<GLchar> log(len);
 		glGetShaderInfoLog(shader, len, &len, log.data());
 		std::string err(log.begin(), log.end());
-		write_log(LogType::ERROR, "Shader compilation failed: " + err);
+		write_log(LogType::LOG_ERROR, "Shader compilation failed: " + err);
 
 		// clean up shader
 		glDeleteShader(shader);
@@ -90,7 +90,7 @@ void Shader::link(void)
 		std::vector<GLchar> log(len);
 		glGetProgramInfoLog(program, len, &len, log.data());
 		std::string err(log.begin(), log.end());
-		write_log(LogType::ERROR, "Shader program linking failed: " + err);
+		write_log(LogType::LOG_ERROR, "Shader program linking failed: " + err);
 
 		for (GLuint object : shaders) {
 			glDetachShader(program, object);

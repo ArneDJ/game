@@ -1,7 +1,7 @@
 
 enum class LogType {
-	ERROR,
-	RUN
+	LOG_ERROR,
+	LOG_RUN
 };
 
 extern void write_log(LogType type, const std::string &message);

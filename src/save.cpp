@@ -145,7 +145,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 			cereal::make_nvp("seanav", navmesh_sea)
 		);
 	} else {
-		write_log(LogType::ERROR, "Save error: save file " + filepath + "could not be saved");
+		write_log(LogType::LOG_ERROR, "Save error: save file " + filepath + "could not be saved");
 	}
 }
 
@@ -172,7 +172,7 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 			cereal::make_nvp("seanav", navmesh_sea)
 		);
 	} else {
-		write_log(LogType::ERROR, "Save error: save file " + filepath + " could not be loaded");
+		write_log(LogType::LOG_ERROR, "Save error: save file " + filepath + " could not be loaded");
 		return;
 	}
 

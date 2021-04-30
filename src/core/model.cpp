@@ -55,7 +55,7 @@ Model::Model(const std::string &filepath)
 		load_data(filepath, data);
 		find_bounds(data);
 	} else {
-		write_log(LogType::ERROR, "GLTF Mesh import error for "  + filepath + ": ");
+		write_log(LogType::LOG_ERROR, "GLTF Mesh import error for "  + filepath + ": ");
 		print_gltf_error(result);
 	}
 		
@@ -416,31 +416,31 @@ static void print_gltf_error(cgltf_result error)
 {
 	switch (error) {
 	case cgltf_result_data_too_short:
-		write_log(LogType::ERROR, "data too short");
+		write_log(LogType::LOG_ERROR, "data too short");
 		break;
 	case cgltf_result_unknown_format:
-		write_log(LogType::ERROR, "unknown format");
+		write_log(LogType::LOG_ERROR, "unknown format");
 		break;
 	case cgltf_result_invalid_json:
-		write_log(LogType::ERROR, "invalid json");
+		write_log(LogType::LOG_ERROR, "invalid json");
 		break;
 	case cgltf_result_invalid_gltf:
-		write_log(LogType::ERROR, "invalid GLTF");
+		write_log(LogType::LOG_ERROR, "invalid GLTF");
 		break;
 	case cgltf_result_invalid_options:
-		write_log(LogType::ERROR, "invalid options");
+		write_log(LogType::LOG_ERROR, "invalid options");
 		break;
 	case cgltf_result_file_not_found:
-		write_log(LogType::ERROR, "file not found");
+		write_log(LogType::LOG_ERROR, "file not found");
 		break;
 	case cgltf_result_io_error:
-		write_log(LogType::ERROR, "io error");
+		write_log(LogType::LOG_ERROR, "io error");
 		break;
 	case cgltf_result_out_of_memory:
-		write_log(LogType::ERROR, "out of memory");
+		write_log(LogType::LOG_ERROR, "out of memory");
 		break;
 	case cgltf_result_legacy_gltf:
-		write_log(LogType::ERROR, "legacy GLTF");
+		write_log(LogType::LOG_ERROR, "legacy GLTF");
 		break;
 	};
 }

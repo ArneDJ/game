@@ -265,7 +265,7 @@ FrameSystem::FrameSystem(uint16_t w, uint16_t h)
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthmap, 0);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		write_log(LogType::ERROR, "Frame system FBO error: incomplete FBO");
+		write_log(LogType::LOG_ERROR, "Frame system FBO error: incomplete FBO");
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
