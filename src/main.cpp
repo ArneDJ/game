@@ -44,6 +44,8 @@
 #include "extern/imgui/imgui_impl_sdl.h"
 #include "extern/imgui/imgui_impl_opengl3.h"
 
+#include "extern/freetype/freetype-gl.h"
+
 #include "core/logger.h"
 #include "core/geom.h"
 #include "core/image.h"
@@ -61,6 +63,7 @@
 #include "core/navigation.h"
 #include "core/voronoi.h"
 #include "core/media.h"
+#include "core/text.h"
 #include "graphics/clouds.h"
 #include "graphics/sky.h"
 #include "graphics/render.h"
@@ -145,6 +148,7 @@ private:
 	Saver saver;
 	WindowManager windowman;
 	InputManager inputman;
+	TextManager *textman;
 	Timer timer;
 	Debugger debugger;
 	Campaign campaign;
@@ -156,6 +160,7 @@ private:
 	Shader object_shader;
 	Shader debug_shader;
 	Shader billboard_shader;
+	Shader font_shader;
 	Shader depth_shader;
 	Shader copy_shader;
 	// temporary assets
@@ -268,6 +273,8 @@ void Game::init(void)
 	} else {
 		write_log(LogType::ERROR, "Save error: could not find user pref path");
 	}
+
+	textman = new TextManager { "modules/native/fonts/exocet.ttf", 40 };
 }
 	
 void Game::load_module(void)
@@ -290,6 +297,10 @@ void Game::load_module(void)
 	billboard_shader.compile("shaders/billboard.vert", GL_VERTEX_SHADER);
 	billboard_shader.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
 	billboard_shader.link();
+
+	font_shader.compile("shaders/font.vert", GL_VERTEX_SHADER);
+	font_shader.compile("shaders/font.frag", GL_FRAGMENT_SHADER);
+	font_shader.link();
 
 	depth_shader.compile("shaders/depthmap.vert", GL_VERTEX_SHADER);
 	depth_shader.compile("shaders/depthmap.frag", GL_FRAGMENT_SHADER);
@@ -321,6 +332,8 @@ void Game::teardown(void)
 		ImGui_ImplSDL2_Shutdown();
 		ImGui::DestroyContext();
 	}
+
+	delete textman;
 
 	skybox.teardown();
 	renderman.teardown();
@@ -845,6 +858,9 @@ void Game::run(void)
 	init_battle();
 	
 	state = GS_TITLE;
+	
+	textman->add_text("Hello World!", glm::vec3(1.f, 1.f, 1.f), glm::vec2(50.f, 400.f));
+	textman->add_text("Archeon Prototype", glm::vec3(1.f, 1.f, 1.f), glm::vec2(50.f, 100.f));
 
 	while (state == GS_TITLE) {
 		inputman.update();
@@ -870,6 +886,11 @@ void Game::run(void)
 		}
 		
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		font_shader.use();
+		glm::mat4 menu_project = glm::ortho(0.0f, float(windowman.width), 0.0f, float(windowman.height));
+		font_shader.uniform_mat4("PROJECT", menu_project);
+		textman->display();
 
 		if (debugmode) {
 			ImGui::Render();

@@ -6,7 +6,11 @@ project(game)
 
 set(EXECUTABLE_OUTPUT_PATH "prototype")
 
+include(FindFreetype)
+
 find_package(SDL2 REQUIRED)
+
+find_package(Freetype REQUIRED)
 
 find_package(OpenGL REQUIRED COMPONENTS OpenGL)
 
@@ -39,6 +43,7 @@ target_link_libraries(${PROJECT_NAME} SDL2::SDL2 SDL2::SDL2main)
 target_link_libraries(${PROJECT_NAME} GLEW::GLEW)
 target_link_libraries(${PROJECT_NAME} OpenGL::OpenGL)
 target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+target_link_libraries(${PROJECT_NAME} Freetype::Freetype)
 
 # link bullet static libraries
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libBulletDynamics.a)
@@ -54,3 +59,6 @@ target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libozz_geometry.a
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libRecast.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libDetour.a)
 target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libDetourCrowd.a)
+
+# freetype 
+target_link_libraries(${PROJECT_NAME}  ${CMAKE_SOURCE_DIR}/lib/libfreetype-gl.a)
