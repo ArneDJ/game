@@ -36,6 +36,7 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/extern/recast/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/extern/recast/*.h"
         "${PROJECT_SOURCE_DIR}/src/extern/fastnoise/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/extern/namegen/*.cpp"
 )
 
 add_executable(${PROJECT_NAME} ${all_SRCS})

@@ -46,6 +46,8 @@
 
 #include "extern/freetype/freetype-gl.h"
 
+#include "extern/namegen/namegen.h"
+
 #include "core/logger.h"
 #include "core/geom.h"
 #include "core/image.h"
@@ -69,6 +71,7 @@
 #include "graphics/render.h"
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
+#include "graphics/label.h"
 #include "object.h"
 #include "creature.h"
 #include "debugger.h"
@@ -149,6 +152,7 @@ private:
 	WindowManager windowman;
 	InputManager inputman;
 	TextManager *textman;
+	LabelManager *labelman;
 	Timer timer;
 	Debugger debugger;
 	Campaign campaign;
@@ -213,6 +217,25 @@ glm::vec2 player_direction(const glm::vec3 &view, bool forward, bool backward, b
 	return velocity;
 }
 
+static void import_pattern(const char *fpath, std::string &pattern)
+{
+	FILE *fp = fopen(fpath, "r");
+	if (!fp) {
+		perror("File opening failed");
+		pattern = "failure";
+		return;
+	}
+
+	int c;
+	while ((c = fgetc(fp)) != EOF) {
+		if (c != '\n') {
+			pattern.append(1, c);
+		}
+	}
+
+	fclose(fp);
+}
+
 void Game::load_settings(void)
 {
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
@@ -275,6 +298,7 @@ void Game::init(void)
 	}
 
 	textman = new TextManager { "modules/native/fonts/exocet.ttf", 40 };
+	labelman = new LabelManager { "modules/native/fonts/exocet.ttf", 30 };
 }
 	
 void Game::load_module(void)
@@ -334,6 +358,7 @@ void Game::teardown(void)
 	}
 
 	delete textman;
+	delete labelman;
 
 	skybox.teardown();
 	renderman.teardown();
@@ -529,7 +554,7 @@ void Game::run_battle(void)
 		battle.ordinary->display(&battle.camera);
 
 		if (debugmode) {
-			debugger.render_bboxes(&battle.camera);
+			//debugger.render_bboxes(&battle.camera);
 		}
 
 		battle.billboards->display(&battle.camera);
@@ -639,6 +664,8 @@ void Game::init_campaign(void)
 
 void Game::cleanup_campaign(void)
 {
+	labelman->clear();
+
 	campaign.ordinary->clear();
 	campaign.creatures->clear();
 	campaign.billboards->clear();
@@ -807,6 +834,14 @@ void Game::prepare_campaign(void)
 		ents.push_back(settlements[i]);
 	}
 	campaign.ordinary->add_object(mediaman.load_model("map/fort.glb"), ents);
+
+	std::string town;
+	std::string fort;
+	import_pattern("modules/native/names/town.txt", town);
+	NameGen::Generator towngen(town.c_str());
+	for (const auto &ent : settlements) {
+		labelman->add(towngen.toString(), glm::vec3(1.f, 1.f, 1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
+	}
 }
 
 void Game::run_campaign(void)
@@ -830,6 +865,8 @@ void Game::run_campaign(void)
 
 		renderman.bind_depthmap(GL_TEXTURE2);
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
+
+		labelman->display(&campaign.camera);
 
 		renderman.final_render();
 
