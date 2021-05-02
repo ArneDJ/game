@@ -19,6 +19,8 @@ bool InputManager::exit_request(void) const
 
 void InputManager::update(void) 
 { 
+	mousewheel = 0;
+
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) { sample_event(&event); }
 
@@ -59,6 +61,10 @@ void InputManager::sample_event(const SDL_Event *event)
 	}
 	if (event->type == SDL_MOUSEBUTTONUP) {
 		release_key(event->button.button);
+	}
+
+	if (event->type == SDL_MOUSEWHEEL) {
+		mousewheel = event->wheel.y;
 	}
 }
 
@@ -133,4 +139,9 @@ glm::vec2 InputManager::abs_mousecoords(void) const
 glm::vec2 InputManager::rel_mousecoords(void) const
 {
 	return mousecoords.relative;
+}
+
+int InputManager::mousewheel_y(void) const
+{
+	return mousewheel;
 }

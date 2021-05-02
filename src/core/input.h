@@ -9,6 +9,7 @@ public:
 	bool key_pressed(uint32_t keyID) const; // is key pressed in current update
 	glm::vec2 abs_mousecoords(void) const;
 	glm::vec2 rel_mousecoords(void) const;
+	int mousewheel_y(void) const;
 	bool mouse_grabbed(void) const { return mousegrab; }
 private:
 	std::unordered_map<uint32_t, bool> keymap;
@@ -19,6 +20,7 @@ private:
 	} mousecoords;
 	bool mousegrab = false;
 	bool exit = false;
+	int mousewheel = 0;
 private:
 	void press_key(uint32_t keyID);
 	void release_key(uint32_t keyID);

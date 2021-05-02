@@ -689,13 +689,32 @@ void Game::update_campaign(void)
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
 	campaign.camera.target(rel_mousecoords);
 
-	float modifier = 20.f * timer.delta;
-	if (inputman.key_down(SDLK_w)) { campaign.camera.move_forward(modifier); }
-	if (inputman.key_down(SDLK_s)) { campaign.camera.move_backward(modifier); }
+	float zoomlevel = campaign.camera.position.y / campaign.atlas->SCALE.y;
+	zoomlevel = glm::clamp(zoomlevel, 0.f, 2.f);
+	float modifier = 200.f * timer.delta * (zoomlevel*zoomlevel);
+	//if (inputman.key_down(SDLK_w)) { campaign.camera.move_forward(modifier); }
+	//if (inputman.key_down(SDLK_s)) { campaign.camera.move_backward(modifier); }
+	if (inputman.key_down(SDLK_w)) { 
+		glm::vec2 dir = glm::normalize(glm::vec2(campaign.camera.direction.x, campaign.camera.direction.z));
+		campaign.camera.position += modifier * glm::vec3(dir.x, 0.f, dir.y);
+	}
+	if (inputman.key_down(SDLK_s)) { 
+		glm::vec2 dir = glm::normalize(glm::vec2(campaign.camera.direction.x, campaign.camera.direction.z));
+		campaign.camera.position -= modifier * glm::vec3(dir.x, 0.f, dir.y);
+	}
 	if (inputman.key_down(SDLK_d)) { campaign.camera.move_right(modifier); }
 	if (inputman.key_down(SDLK_a)) { campaign.camera.move_left(modifier); }
 
+	// scroll forward or backward
+
 	campaign.camera.update();
+	int mousewheel = inputman.mousewheel_y();
+	if (mousewheel > 0) {
+		campaign.camera.move_forward(10.0*mousewheel*modifier);
+	}
+	if (mousewheel < 0) {
+		campaign.camera.move_backward(10.0*abs(mousewheel)*modifier);
+	}
 		
 	struct ray_result camresult = campaign.collisionman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z));
 	if (camresult.hit) {
@@ -710,9 +729,28 @@ void Game::update_campaign(void)
 		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
 		if (result.hit) {
 			campaign.marker.position = result.point;
+			// get tile
+			glm::vec2 position = translate_3D_to_2D(result.point);
+			const struct tile *tily = campaign.atlas->tile_at_position(position);
+			if (tily != nullptr && glm::distance(position, translate_3D_to_2D(campaign.player->position)) < 10.f) {
+				// embark or disembark
+				if (campaign.player->get_movement_mode() == MOVEMENT_LAND && tily->land == false) {
+					campaign.player->set_movement_mode(MOVEMENT_SEA);
+					campaign.player->teleport(position);
+				} else if (campaign.player->get_movement_mode() == MOVEMENT_SEA && tily->land == true) {
+					campaign.player->set_movement_mode(MOVEMENT_LAND);
+					campaign.player->teleport(position);
+				}
+			}
+			// change path if found
 			std::list<glm::vec2> waypoints;
-			campaign.landnav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
-			campaign.player->set_path(waypoints);
+			if (campaign.player->get_movement_mode() == MOVEMENT_LAND) {
+				campaign.landnav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
+				campaign.player->set_path(waypoints);
+			} else if (campaign.player->get_movement_mode() == MOVEMENT_SEA) {
+				campaign.seanav.find_2D_path(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position), waypoints);
+				campaign.player->set_path(waypoints);
+			}
 		}
 	}
 
@@ -743,6 +781,12 @@ void Game::update_campaign(void)
 	// update atmosphere
 	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
 	skybox.update(&campaign.camera, timer.elapsed);
+
+	// scale between 1 and 10
+	float label_scale = campaign.camera.position.y / campaign.atlas->SCALE.y;
+	label_scale = (label_scale - 0.8f) / 0.2f;
+	label_scale = glm::clamp(10.f*label_scale, 1.f, 10.f);
+	labelman->set_scale(label_scale);
 }
 	
 void Game::new_campaign(void)
@@ -754,7 +798,7 @@ void Game::new_campaign(void)
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
 	//campaign.seed = 4998651408012010310;
-	campaign.seed = 8038877013446859113;
+	//campaign.seed = 8038877013446859113;
 
 	write_runtime_log("seed: " + std::to_string(campaign.seed));
 
@@ -839,8 +883,10 @@ void Game::prepare_campaign(void)
 	std::string fort;
 	import_pattern("modules/native/names/town.txt", town);
 	NameGen::Generator towngen(town.c_str());
+	std::mt19937 gen(campaign.seed);
+	std::uniform_real_distribution<float> color_dist(0.5f, 1.f);
 	for (const auto &ent : settlements) {
-		labelman->add(towngen.toString(), glm::vec3(1.f, 1.f, 1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
+		labelman->add(towngen.toString(), glm::vec3(color_dist(gen), color_dist(gen), color_dist(gen)), ent->position + glm::vec3(0.f, 8.f, 0.f));
 	}
 }
 

@@ -79,6 +79,7 @@ Army::Army(glm::vec2 start, float speedy) :
 {
 	speed = speedy;
 	pathfinder = new Pathfinder { start };
+	movement_mode = MOVEMENT_LAND;
 }
 
 Army::~Army(void) 

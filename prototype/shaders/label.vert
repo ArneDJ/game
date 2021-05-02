@@ -1,20 +1,24 @@
 #version 430 core
 
 layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 color;
-layout (location = 2) in vec2 uv;
+layout (location = 1) in vec3 translation;
+layout (location = 2) in vec3 vcolor;
+layout (location = 3) in vec2 uv;
 
 out vec2 texcoords;
+out vec3 color;
 
+uniform float SCALE;
 uniform mat4 PROJECT, VIEW;
 
 void main(void)
 {
 	texcoords = uv;
+	color = vcolor;
 
 	// spherical billboards
 	mat4 T = mat4(1.0);
-	T[3].xyz = color;
+	T[3].xyz = translation;
 	mat4 MV = VIEW * T;
 
 	// Column 0:
@@ -30,5 +34,7 @@ void main(void)
 	MV[2][1] = 0;
 	MV[2][2] = 1;
 
-	gl_Position = PROJECT * MV * vec4(position, 1.0);
+	vec3 scaled_pos = SCALE * position;
+
+	gl_Position = PROJECT * MV * vec4(scaled_pos, 1.0);
 }  

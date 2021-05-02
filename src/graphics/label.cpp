@@ -21,6 +21,7 @@
 
 LabelManager::LabelManager(const std::string &fontpath, size_t fontsize)
 {
+	scale = 1.f;
 	atlas = texture_atlas_new(1024, 1024, 1);
 	font = texture_font_new_from_file(atlas, fontsize, fontpath.c_str());
 
@@ -45,17 +46,20 @@ LabelManager::LabelManager(const std::string &fontpath, size_t fontsize)
 	//GLuint VBO;
 	glGenBuffers(1, &glyph_batch.VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, glyph_batch.VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glyph_vertex_t), NULL, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(label_vertex_t), NULL, GL_DYNAMIC_DRAW);
 
 	// positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glyph_vertex_t), BUFFER_OFFSET(offsetof(glyph_vertex_t, position)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(label_vertex_t), BUFFER_OFFSET(offsetof(label_vertex_t, position)));
 	glEnableVertexAttribArray(0);
-	// color
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glyph_vertex_t), BUFFER_OFFSET(offsetof(glyph_vertex_t, color)));
+	// translation
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(label_vertex_t), BUFFER_OFFSET(offsetof(label_vertex_t, translation)));
 	glEnableVertexAttribArray(1);
-	// texcoords
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(glyph_vertex_t), BUFFER_OFFSET(offsetof(glyph_vertex_t, uv)));
+	// color
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(label_vertex_t), BUFFER_OFFSET(offsetof(label_vertex_t, color)));
 	glEnableVertexAttribArray(2);
+	// texcoords
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(label_vertex_t), BUFFER_OFFSET(offsetof(label_vertex_t, uv)));
+	glEnableVertexAttribArray(3);
 
 	shader.compile("shaders/label.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/label.frag", GL_FRAGMENT_SHADER);
@@ -82,7 +86,7 @@ void LabelManager::add(const std::string &text, const glm::vec3 &color, const gl
 
 	glm::vec2 last = { color.x, color.z };
 
-	struct glyph_buffer_t label;
+	struct label_buffer_t label;
 
 	for (int i = 0; i < text.length(); i++) {
 		texture_glyph_t *glyph = texture_font_get_glyph(font, &text.at(i));
@@ -109,11 +113,11 @@ void LabelManager::add(const std::string &text, const glm::vec3 &color, const gl
 
 		last = glm::vec2(x1, y1);
 
-		glyph_vertex_t vertices[4] = { 
-			{ { x0, y0, 0 }, position, { s0, t0 } },
-			{ { x0, y1, 0 }, position, { s0, t1 } },
-			{ { x1, y1, 0 }, position, { s1, t1 } },
-			{ { x1, y0, 0 }, position, { s1, t0 } } 
+		label_vertex_t vertices[4] = { 
+			{ { x0, y0, 0 }, position, color, { s0, t0 } },
+			{ { x0, y1, 0 }, position, color, { s0, t1 } },
+			{ { x1, y1, 0 }, position, color, { s1, t1 } },
+			{ { x1, y0, 0 }, position, color, { s1, t0 } } 
 		};
 		for (int j = 0; j < 4; j++) {
 			vertices[j].position *= glm::vec3(0.1f, 0.1f, 0.1f);
@@ -140,6 +144,7 @@ void LabelManager::clear(void)
 void LabelManager::display(const Camera *camera) const
 {
 	shader.use();
+	shader.uniform_float("SCALE", scale);
 	shader.uniform_mat4("PROJECT", camera->projection);
 	shader.uniform_mat4("VIEW", camera->viewing);
 
@@ -152,7 +157,7 @@ void LabelManager::display(const Camera *camera) const
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glyph_batch.EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t)*glyph_buffer.indices.size(), glyph_buffer.indices.data(), GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, glyph_batch.VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glyph_vertex_t)*glyph_buffer.vertices.size(), glyph_buffer.vertices.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(label_vertex_t)*glyph_buffer.vertices.size(), glyph_buffer.vertices.data(), GL_DYNAMIC_DRAW);
 
 	glDrawElements(GL_TRIANGLES, glyph_buffer.indices.size(), GL_UNSIGNED_INT, NULL);
 }
