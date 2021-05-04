@@ -1,7 +1,8 @@
 
 struct ray_result {
 	bool hit = false;
-	glm::vec3 point; // the point the ray intersection happened
+	glm::vec3 point; // the point where the ray intersection happened
+	const btRigidBody *body = nullptr; // the body if ray hit
 };
 
 class PhysicsManager {

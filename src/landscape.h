@@ -2,7 +2,8 @@
 struct building_t {
 	const GLTF::Model *model;
 	glm::vec3 bounds;
-	std::vector<Entity*> entities;
+	//std::vector<Entity*> entities;
+	std::vector<struct transformation> transforms;
 };
 
 class Landscape {

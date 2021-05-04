@@ -12,6 +12,7 @@ public:
 	void reset(const std::list<glm::vec2> &pathway);
 	void update(float delta, float speed);
 	glm::vec2 at(void) const;
+	glm::vec2 to(void) const;
 	glm::vec2 velo(void) const;
 	void teleport(const glm::vec2 &pos);
 private:
@@ -31,6 +32,14 @@ enum ARMY_MOVEMENT_MODE : uint8_t {
 	MOVEMENT_DISEMBARK
 };
 
+enum ARMY_TARGET_TYPE : uint8_t {
+	TARGET_NONE,
+	TARGET_SETTLEMENT,
+	TARGET_ARMY,
+	TARGET_LAND,
+	TARGET_SEA
+};
+
 // moves on the campaign map
 // either controlled by the player or the AI
 class Army : public Entity {
@@ -41,10 +50,14 @@ public:
 	void update(float delta);
 	void set_y_offset(float offset);
 	void teleport(const glm::vec2 &pos);
-	enum ARMY_MOVEMENT_MODE get_movement_mode(void) const { return movement_mode; };
 	void set_movement_mode(enum ARMY_MOVEMENT_MODE mode) { movement_mode = mode; };
+	void set_target_type(enum ARMY_TARGET_TYPE target) { target_type = target; };
+public:
+	enum ARMY_MOVEMENT_MODE get_movement_mode(void) const { return movement_mode; };
+	enum ARMY_TARGET_TYPE get_target_type(void) const { return target_type; };
 private:
 	float speed;
 	Pathfinder *pathfinder;
 	enum ARMY_MOVEMENT_MODE movement_mode;
+	enum ARMY_TARGET_TYPE target_type;
 };

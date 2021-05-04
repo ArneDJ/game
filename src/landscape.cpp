@@ -119,10 +119,7 @@ void Landscape::clear(void)
 	trees.clear();
 
 	for (auto &building : houses) {
-		for (int i = 0; i < building.entities.size(); i++) {
-			delete building.entities[i];
-		}
-		building.entities.clear();
+		building.transforms.clear();
 	}
 }
 
@@ -388,8 +385,8 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 						}
 					}
 					if (valid) {
-						Entity *entity = new Entity { position, rotation };
-						house.entities.push_back(entity);
+						struct transformation transform = { position, rotation, 1.f };
+						house.transforms.push_back(transform);
 					}
 
 					break;
@@ -413,8 +410,8 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 			// pick a random house
 			auto &house = houses[house_type_dist(gen)];
-			Entity *entity = new Entity { position, rotation };
-			house.entities.push_back(entity);
+			struct transformation transform = { position, rotation, 1.f };
+			house.transforms.push_back(transform);
 		}
 	}
 }

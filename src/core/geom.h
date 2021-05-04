@@ -1,4 +1,10 @@
 
+struct transformation {
+	glm::vec3 position;
+	glm::quat rotation;
+	float scale;
+};
+
 struct rectangle {
 	glm::vec2 min;
 	glm::vec2 max;

@@ -261,7 +261,7 @@ void PhysicsManager::remove_body(btRigidBody *body)
 	
 struct ray_result PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::vec3 &end)
 {
-	struct ray_result result = { false, end };
+	struct ray_result result = { false, end, nullptr };
 
 	btVector3 from = vec3_to_bt(origin);
 	btVector3 to = vec3_to_bt(end);
@@ -272,6 +272,8 @@ struct ray_result PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::v
 	if (callback.hasHit()) {
 		result.hit = true;
 		result.point = bt_to_vec3(callback.m_hitPointWorld);
+		const btCollisionObject *object = callback.m_collisionObject;
+		result.body = btRigidBody::upcast(object);
 	}
 
 	return result;

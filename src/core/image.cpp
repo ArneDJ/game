@@ -5,6 +5,9 @@
 
 #include <glm/glm.hpp>
 #include <glm/vec2.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "../extern/stbimage/stb_image.h"

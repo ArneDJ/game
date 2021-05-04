@@ -1,3 +1,4 @@
+#include <memory>
 #include <iostream>
 #include <unordered_map>
 #include <chrono>
@@ -124,6 +125,7 @@ public:
 	RenderGroup *ordinary;
 	RenderGroup *creatures;
 	BillboardGroup *billboards;
+	std::vector<SettlementNode*> settlements;
 };
 
 class Battle {
@@ -141,7 +143,9 @@ public:
 
 class Game {
 public:
+	bool init(void);
 	void run(void);
+	void shutdown(void);
 private:
 	bool running;
 	bool debugmode;
@@ -169,10 +173,8 @@ private:
 	Shader copy_shader;
 	// temporary assets
 private:
-	void init(void);
 	void load_settings(void);
 	void load_module(void);
-	void teardown(void);
 private:
 	void init_campaign(void);
 	void prepare_campaign(void);
@@ -257,13 +259,13 @@ void Game::load_settings(void)
 	settings.module_name = reader.Get("", "MODULE", "native");
 }
 
-void Game::init(void)
+bool Game::init(void)
 {
 	// load settings
 	load_settings();
 
 	if (!windowman.init(settings.window_width, settings.window_height)) {
-		exit(EXIT_FAILURE);
+		return false;
 	}
 
 	if (settings.fullscreen) {
@@ -278,7 +280,8 @@ void Game::init(void)
 		// Setup Dear ImGui context
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
-		ImGuiIO &io = ImGui::GetIO(); (void)io;
+		ImGuiIO &io = ImGui::GetIO();
+		(void)io;
 
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
@@ -295,19 +298,11 @@ void Game::init(void)
 		SDL_free(savepath);
 	} else {
 		write_error_log("Save error: could not find user pref path");
+		return false;
 	}
 
-	textman = new TextManager { "modules/native/fonts/exocet.ttf", 40 };
-	labelman = new LabelManager { "modules/native/fonts/exocet.ttf", 30 };
-}
-	
-void Game::load_module(void)
-{
-	modular.load(settings.module_name);
-
-	mediaman.change_path(modular.path);
-
-	// load assets
+	textman = new TextManager { "fonts/exocet.ttf", 40 };
+	labelman = new LabelManager { "fonts/diablo.ttf", 30 };
 
 	// load shaders
 	debug_shader.compile("shaders/debug.vert", GL_VERTEX_SHADER);
@@ -334,14 +329,25 @@ void Game::load_module(void)
 	copy_shader.link();
 
 	skybox.init(windowman.width, windowman.height);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	if (debugmode) {
 		debugger.init(&debug_shader);
 	}
+
+	return true;
+}
+	
+void Game::load_module(void)
+{
+	modular.load(settings.module_name);
+
+	mediaman.change_path(modular.path);
+
+	// load assets
+
 }
 
-void Game::teardown(void)
+void Game::shutdown(void)
 {
 	teardown_campaign();
 
@@ -466,11 +472,15 @@ void Game::prepare_battle(void)
 		gen.discard(tileref);
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
 		local_seed = local_seed_distrib(gen);
-		switch (tily->site) {
-		case CASTLE: site_radius = 1; break;
-		case TOWN: site_radius = 2; break;
+		if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
+			switch (tily->site) {
+			case CASTLE: site_radius = 1; break;
+			case TOWN: site_radius = 2; break;
+			}
 		}
 	}
+	campaign.player->set_target_type(TARGET_NONE);
+
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false);
@@ -513,8 +523,8 @@ void Game::prepare_battle(void)
 		}
 		btCollisionShape *shape = battle.physicsman.add_mesh(positions, indices);
 		// create entities
-		for (int i = 0; i < house.entities.size(); i++) {
-			StationaryObject *stationary = new StationaryObject { house.entities[i]->position, house.entities[i]->rotation, shape };
+		for (const auto &transform : house.transforms) {
+			StationaryObject *stationary = new StationaryObject { transform.position, transform.rotation, shape };
 			battle.stationaries.push_back(stationary);
 			house_entities.push_back(stationary);
 		}
@@ -728,7 +738,14 @@ void Game::update_campaign(void)
 		glm::vec3 ray = campaign.camera.ndc_to_ray(inputman.abs_mousecoords());
 		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
 		if (result.hit) {
+			campaign.player->set_target_type(TARGET_LAND);
 			campaign.marker.position = result.point;
+			if (result.body) {
+				SettlementNode *node = static_cast<SettlementNode*>(result.body->getUserPointer());
+				if (node) {
+					campaign.player->set_target_type(TARGET_SETTLEMENT);
+				}
+			}
 			// get tile
 			glm::vec2 position = translate_3D_to_2D(result.point);
 			const struct tile *tily = campaign.atlas->tile_at_position(position);
@@ -769,6 +786,12 @@ void Game::update_campaign(void)
 		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
 		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
 		ImGui::End();
+	}
+
+	if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
+		if (glm::distance(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position)) < 1.f) {
+			state = GS_BATTLE;
+		}
 	}
 
 	inputman.update_keymap();
@@ -872,6 +895,20 @@ void Game::prepare_campaign(void)
 	}
 	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
 
+
+	btCollisionShape *shape = campaign.collisionman.add_sphere(5.f);
+	for (const auto &tile : campaign.atlas->worldgraph->tiles) {
+		if (tile.site == CASTLE || tile.site == TOWN) {
+		glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
+		glm::vec3 origin = { tile.center.x, campaign.atlas->SCALE.y, tile.center.y };
+		struct ray_result result = campaign.collisionman.cast_ray(origin, position);
+		position.y = result.point.y;
+		SettlementNode *node = new SettlementNode { position, glm::quat(1.f, 0.f, 0.f, 0.f), shape, tile.index };
+		campaign.settlements.push_back(node);
+		campaign.collisionman.insert_body(node->body);
+		}
+	}
+
 	ents.clear();
 	const std::vector<Entity*> settlements = campaign.atlas->get_settlements();
 	for (int i = 0; i < settlements.size(); i++) {
@@ -934,7 +971,6 @@ void Game::run_campaign(void)
 
 void Game::run(void)
 {
-	init();
 	load_module();
 
 	init_campaign();
@@ -989,8 +1025,6 @@ void Game::run(void)
 			load_campaign();
 		}
 	}
-
-	teardown();
 }
 
 int main(int argc, char *argv[])
@@ -998,7 +1032,11 @@ int main(int argc, char *argv[])
 	write_start_log();
 
 	Game archeon;
+	if (!archeon.init()) {
+		exit(EXIT_FAILURE);
+	}
 	archeon.run();
+	archeon.shutdown();
 
 	write_exit_log();
 

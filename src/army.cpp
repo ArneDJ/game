@@ -63,6 +63,8 @@ void Pathfinder::update(float delta, float speed)
 }
 
 glm::vec2 Pathfinder::at(void) const { return location; }
+	
+glm::vec2 Pathfinder::to(void) const { return destination; }
 
 glm::vec2 Pathfinder::velo(void) const { return velocity; }
 
@@ -80,6 +82,7 @@ Army::Army(glm::vec2 start, float speedy) :
 	speed = speedy;
 	pathfinder = new Pathfinder { start };
 	movement_mode = MOVEMENT_LAND;
+	target_type = TARGET_NONE;
 }
 
 Army::~Army(void) 
