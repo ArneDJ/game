@@ -21,6 +21,7 @@
 
 LabelManager::LabelManager(const std::string &fontpath, size_t fontsize)
 {
+	depthless = false;
 	scale = 1.f;
 	atlas = texture_atlas_new(1024, 1024, 1);
 	font = texture_font_new_from_file(atlas, fontsize, fontpath.c_str());
@@ -143,6 +144,10 @@ void LabelManager::clear(void)
 
 void LabelManager::display(const Camera *camera) const
 {
+	if (depthless) {
+		glDisable(GL_DEPTH_TEST);
+	}
+
 	shader.use();
 	shader.uniform_float("SCALE", scale);
 	shader.uniform_mat4("PROJECT", camera->projection);
@@ -160,4 +165,9 @@ void LabelManager::display(const Camera *camera) const
 	glBufferData(GL_ARRAY_BUFFER, sizeof(label_vertex_t)*glyph_buffer.vertices.size(), glyph_buffer.vertices.data(), GL_DYNAMIC_DRAW);
 
 	glDrawElements(GL_TRIANGLES, glyph_buffer.indices.size(), GL_UNSIGNED_INT, NULL);
+
+	// restore depth
+	if (depthless) {
+		glEnable(GL_DEPTH_TEST);
+	}
 }

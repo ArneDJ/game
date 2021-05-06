@@ -23,6 +23,7 @@ public:
 	void clear(void);
 	void display(const Camera *camera) const;
 	void set_scale(float scalefactor) { scale = scalefactor; }
+	void set_depth(bool depth) { depthless = depth; }
 private:
 	texture_atlas_t *atlas;
 	texture_font_t *font;
@@ -30,4 +31,5 @@ private:
 	struct label_batch_t glyph_batch;
 	Shader shader;
 	float scale = 1.f;
+	bool depthless = false;
 };

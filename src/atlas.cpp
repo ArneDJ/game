@@ -1108,7 +1108,7 @@ void Atlas::create_sea_navigation(void)
 	size_t index = 0;
 	for (const auto &c : worldgraph->corners) {
 		marked[c.index] = false;
-		if (c.coast == true && c.river == false) {
+		if (c.coast) {
 			points.push_back(c.position);
 			umap[c.index] = index++;
 			marked[c.index] = true;
@@ -1121,85 +1121,6 @@ void Atlas::create_sea_navigation(void)
 				points.push_back(c.position);
 				umap[c.index] = index++;
 				marked[c.index] = true;
-			}
-		}
-	}
-
-	// make river polygons
-	std::map<std::pair<uint32_t, uint32_t>, size_t> tilevertex;
-	for (const auto &t : worldgraph->tiles) {
-		for (const auto &c : t.corners) {
-			if (c->river) {
-				glm::vec2 vertex = segment_midpoint(t.center, c->position);
-				points.push_back(vertex);
-				tilevertex[std::minmax(t.index, c->index)] = index++;
-			}
-		}
-	}
-	for (const auto &b : worldgraph->borders) {
-		if (b.river) {
-			size_t left_t0 = tilevertex[std::minmax(b.t0->index, b.c0->index)];
-			size_t right_t0 = tilevertex[std::minmax(b.t0->index, b.c1->index)];
-			size_t left_t1 = tilevertex[std::minmax(b.t1->index, b.c0->index)];
-			size_t right_t1 = tilevertex[std::minmax(b.t1->index, b.c1->index)];
-			struct customedge edge;
-			edge.vertices = std::make_pair(left_t0, right_t0);
-			edges.push_back(edge);
-			edge.vertices = std::make_pair(left_t1, right_t1);
-			edges.push_back(edge);
-		}
-	}
-
-	std::unordered_map<uint32_t, bool> marked_edges;
-	std::unordered_map<uint32_t, size_t> edge_vertices;
-
-	// add rivers
-	for (const auto &b : worldgraph->borders) {
-		bool half_river = b.c0->river ^ b.c1->river;
-		marked_edges[b.index] = half_river;
-		if (half_river) {
-			glm::vec2 vertex = segment_midpoint(b.c0->position, b.c1->position);
-			points.push_back(vertex);
-			edge_vertices[b.index] = index++;
-		} else if (b.river == false && b.c0->river && b.c1->river) {
-			glm::vec2 vertex = segment_midpoint(b.c0->position, b.c1->position);
-			points.push_back(vertex);
-			edge_vertices[b.index] = index++;
-			marked_edges[b.index] = true;
-		}
-	}
-	for (const auto &t : worldgraph->tiles) {
-		if (t.land) {
-			for (const auto &b : t.borders) {
-				if (marked_edges[b->index] == true) {
-					if (b->c0->river) {
-						size_t left = tilevertex[std::minmax(t.index, b->c0->index)];
-						size_t right = edge_vertices[b->index];
-						struct customedge edge;
-						edge.vertices = std::make_pair(left, right);
-						edges.push_back(edge);
-					}
-					if (b->c1->river) {
-						size_t left = tilevertex[std::minmax(t.index, b->c1->index)];
-						size_t right = edge_vertices[b->index];
-						struct customedge edge;
-						edge.vertices = std::make_pair(left, right);
-						edges.push_back(edge);
-					}
-				}
-			}
-		}
-	}
-	for (const auto &b : worldgraph->borders) {
-		if (b.coast) {
-			bool half_river = b.c0->river ^ b.c1->river;
-			if (half_river) {
-				uint32_t index = (b.c0->river == false) ? b.c0->index : b.c1->index; 
-				size_t left = umap[index];
-				size_t right = edge_vertices[b.index];
-				struct customedge edge;
-				edge.vertices = std::make_pair(left, right);
-				edges.push_back(edge);
 			}
 		}
 	}
