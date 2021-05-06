@@ -10,6 +10,7 @@
 #include "extern/cereal/types/vector.hpp"
 #include "extern/cereal/types/memory.hpp"
 #include "extern/cereal/archives/json.hpp"
+#include "extern/cereal/archives/xml.hpp"
 
 #include "core/logger.h"
 #include "module.h"
@@ -19,9 +20,9 @@ void Module::load(const std::string &modname)
 	name = modname;
 	path = "modules/" + modname + "/";
 	
-	std::string worldpath = path + "worldgen.json";
-	std::string atmospath = path + "colors.json";
-	std::string buildingpath = path + "buildings.json";
+	std::string worldpath = path + "worldgen.xml";
+	std::string atmospath = path + "colors.xml";
+	std::string buildingpath = path + "buildings.xml";
 
 	load_world_parameters(worldpath);
 
@@ -44,7 +45,7 @@ void Module::save_world_parameters(const std::string &filepath)
 	std::ofstream stream(filepath);
 
 	if (stream.is_open()) {
-		cereal::JSONOutputArchive archive(stream);
+		cereal::XMLOutputArchive archive(stream);
 		archive(cereal::make_nvp("worldgen_config", params));
 	} else {
 		write_error_log("Module save error: could not save to " + filepath);
@@ -56,7 +57,7 @@ void Module::load_world_parameters(const std::string &filepath)
 	std::ifstream stream(filepath);
 
 	if (stream.is_open()) {
-		cereal::JSONInputArchive archive(stream);
+		cereal::XMLInputArchive archive(stream);
 		archive(cereal::make_nvp("worldgen_config", params));
 	} else {
 		// file not found 
@@ -72,7 +73,7 @@ void Module::load_colors(const std::string &filepath)
 	std::ifstream stream(filepath);
 
 	if (stream.is_open()) {
-		cereal::JSONInputArchive archive(stream);
+		cereal::XMLInputArchive archive(stream);
 		archive(cereal::make_nvp("colors", colors));
 	} else {
 		// file not found 
@@ -88,7 +89,7 @@ void Module::save_colors(const std::string &filepath)
 	std::ofstream stream(filepath);
 
 	if (stream.is_open()) {
-		cereal::JSONOutputArchive archive(stream);
+		cereal::XMLOutputArchive archive(stream);
 		archive(cereal::make_nvp("colors", colors));
 	} else {
 		write_error_log("Module save error: could not save to " + filepath);
@@ -100,7 +101,7 @@ void Module::load_buildings(const std::string &filepath)
 	std::ifstream stream(filepath);
 
 	if (stream.is_open()) {
-		cereal::JSONInputArchive archive(stream);
+		cereal::XMLInputArchive archive(stream);
 		archive(cereal::make_nvp("houses", houses));
 	} else {
 		// file not found 

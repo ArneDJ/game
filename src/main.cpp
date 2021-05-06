@@ -1,3 +1,6 @@
+#include <cereal/archives/xml.hpp>
+#include <fstream>
+
 #include <memory>
 #include <iostream>
 #include <unordered_map>
@@ -219,9 +222,9 @@ glm::vec2 player_direction(const glm::vec3 &view, bool forward, bool backward, b
 	return velocity;
 }
 
-static void import_pattern(const char *fpath, std::string &pattern)
+static void import_pattern(const std::string &fpath, std::string &pattern)
 {
-	FILE *fp = fopen(fpath, "r");
+	FILE *fp = fopen(fpath.c_str(), "r");
 	if (!fp) {
 		perror("File opening failed");
 		pattern = "failure";
@@ -483,6 +486,7 @@ void Game::prepare_battle(void)
 
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
+	puts("generating landscape");
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
@@ -670,10 +674,15 @@ void Game::init_campaign(void)
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	campaign.player = new Army { startpos, 20.f };
+	
+	std::string pattern;
+	import_pattern(modular.path + "/names/town.txt", pattern);
 }
 
 void Game::cleanup_campaign(void)
 {
+	// delete in reverse order of initialization
+
 	labelman->clear();
 
 	campaign.ordinary->clear();
@@ -834,7 +843,7 @@ void Game::new_campaign(void)
 	campaign.atlas->create_sea_navigation();
 	const auto sea_navsoup = campaign.atlas->get_navsoup();
 	campaign.seanav.build(sea_navsoup->vertices, sea_navsoup->indices);
-
+	
 	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	
 	prepare_campaign();
@@ -847,7 +856,7 @@ void Game::load_campaign(void)
 	saver.load("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	auto end = std::chrono::steady_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << "s\n";
+	std::cout << "campaign load elapsed time: " << elapsed_seconds.count() << "s\n";
 
 	prepare_campaign();
 	run_campaign();
@@ -949,7 +958,9 @@ void Game::run_campaign(void)
 		renderman.bind_depthmap(GL_TEXTURE2);
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
 
+	glDisable(GL_DEPTH_TEST);
 		labelman->display(&campaign.camera);
+	glEnable(GL_DEPTH_TEST);
 
 		renderman.final_render();
 

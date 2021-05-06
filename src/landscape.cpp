@@ -396,22 +396,24 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 	}
 
 	// place some farm houses outside walls
-	std::random_device rd;
-	std::mt19937 gen(seed);
-	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
-	std::uniform_int_distribution<uint32_t> house_type_dist(0, houses.size()-1);
+	if (houses.size() > 0) {
+		std::random_device rd;
+		std::mt19937 gen(seed);
+		std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
+		std::uniform_int_distribution<uint32_t> house_type_dist(0, houses.size()-1);
 
-	std::bernoulli_distribution bern(0.25f);
+		std::bernoulli_distribution bern(0.25f);
 
-	for (const auto &district : sitegen.districts) {
-		if (district.radius > radius && bern(gen) == true) {
-			float height = sample_heightmap(district.center + SITE_BOUNDS.min);
-			glm::vec3 position = { district.center.x+SITE_BOUNDS.min.x, height, district.center.y+SITE_BOUNDS.min.y };
-			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-			// pick a random house
-			auto &house = houses[house_type_dist(gen)];
-			struct transformation transform = { position, rotation, 1.f };
-			house.transforms.push_back(transform);
+		for (const auto &district : sitegen.districts) {
+			if (district.radius > radius && bern(gen) == true) {
+				float height = sample_heightmap(district.center + SITE_BOUNDS.min);
+				glm::vec3 position = { district.center.x+SITE_BOUNDS.min.x, height, district.center.y+SITE_BOUNDS.min.y };
+				glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+				// pick a random house
+				auto &house = houses[house_type_dist(gen)];
+				struct transformation transform = { position, rotation, 1.f };
+				house.transforms.push_back(transform);
+			}
 		}
 	}
 }

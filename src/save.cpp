@@ -18,6 +18,8 @@
 #include "extern/recast/DetourNavMeshQuery.h"
 #include "extern/recast/ChunkyTriMesh.h"
 
+#include "extern/namegen/namegen.h"
+
 #include "core/logger.h"
 #include "core/geom.h"
 #include "core/entity.h"

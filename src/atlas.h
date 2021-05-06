@@ -45,17 +45,18 @@ private:
 	Image *watermap; // heightmap of ocean, seas and rivers
 	Image *vegetation;
 	Image *materialmasks;
-	std::vector<struct holding> holdings;
-	std::unordered_map<uint32_t, uint32_t> holding_tiles;
-	//void name_holds(void);
-	Mapfield mapfield;
 	FloatImage *container;
 	FloatImage *detail;
 	Image *mask;
 	Image *tree_density;
+private:
+	std::vector<struct holding> holdings; // TODO remove this
+	std::unordered_map<uint32_t, uint32_t> holding_tiles;
+	Mapfield mapfield;
 	struct navigation_soup navsoup;
-	std::vector<Entity*> trees;
-	std::vector<Entity*> settlements;
+	std::vector<Entity*> trees; // TODO replace
+	std::vector<Entity*> settlements; // TODO replace
+	//void name_holds(void);
 private:
 	void gen_holds(void);
 	void smoothe_heightmap(void);
