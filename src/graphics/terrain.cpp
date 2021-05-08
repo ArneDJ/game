@@ -105,11 +105,7 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap, const 
 
 	sitemasks->reload(cadastre);
 	
-	auto start = std::chrono::steady_clock::now();
 	grass->refresh(heightmap, scale);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "grass refresh time: " << elapsed_seconds.count() << "s\n";
 }
 	
 void Terrain::display_land(const Camera *camera) const

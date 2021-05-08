@@ -89,18 +89,6 @@ void RenderGroup::clear(void)
 	
 void RenderManager::init(uint16_t w, uint16_t h)
 {
-	// set OpenGL states
-	glClearColor(0.f, 0.f, 0.f, 1.f);
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glEnable(GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-	glLineWidth(5.f);
-	
 	framesystem = new FrameSystem { w, h };
 }
 	

@@ -13,7 +13,7 @@ public:
 		scale = 1.f;
 		visible = true;
 	}
-	Entity(glm::vec3 pos, glm::quat rot)
+	explicit Entity(const glm::vec3 &pos, const glm::quat &rot)
 	{
 		position = pos;
 		rotation = rot;

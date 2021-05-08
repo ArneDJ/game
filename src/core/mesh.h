@@ -1,13 +1,5 @@
 
 // only used for debugging
-/*
-struct vertex_t {
-	float x, y, z;
-	float s, t;
-	float r, g, b, a;
-};
-*/
-
 struct vertex {
 	glm::vec3 position;
 	glm::vec3 color;

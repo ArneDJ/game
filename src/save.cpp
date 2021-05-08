@@ -144,7 +144,8 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders),
 			cereal::make_nvp("landnav", navmesh_land),
-			cereal::make_nvp("seanav", navmesh_sea)
+			cereal::make_nvp("seanav", navmesh_sea),
+			cereal::make_nvp("holdings", atlas->holdings)
 		);
 	} else {
 		write_error_log("Save error: save file " + filepath + "could not be saved");
@@ -171,7 +172,8 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 			cereal::make_nvp("corners", worldgraph->corners),
 			cereal::make_nvp("borders", worldgraph->borders),
 			cereal::make_nvp("landnav", navmesh_land),
-			cereal::make_nvp("seanav", navmesh_sea)
+			cereal::make_nvp("seanav", navmesh_sea),
+			cereal::make_nvp("holdings", atlas->holdings)
 		);
 	} else {
 		write_error_log("Save error: save file " + filepath + " could not be loaded");

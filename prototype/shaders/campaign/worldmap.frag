@@ -11,12 +11,13 @@ layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 1) uniform sampler2D NORMALMAP;
 layout(binding = 2) uniform sampler2D RAINMAP;
 layout(binding = 3) uniform sampler2D MASKMAP;
+layout(binding = 4) uniform sampler2D FACTIONSMAP;
 // material textures
-layout(binding = 4) uniform sampler2D STONEMAP;
-layout(binding = 5) uniform sampler2D SANDMAP;
-layout(binding = 6) uniform sampler2D SNOWMAP;
-layout(binding = 7) uniform sampler2D GRASSMAP;
-layout(binding = 8) uniform sampler2D FARMMAP;
+layout(binding = 5) uniform sampler2D STONEMAP;
+layout(binding = 6) uniform sampler2D SANDMAP;
+layout(binding = 7) uniform sampler2D SNOWMAP;
+layout(binding = 8) uniform sampler2D GRASSMAP;
+layout(binding = 9) uniform sampler2D FARMMAP;
 
 uniform vec3 CAM_POS;
 uniform vec3 FOG_COLOR;
@@ -105,6 +106,8 @@ void main(void)
 	float slope = 1.0 - normal.y;
 	slope = smoothstep(0.7, 0.8, slope);
 	
+	vec3 factions = texture(FACTIONSMAP, fragment.texcoord).rgb;
+
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
 	vec3 snow = texture(SNOWMAP, 100.0 * fragment.texcoord).rgb;
@@ -128,6 +131,8 @@ void main(void)
 	color = mix(color, stone, slope);
 
 	color = mix(color, strata*color, 0.5);
+
+	color = mix(color, factions, 0.7);
 
 	// terrain lighting
 	const vec3 lightdirection = vec3(0.5, 0.93, 0.1);

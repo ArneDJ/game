@@ -2,7 +2,6 @@
 struct building_t {
 	const GLTF::Model *model;
 	glm::vec3 bounds;
-	//std::vector<Entity*> entities;
 	std::vector<struct transformation> transforms;
 };
 
@@ -14,15 +13,18 @@ public:
 		{ 4096.F, 4096.F }
 	};
 public:
-	Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &house_models);
+	Landscape(uint16_t heightres);
 	~Landscape(void);
+public:
+	void load_buildings(const std::vector<const GLTF::Model*> &house_models);
+public:
 	void clear(void);
-	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled);
+	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled, bool nautical);
 public:
 	const FloatImage* get_heightmap(void) const;
 	const Image* get_normalmap(void) const;
 	const Image* get_sitemasks(void) const;
-	const std::vector<Entity*>& get_trees(void) const;
+	const std::vector<transformation>& get_trees(void) const;
 	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
@@ -35,7 +37,8 @@ private:
 	Image *sitemasks = nullptr;
 	Sitegen sitegen;
 private:
-	std::vector<Entity*> trees;
+	//std::vector<Entity*> trees;
+	std::vector<transformation> trees;
 	std::vector<building_t> houses;
 private:
 	void gen_heightmap(int32_t local_seed, float amplitude);

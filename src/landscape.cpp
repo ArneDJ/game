@@ -69,7 +69,7 @@ static bool larger_building(const struct building_t &a, const struct building_t 
 
 static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
-Landscape::Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &house_models)
+Landscape::Landscape(uint16_t heightres)
 {
 	heightmap = new FloatImage { heightres, heightres, COLORSPACE_GRAYSCALE };
 	normalmap = new Image { heightres, heightres, COLORSPACE_RGB };
@@ -80,17 +80,6 @@ Landscape::Landscape(uint16_t heightres, const std::vector<const GLTF::Model*> &
 	density = new Image { DENSITY_MAP_RES, DENSITY_MAP_RES, COLORSPACE_GRAYSCALE };
 
 	sitemasks = new Image { SITEMASK_RES, SITEMASK_RES, COLORSPACE_GRAYSCALE };
-
-	for (const auto &model : house_models) {
-		glm::vec3 size = model->bound_max - model->bound_min;
-		struct building_t house = {
-			model,
-			size
-		};
-		houses.push_back(house);
-	}
-	// sort house types from largest to smallest
-	std::sort(houses.begin(), houses.end(), larger_building);
 }
 
 Landscape::~Landscape(void)
@@ -105,6 +94,20 @@ Landscape::~Landscape(void)
 	delete container;
 }
 	
+void Landscape::load_buildings(const std::vector<const GLTF::Model*> &house_models)
+{
+	for (const auto &model : house_models) {
+		glm::vec3 size = model->bound_max - model->bound_min;
+		struct building_t house = {
+			model,
+			size
+		};
+		houses.push_back(house);
+	}
+	// sort house types from largest to smallest
+	std::sort(houses.begin(), houses.end(), larger_building);
+}
+	
 void Landscape::clear(void)
 {
 	heightmap->clear();
@@ -113,9 +116,11 @@ void Landscape::clear(void)
 	container->clear();
 	sitemasks->clear();
 
+	/*
 	for (int i = 0; i < trees.size(); i++) {
 		delete trees[i];
 	}
+	*/
 	trees.clear();
 
 	for (auto &building : houses) {
@@ -123,7 +128,7 @@ void Landscape::clear(void)
 	}
 }
 
-void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled)
+void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled, bool nautical)
 {
 	clear();
 
@@ -146,7 +151,9 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 		place_houses(walled, site_radius, local_seed);
 	}
 
-	gen_forest(local_seed, precipitation);
+	if (nautical == false) {
+		gen_forest(local_seed, precipitation);
+	}
 }
 
 const FloatImage* Landscape::get_heightmap(void) const
@@ -154,7 +161,7 @@ const FloatImage* Landscape::get_heightmap(void) const
 	return heightmap;
 }
 	
-const std::vector<Entity*>& Landscape::get_trees(void) const
+const std::vector<transformation>& Landscape::get_trees(void) const
 {
 	return trees;
 }
@@ -218,9 +225,10 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 		position.y = sample_heightmap(glm::vec2(position.x,  position.z));
 		position.y -= 2.f;
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-		Entity *ent = new Entity { position, rotation };
-		ent->scale = 20.f;
-		trees.push_back(ent);
+		//Entity *ent = new Entity { position, rotation };
+		//ent->scale = 20.f;
+		struct transformation transform = { position, rotation, 20.f };
+		trees.push_back(transform);
 	}
 }
 	

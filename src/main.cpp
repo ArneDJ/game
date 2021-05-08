@@ -1,6 +1,3 @@
-#include <cereal/archives/xml.hpp>
-#include <fstream>
-
 #include <memory>
 #include <iostream>
 #include <unordered_map>
@@ -91,7 +88,8 @@
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
-enum game_state {
+
+enum game_state_t {
 	GS_TITLE,
 	GS_NEW_CAMPAIGN,
 	GS_LOAD_CAMPAIGN,
@@ -100,7 +98,7 @@ enum game_state {
 	GS_EXIT
 };
 
-struct game_settings {
+struct game_settings_t {
 	std::string module_name;
 	uint16_t window_width;
 	uint16_t window_height;
@@ -128,10 +126,12 @@ public:
 	RenderGroup *creatures;
 	BillboardGroup *billboards;
 	std::vector<SettlementNode*> settlements;
+	Skybox skybox;
 };
 
 class Battle {
 public:
+	bool naval = false;
 	Camera camera;
 	RenderGroup *ordinary;
 	BillboardGroup *billboards;
@@ -141,6 +141,8 @@ public:
 	PhysicsManager physicsman;
 	Creature *player;
 	std::vector<StationaryObject*> stationaries;
+	std::vector<Entity> entities;
+	Skybox skybox;
 };
 
 class GameNeedsRefactor {
@@ -152,8 +154,8 @@ private:
 	bool running;
 	bool debugmode;
 	Module modular;
-	enum game_state state;
-	struct game_settings settings;
+	enum game_state_t state;
+	struct game_settings_t settings;
 	Saver saver;
 	WindowManager windowman;
 	InputManager inputman;
@@ -166,7 +168,6 @@ private:
 	// graphics
 	MediaManager mediaman;
 	RenderManager renderman;
-	Skybox skybox;
 	Shader object_shader;
 	Shader debug_shader;
 	Shader billboard_shader;
@@ -176,6 +177,7 @@ private:
 	// temporary assets
 private:
 	void load_settings(void);
+	void set_opengl_states(void);
 	void load_module(void);
 private:
 	void init_campaign(void);
@@ -240,6 +242,21 @@ static void import_pattern(const std::string &fpath, std::string &pattern)
 	fclose(fp);
 }
 
+void GameNeedsRefactor::set_opengl_states(void)
+{
+	// set OpenGL states
+	glClearColor(0.f, 0.f, 0.f, 1.f);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+	glLineWidth(5.f);
+}
+
 void GameNeedsRefactor::load_settings(void)
 {
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
@@ -266,6 +283,7 @@ bool GameNeedsRefactor::init(void)
 	// load settings
 	load_settings();
 
+	// initialize window
 	if (!windowman.init(settings.window_width, settings.window_height)) {
 		return false;
 	}
@@ -275,6 +293,8 @@ bool GameNeedsRefactor::init(void)
 	}
 	
 	SDL_SetRelativeMouseMode(SDL_FALSE);
+
+	set_opengl_states();
 
 	renderman.init(settings.window_width, settings.window_height);
 
@@ -330,8 +350,6 @@ bool GameNeedsRefactor::init(void)
 	copy_shader.compile("shaders/copy.comp", GL_COMPUTE_SHADER);
 	copy_shader.link();
 
-	skybox.init(windowman.width, windowman.height);
-
 	if (debugmode) {
 		debugger.init(&debug_shader);
 	}
@@ -368,7 +386,6 @@ void GameNeedsRefactor::shutdown(void)
 	delete textman;
 	delete labelman;
 
-	skybox.teardown();
 	renderman.teardown();
 
 	windowman.teardown();
@@ -376,6 +393,8 @@ void GameNeedsRefactor::shutdown(void)
 
 void GameNeedsRefactor::teardown_campaign(void)
 {
+	campaign.skybox.teardown();
+
 	campaign.collisionman.clear();
 
 	delete campaign.ordinary;
@@ -394,6 +413,8 @@ void GameNeedsRefactor::teardown_campaign(void)
 
 void GameNeedsRefactor::teardown_battle(void)
 {
+	battle.skybox.teardown();
+
 	battle.physicsman.clear();
 
 	delete battle.ordinary;
@@ -450,15 +471,13 @@ void GameNeedsRefactor::update_battle(void)
 	battle.camera.update();
 	
 	// update atmosphere
-	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
-	skybox.update(&battle.camera, timer.elapsed);
+	battle.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
+	battle.skybox.update(&battle.camera, timer.elapsed);
 }
 	
 void GameNeedsRefactor::prepare_battle(void)
 {
-	battle.camera.position = { 3072.f, 200.f, 3072.f };
-	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
-
+	// find the campaign tile the player is on and prepare local scene properties based on it
 	glm::vec2 position = translate_3D_to_2D(campaign.player->position);
 	const struct tile *tily = campaign.atlas->tile_at_position(position);
 	uint32_t tileref = 0;
@@ -467,6 +486,7 @@ void GameNeedsRefactor::prepare_battle(void)
 	int32_t local_seed = 0;
 	uint8_t site_radius = 0;
 	if (tily) {
+		battle.naval = !tily->land;
 		amp = tily->amp;
 		tileref = tily->index;
 		precipitation = tily->precipitation;
@@ -485,8 +505,7 @@ void GameNeedsRefactor::prepare_battle(void)
 
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
-	puts("generating landscape");
-	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false);
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
@@ -495,10 +514,16 @@ void GameNeedsRefactor::prepare_battle(void)
 
 	// add tree models
 	std::vector<const Entity*> ents;
-	const std::vector<Entity*> trees = battle.landscape->get_trees();
+	auto trees = battle.landscape->get_trees();
 	ents.clear();
-	for (int i = 0; i < trees.size(); i++) {
-		ents.push_back(trees[i]);
+	battle.entities.clear();
+	for (const auto &tree : trees) {
+		Entity entity = Entity(tree.position, tree.rotation);
+		entity.scale = tree.scale;
+		battle.entities.push_back(entity);
+	}
+	for (int i = 0; i < battle.entities.size(); i++) {
+		ents.push_back(&battle.entities[i]);
 	}
 	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
 
@@ -550,7 +575,14 @@ void GameNeedsRefactor::prepare_battle(void)
 	ents.push_back(battle.player);
 	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
 
-	skybox.prepare();
+	battle.skybox.prepare();
+
+	if (battle.naval) {
+		battle.camera.position = { 3072.f, 270.f, 3072.f };
+	} else {
+		battle.camera.position = { 3072.f, 200.f, 3072.f };
+	}
+	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 }
 
 void GameNeedsRefactor::run_battle(void)
@@ -574,9 +606,14 @@ void GameNeedsRefactor::run_battle(void)
 
 		battle.terrain->display_land(&battle.camera);
 
-		skybox.display(&battle.camera);
+		battle.skybox.display(&battle.camera);
 		
 		battle.terrain->display_grass(&battle.camera);
+
+		if (battle.naval) {
+			renderman.bind_depthmap(GL_TEXTURE2);
+			battle.terrain->display_water(&battle.camera, timer.elapsed);
+		}
 
 		renderman.final_render();
 
@@ -622,11 +659,14 @@ void GameNeedsRefactor::init_battle(void)
 	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battle.camera.project();
 
+	battle.landscape = new Landscape { 2048 };
+
+	// import all the buildings of the module
 	std::vector<const GLTF::Model*> house_models;
 	for (const auto &house : modular.houses) {
 		house_models.push_back(mediaman.load_model(house.model));
 	}
-	battle.landscape = new Landscape { 2048, house_models };
+	battle.landscape->load_buildings(house_models);
 	
 	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks(), mediaman.load_model("foliage/grass.glb") };
 	std::vector<const Texture*> materials;
@@ -644,6 +684,8 @@ void GameNeedsRefactor::init_battle(void)
 	battle.ordinary = new RenderGroup { &debug_shader };
 
 	battle.physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
+	
+	battle.skybox.init(windowman.width, windowman.height);
 }
 
 void GameNeedsRefactor::init_campaign(void)
@@ -653,7 +695,7 @@ void GameNeedsRefactor::init_campaign(void)
 
 	campaign.atlas = new Atlas;
 
-	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks() };
+	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions() };
 	std::vector<const Texture*> materials;
 	materials.push_back(mediaman.load_texture("ground/stone.dds"));
 	materials.push_back(mediaman.load_texture("ground/sand.dds"));
@@ -674,8 +716,7 @@ void GameNeedsRefactor::init_campaign(void)
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	campaign.player = new Army { startpos, 20.f };
 	
-	std::string pattern;
-	import_pattern(modular.path + "/names/town.txt", pattern);
+	campaign.skybox.init(windowman.width, windowman.height);
 }
 
 void GameNeedsRefactor::cleanup_campaign(void)
@@ -810,8 +851,8 @@ void GameNeedsRefactor::update_campaign(void)
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
-	skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
-	skybox.update(&campaign.camera, timer.elapsed);
+	campaign.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
+	campaign.skybox.update(&campaign.camera, timer.elapsed);
 
 	// scale between 1 and 10
 	float label_scale = campaign.camera.position.y / campaign.atlas->SCALE.y;
@@ -872,7 +913,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
-	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks());
+	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
 	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, sun_position);
 	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
@@ -890,7 +931,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 	ents.push_back(campaign.player);
 	campaign.creatures->add_object(mediaman.load_model("duck.glb"), ents);
 
-	Entity dragon = { glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	Entity dragon = Entity(glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f));
 	ents.clear();
 	ents.push_back(&campaign.marker);
 	campaign.ordinary->add_object(mediaman.load_model("cone.glb"), ents);
@@ -898,7 +939,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 	ents.push_back(&dragon);
 	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
 
-	const std::vector<Entity*> trees = campaign.atlas->get_trees();
+	auto trees = campaign.atlas->get_trees();
 	ents.clear();
 	for (int i = 0; i < trees.size(); i++) {
 		ents.push_back(trees[i]);
@@ -907,7 +948,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 
 
 	btCollisionShape *shape = campaign.collisionman.add_sphere(5.f);
-	for (const auto &tile : campaign.atlas->worldgraph->tiles) {
+	for (const auto &tile : campaign.atlas->get_worldgraph()->tiles) {
 		if (tile.site == CASTLE || tile.site == TOWN) {
 		glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
 		glm::vec3 origin = { tile.center.x, campaign.atlas->SCALE.y, tile.center.y };
@@ -930,10 +971,8 @@ void GameNeedsRefactor::prepare_campaign(void)
 	std::string fort;
 	import_pattern("modules/native/names/town.txt", town);
 	NameGen::Generator towngen(town.c_str());
-	std::mt19937 gen(campaign.seed);
-	std::uniform_real_distribution<float> color_dist(0.5f, 1.f);
 	for (const auto &ent : settlements) {
-		labelman->add(towngen.toString(), glm::vec3(color_dist(gen), color_dist(gen), color_dist(gen)), ent->position + glm::vec3(0.f, 8.f, 0.f));
+		labelman->add(towngen.toString(), glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
 	}
 }
 
@@ -954,7 +993,7 @@ void GameNeedsRefactor::run_campaign(void)
 
 		campaign.worldmap->display_land(&campaign.camera);
 
-		skybox.display(&campaign.camera);
+		campaign.skybox.display(&campaign.camera);
 
 		renderman.bind_depthmap(GL_TEXTURE2);
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
@@ -981,8 +1020,10 @@ void GameNeedsRefactor::run_campaign(void)
 
 void GameNeedsRefactor::run(void)
 {
+	// first import the game module
 	load_module();
 
+	// now that the module is loaded we initialize the campaign and battle
 	init_campaign();
 	init_battle();
 	

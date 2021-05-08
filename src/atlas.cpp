@@ -50,6 +50,7 @@ static const uint16_t WATERMAP_RES = 2048;
 static const uint16_t RAINMAP_RES = 512;
 static const uint16_t TEMPMAP_RES = 512;
 static const uint16_t MATERIALMASKS_RES = 2048;
+static const uint16_t FACTIONSMAP_RES = 2048;
 
 Atlas::Atlas(void)
 {
@@ -72,11 +73,15 @@ Atlas::Atlas(void)
 	
 	vegetation = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
 	tree_density = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
+
+	factions = new Image { FACTIONSMAP_RES, FACTIONSMAP_RES, COLORSPACE_RGB };
 }
 
 Atlas::~Atlas(void)
 {
 	clear_entities();
+
+	delete factions;
 
 	delete terragen;
 	delete worldgraph;
@@ -97,7 +102,6 @@ void Atlas::generate(long seedling, const struct worldparams *params)
 {
 auto start = std::chrono::steady_clock::now();
 	holdings.clear();
-	holding_tiles.clear();
 
 	mask->clear();
 	watermap->clear();
@@ -590,6 +594,34 @@ void Atlas::create_vegetation(void)
 		}
 	}
 }
+	
+void Atlas::create_factions_map(void)
+{
+	const glm::vec2 mapscale = {
+		float(factions->width) / SCALE.x,
+		float(factions->height) / SCALE.z
+	};
+
+	// TODO faction colors need to be saved
+	std::mt19937 gen(1337);
+	std::uniform_real_distribution<float> color_dist(0.f, 1.f);
+
+	for(auto iter = holdings.begin(); iter != holdings.end(); iter++) {
+		auto &hold = iter->second;
+		glm::vec3 color = { color_dist(gen), color_dist(gen), color_dist(gen) };
+		for (auto tileID : hold.lands) {
+			const struct tile *t = &worldgraph->tiles[tileID]; // TODO use map
+			glm::vec2 a = mapscale * t->center;
+			for (const auto &bord : t->borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				factions->draw_triangle(a, b, c, CHANNEL_RED, 255*color.x);
+				factions->draw_triangle(a, b, c, CHANNEL_GREEN, 255*color.y);
+				factions->draw_triangle(a, b, c, CHANNEL_BLUE, 255*color.z);
+			}
+		}
+	}
+}
 
 void Atlas::place_vegetation(long seed)
 {
@@ -671,6 +703,8 @@ void Atlas::create_mapdata(long seed)
 	place_vegetation(seed);
 
 	place_settlements(seed);
+
+	create_factions_map();
 }
 	
 const FloatImage* Atlas::get_heightmap(void) const
@@ -702,10 +736,25 @@ const Image* Atlas::get_materialmasks(void) const
 {
 	return materialmasks;
 }
+
+const Image* Atlas::get_factions(void) const
+{
+	return factions;
+}
 	
 const struct navigation_soup* Atlas::get_navsoup(void) const
 {
 	return &navsoup;
+}
+
+const std::unordered_map<uint32_t, struct holding>& Atlas::get_holdings(void) const
+{
+	return holdings;
+}
+	
+const Worldgraph* Atlas::get_worldgraph(void) const
+{
+	return worldgraph;
 }
 
 const std::vector<Entity*>& Atlas::get_trees(void) const
@@ -807,6 +856,8 @@ void Atlas::gen_holds(void)
 	std::unordered_map<const struct tile*, bool> visited;
 	std::unordered_map<const struct tile*, int> depth;
 
+	std::unordered_map<uint32_t, uint32_t> holding_tiles;
+
 	// create the holds
 	for (auto &t : worldgraph->tiles) {
 		visited[&t] = false;
@@ -815,17 +866,17 @@ void Atlas::gen_holds(void)
 			candidates.push_back(&t);
 			struct holding hold;
 			hold.ID = index++;
-			hold.name = "unnamed";
-			hold.center = &t;
-			holdings.push_back(hold);
+			hold.center = t.index;
+			holdings[hold.ID] = hold;
 		}
 	}
 
 	// find the nearest hold center for each tile
-	for (auto &hold : holdings) {
-		holding_tiles[hold.center->index] = hold.ID;
+	for(auto iter = holdings.begin(); iter != holdings.end(); iter++) {
+		auto &hold = iter->second;
+		holding_tiles[hold.center] = hold.ID;
 		std::queue<const struct tile*> queue;
-		queue.push(hold.center);
+		queue.push(&worldgraph->tiles[hold.center]);
 		while (!queue.empty()) {
 			const struct tile *node = queue.front();
 			queue.pop();
@@ -855,7 +906,7 @@ void Atlas::gen_holds(void)
 	for (auto &t : worldgraph->tiles) {
 		if (holding_tiles.find(t.index) != holding_tiles.end()) {
 			uint32_t ID = holding_tiles[t.index];
-			holdings[ID].lands.push_back(&t);
+			holdings[ID].lands.push_back(t.index);
 		}
 	}
 
@@ -868,8 +919,8 @@ void Atlas::gen_holds(void)
 			if (ID0 != ID1) {
 				if (link[std::minmax(ID0, ID1)] == false) {
 					link[std::minmax(ID0, ID1)] = true;
-					holdings[ID0].neighbors.push_back(&holdings[ID1]);
-					holdings[ID1].neighbors.push_back(&holdings[ID0]);
+					holdings[ID0].neighbors.push_back(holdings[ID1].ID);
+					holdings[ID1].neighbors.push_back(holdings[ID0].ID);
 				}
 			}
 		}

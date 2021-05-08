@@ -19,7 +19,7 @@ void main(void)
 
 	tesseval.texcoord = pos.xz / MAP_SCALE.xz;
 
-	pos.y = MAP_SCALE.y * 0.1;
+	pos.y = MAP_SCALE.y * 0.5;
 	tesseval.position = pos.xyz;
 
 	tesseval.clip = VP * pos;

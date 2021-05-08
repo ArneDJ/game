@@ -81,6 +81,7 @@ private:
 	btMotionState *motionstate = nullptr;
 };
 
+// TODO should not use rigid bodies 
 class SettlementNode : public Entity {
 public:
 	btRigidBody *body = nullptr;

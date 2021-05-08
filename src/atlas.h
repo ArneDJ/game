@@ -1,10 +1,16 @@
 
+// graph structure of the holding
 struct holding {
 	uint32_t ID;
-	std::string name;
-	struct tile *center; // center tile of the hold that contains a fortification
-	std::vector<struct tile*> lands; // tiles that the holding consists of
-	std::vector<const struct holding*> neighbors; // neighbouring holds
+	uint32_t center; // center tile of the hold that contains a fortification
+	std::vector<uint32_t> lands; // tiles that the holding consists of
+	std::vector<uint32_t> neighbors; // neighbouring holds
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(ID, center, lands, neighbors);
+	}
 };
 
 struct navigation_soup {
@@ -13,9 +19,9 @@ struct navigation_soup {
 };
 
 class Atlas {
+	friend class Saver; // acces to internal data to save it
 public:
 	const glm::vec3 SCALE = { 4096.F, 200.F, 4096.F };
-	Worldgraph *worldgraph;
 public:
 	Atlas(void);
 	~Atlas(void);
@@ -30,9 +36,12 @@ public:
 	const Image* get_tempmap(void) const;
 	const Image* get_materialmasks(void) const;
 	const Image* get_vegetation(void) const;
+	const Image* get_factions(void) const;
 	const std::vector<Entity*>& get_trees(void) const;
 	const std::vector<Entity*>& get_settlements(void) const;
 	const struct navigation_soup* get_navsoup(void) const;
+	const std::unordered_map<uint32_t, struct holding>& get_holdings(void) const;
+	const Worldgraph* get_worldgraph(void) const;
 public:
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
 	void load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
@@ -42,21 +51,21 @@ public:
 	const struct tile* tile_at_position(const glm::vec2 &position) const;
 private:
 	Terragen *terragen;
+	Worldgraph *worldgraph;
 	Image *watermap; // heightmap of ocean, seas and rivers
 	Image *vegetation;
+	Image *factions; // color map of factions
 	Image *materialmasks;
 	FloatImage *container;
 	FloatImage *detail;
 	Image *mask;
 	Image *tree_density;
 private:
-	std::vector<struct holding> holdings; // TODO remove this
-	std::unordered_map<uint32_t, uint32_t> holding_tiles;
+	std::unordered_map<uint32_t, struct holding> holdings; // TODO remove this
 	Mapfield mapfield;
 	struct navigation_soup navsoup;
 	std::vector<Entity*> trees; // TODO replace
 	std::vector<Entity*> settlements; // TODO replace
-	//void name_holds(void);
 private:
 	void gen_holds(void);
 	void smoothe_heightmap(void);
@@ -68,6 +77,7 @@ private:
 	void clamp_heightmap(float land_level);
 	void create_materialmasks(void);
 	void create_vegetation(void);
+	void create_factions_map(void);
 	void place_vegetation(long seed);
 	void clear_entities(void);
 	void place_settlements(long seed);
