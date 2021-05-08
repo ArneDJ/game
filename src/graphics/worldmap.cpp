@@ -24,6 +24,7 @@ static const uint32_t WORLDMAP_PATCH_RES = 85;
 Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap)
 {
 	scale = mapscale;
+	faction_factor = 0.f;
 	glm::vec2 min = { -5.f, -5.f };
 	glm::vec2 max = { mapscale.x + 5.f, mapscale.z + 5.f };
 	patches = new Mesh { WORLDMAP_PATCH_RES, min, max };
@@ -116,6 +117,7 @@ void Worldmap::display_land(const Camera *camera) const
 	land.uniform_float("FOG_FACTOR", fogfactor);
 	land.uniform_vec3("GRASS_DRY", grass_dry);
 	land.uniform_vec3("GRASS_LUSH", grass_lush);
+	land.uniform_float("FACTION_FACTOR", faction_factor);
 
 	topology->bind(GL_TEXTURE0);
 	normals->bind(GL_TEXTURE1);
@@ -162,4 +164,9 @@ void Worldmap::change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush)
 {
 	grass_dry = dry;
 	grass_lush = lush;
+}
+	
+void Worldmap::set_faction_factor(float factor)
+{
+	faction_factor = glm::clamp(factor, 0.f, 1.f);
 }

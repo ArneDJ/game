@@ -24,6 +24,7 @@ uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
 uniform vec3 GRASS_DRY;
 uniform vec3 GRASS_LUSH;
+uniform float FACTION_FACTOR = 1.0;
 
 vec3 fog(vec3 color, float dist)
 {
@@ -132,7 +133,7 @@ void main(void)
 
 	color = mix(color, strata*color, 0.5);
 
-	color = mix(color, factions, 0.7);
+	color = mix(color, factions, 0.8*FACTION_FACTOR);
 
 	// terrain lighting
 	const vec3 lightdirection = vec3(0.5, 0.93, 0.1);

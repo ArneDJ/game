@@ -47,7 +47,6 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	topology.channels = heightmap->channels;
 	topology.size = heightmap->size;
 	topology.data.resize(heightmap->size);
-
 	std::copy(heightmap->data, heightmap->data + heightmap->size, topology.data.begin());
 
 	const Image *tempmap = atlas->get_tempmap();
@@ -56,7 +55,6 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	temperature.channels = tempmap->channels;
 	temperature.size = tempmap->size;
 	temperature.data.resize(tempmap->size);
-
 	std::copy(tempmap->data, tempmap->data + tempmap->size, temperature.data.begin());
 
 	const Image *rainmap = atlas->get_rainmap();
@@ -65,7 +63,6 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	rain.channels = rainmap->channels;
 	rain.size = rainmap->size;
 	rain.data.resize(rainmap->size);
-
 	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
 
 	const Image *waterimage = atlas->get_watermap();
@@ -74,10 +71,9 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	watermap.channels = waterimage->channels;
 	watermap.size = waterimage->size;
 	watermap.data.resize(waterimage->size);
-
 	std::copy(waterimage->data, waterimage->data + waterimage->size, watermap.data.begin());
 
-	const Worldgraph *worldgraph = atlas->worldgraph;
+	const Worldgraph *worldgraph = atlas->get_worldgraph();
 
 	// save the campaign navigation data
 	{

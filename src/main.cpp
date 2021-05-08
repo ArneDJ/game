@@ -127,6 +127,7 @@ public:
 	BillboardGroup *billboards;
 	std::vector<SettlementNode*> settlements;
 	Skybox skybox;
+	bool show_factions = false;
 };
 
 class Battle {
@@ -831,6 +832,7 @@ void GameNeedsRefactor::update_campaign(void)
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", campaign.camera.position.x, campaign.camera.position.y, campaign.camera.position.z);
 		ImGui::Text("player position: %f, %f, %f", campaign.player->position.x, campaign.player->position.y, campaign.player->position.z);
+		if (ImGui::Button("Show factions")) { campaign.show_factions = !campaign.show_factions; }
 		if (ImGui::Button("Battle scene")) { state = GS_BATTLE; }
 		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
 		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
@@ -853,6 +855,16 @@ void GameNeedsRefactor::update_campaign(void)
 	// update atmosphere
 	campaign.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
 	campaign.skybox.update(&campaign.camera, timer.elapsed);
+	
+	float faction_colormix = 0.f;
+	if (campaign.show_factions) {
+		faction_colormix = campaign.camera.position.y / campaign.atlas->SCALE.y;
+		faction_colormix = glm::smoothstep(0.5f, 2.f, faction_colormix);
+		if (faction_colormix < 0.25f) {
+			faction_colormix = 0.f;
+		}
+	}
+	campaign.worldmap->set_faction_factor(faction_colormix);
 
 	// scale between 1 and 10
 	float label_scale = campaign.camera.position.y / campaign.atlas->SCALE.y;
