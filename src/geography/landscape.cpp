@@ -12,13 +12,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "extern/poisson/PoissonGenerator.h"
+#include "../extern/poisson/PoissonGenerator.h"
 
-#include "core/geom.h"
-#include "core/image.h"
-#include "core/texture.h"
-#include "core/mesh.h"
-#include "core/model.h"
+#include "../core/geom.h"
+#include "../core/image.h"
+#include "../core/texture.h"
+#include "../core/mesh.h"
+#include "../core/model.h"
 #include "sitegen.h"
 #include "landscape.h"
 

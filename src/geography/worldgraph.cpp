@@ -13,10 +13,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "extern/cereal/types/vector.hpp"
-#include "extern/cereal/types/memory.hpp"
+#include "../extern/cereal/types/vector.hpp"
+#include "../extern/cereal/types/memory.hpp"
 
-#include "extern/poisson/poisson_disk_sampling.h"
+#include "../extern/poisson/poisson_disk_sampling.h"
 
 #include "../core/voronoi.h"
 #include "../core/geom.h"

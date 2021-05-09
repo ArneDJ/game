@@ -11,12 +11,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "extern/cereal/types/vector.hpp"
-#include "extern/cereal/types/memory.hpp"
+#include "../extern/cereal/types/vector.hpp"
+#include "../extern/cereal/types/memory.hpp"
 
-#include "extern/cdt/CDT.h"
+#include "../extern/cdt/CDT.h"
 
-#include "extern/poisson/PoissonGenerator.h"
+#include "../extern/poisson/PoissonGenerator.h"
 
 #include "../core/logger.h"
 #include "../core/geom.h"

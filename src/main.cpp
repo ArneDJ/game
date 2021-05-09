@@ -47,7 +47,7 @@
 
 #include "extern/freetype/freetype-gl.h"
 
-#include "extern/namegen/namegen.h"
+//#include "extern/namegen/namegen.h"
 
 #include "core/logger.h"
 #include "core/geom.h"
@@ -993,9 +993,10 @@ void GameNeedsRefactor::prepare_campaign(void)
 	std::string town;
 	std::string fort;
 	import_pattern("modules/native/names/town.txt", town);
-	NameGen::Generator towngen(town.c_str());
+	//NameGen::Generator towngen(town.c_str());
 	for (const auto &ent : campaign.settlements) {
-		labelman->add(towngen.toString(), glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
+		//labelman->add(towngen.toString(), glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
+		labelman->add("Hello World", glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
 	}
 }
 
