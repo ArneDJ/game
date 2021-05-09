@@ -37,7 +37,6 @@ private:
 	Image *sitemasks = nullptr;
 	Sitegen sitegen;
 private:
-	//std::vector<Entity*> trees;
 	std::vector<transformation> trees;
 	std::vector<building_t> houses;
 private:

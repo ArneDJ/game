@@ -15,7 +15,6 @@
 #include "extern/poisson/PoissonGenerator.h"
 
 #include "core/geom.h"
-#include "core/entity.h"
 #include "core/image.h"
 #include "core/texture.h"
 #include "core/mesh.h"

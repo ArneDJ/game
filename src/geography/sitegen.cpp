@@ -13,8 +13,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/geom.h"
-#include "core/voronoi.h"
+#include "../core/geom.h"
+#include "../core/voronoi.h"
 #include "sitegen.h"
 
 struct chainsegment {

@@ -77,14 +77,14 @@
 #include "creature.h"
 #include "debugger.h"
 #include "module.h"
-#include "terragen.h"
-#include "worldgraph.h"
-#include "mapfield.h"
-#include "atlas.h"
+#include "geography/terragen.h"
+#include "geography/worldgraph.h"
+#include "geography/mapfield.h"
+#include "geography/atlas.h"
+#include "geography/sitegen.h"
+#include "geography/landscape.h"
 #include "save.h"
 #include "army.h"
-#include "sitegen.h"
-#include "landscape.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
@@ -126,6 +126,7 @@ public:
 	RenderGroup *creatures;
 	BillboardGroup *billboards;
 	std::vector<SettlementNode*> settlements;
+	std::vector<Entity> entities;
 	Skybox skybox;
 	bool show_factions = false;
 };
@@ -722,7 +723,14 @@ void GameNeedsRefactor::init_campaign(void)
 
 void GameNeedsRefactor::cleanup_campaign(void)
 {
+	campaign.entities.clear();
+
 	// delete in reverse order of initialization
+	for (int i = 0; i < campaign.settlements.size(); i++) {
+		campaign.collisionman.remove_body(campaign.settlements[i]->body);
+		delete campaign.settlements[i];
+	}
+	campaign.settlements.clear();
 
 	labelman->clear();
 
@@ -882,9 +890,9 @@ void GameNeedsRefactor::new_campaign(void)
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
-	//campaign.seed = 4998651408012010310;
+	campaign.seed = 4998651408012010310;
 	//campaign.seed = 8038877013446859113;
-	campaign.seed = 6900807170427947938;
+	//campaign.seed = 6900807170427947938;
 
 	write_runtime_log("seed: " + std::to_string(campaign.seed));
 
@@ -953,11 +961,15 @@ void GameNeedsRefactor::prepare_campaign(void)
 
 	auto trees = campaign.atlas->get_trees();
 	ents.clear();
+	printf("n trees %d\n", trees.size());
 	for (int i = 0; i < trees.size(); i++) {
-		ents.push_back(trees[i]);
+		Entity entity = Entity(trees[i].position, trees[i].rotation);
+		entity.scale = trees[i].scale;
+		campaign.entities.push_back(entity);
+		ents.push_back(&campaign.entities[i]);
 	}
+	printf("entities n trees %d\n", ents.size());
 	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
-
 
 	btCollisionShape *shape = campaign.collisionman.add_sphere(5.f);
 	for (const auto &tile : campaign.atlas->get_worldgraph()->tiles) {
@@ -973,9 +985,8 @@ void GameNeedsRefactor::prepare_campaign(void)
 	}
 
 	ents.clear();
-	const std::vector<Entity*> settlements = campaign.atlas->get_settlements();
-	for (int i = 0; i < settlements.size(); i++) {
-		ents.push_back(settlements[i]);
+	for (int i = 0; i < campaign.settlements.size(); i++) {
+		ents.push_back(campaign.settlements[i]);
 	}
 	campaign.ordinary->add_object(mediaman.load_model("map/fort.glb"), ents);
 
@@ -983,7 +994,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 	std::string fort;
 	import_pattern("modules/native/names/town.txt", town);
 	NameGen::Generator towngen(town.c_str());
-	for (const auto &ent : settlements) {
+	for (const auto &ent : campaign.settlements) {
 		labelman->add(towngen.toString(), glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
 	}
 }

@@ -19,7 +19,7 @@ struct navigation_soup {
 };
 
 class Atlas {
-	friend class Saver; // acces to internal data to save it
+	friend class Saver; // needs acces to internal data to save it
 public:
 	const glm::vec3 SCALE = { 4096.F, 200.F, 4096.F };
 public:
@@ -37,8 +37,7 @@ public:
 	const Image* get_materialmasks(void) const;
 	const Image* get_vegetation(void) const;
 	const Image* get_factions(void) const;
-	const std::vector<Entity*>& get_trees(void) const;
-	const std::vector<Entity*>& get_settlements(void) const;
+	const std::vector<transformation>& get_trees(void) const;
 	const struct navigation_soup* get_navsoup(void) const;
 	const std::unordered_map<uint32_t, struct holding>& get_holdings(void) const;
 	const Worldgraph* get_worldgraph(void) const;
@@ -61,11 +60,10 @@ private:
 	Image *mask;
 	Image *tree_density;
 private:
-	std::unordered_map<uint32_t, struct holding> holdings; // TODO remove this
+	std::unordered_map<uint32_t, struct holding> holdings; // TODO put in worldgraph
 	Mapfield mapfield;
 	struct navigation_soup navsoup;
-	std::vector<Entity*> trees; // TODO replace
-	std::vector<Entity*> settlements; // TODO replace
+	std::vector<transformation> trees;
 private:
 	void gen_holds(void);
 	void smoothe_heightmap(void);
@@ -80,6 +78,5 @@ private:
 	void create_factions_map(void);
 	void place_vegetation(long seed);
 	void clear_entities(void);
-	void place_settlements(long seed);
 };
 

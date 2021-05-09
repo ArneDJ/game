@@ -11,8 +11,8 @@
 #include "extern/cereal/types/memory.hpp"
 #include "extern/cereal/archives/json.hpp"
 
-#include "core/image.h"
-#include "module.h"
+#include "../core/image.h"
+#include "../module.h"
 #include "terragen.h"
 
 // The parameter a is the height of the curve's peak, b is the position of the center of the peak and c (the standard deviation, sometimes called the Gaussian RMS width) controls the width of the "bell".

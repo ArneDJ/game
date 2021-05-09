@@ -18,12 +18,11 @@
 
 #include "extern/poisson/PoissonGenerator.h"
 
-#include "core/logger.h"
-#include "core/geom.h"
-#include "core/entity.h"
-#include "core/image.h"
-#include "core/voronoi.h"
-#include "module.h"
+#include "../core/logger.h"
+#include "../core/geom.h"
+#include "../core/image.h"
+#include "../core/voronoi.h"
+#include "../module.h"
 #include "terragen.h"
 #include "worldgraph.h"
 #include "mapfield.h"
@@ -132,15 +131,7 @@ std::cout << "campaign image maps time: " << elapsed_seconds.count() << "s\n";
 	
 void Atlas::clear_entities(void)
 {
-	for (int i = 0; i < trees.size(); i++) {
-		delete trees[i];
-	}
 	trees.clear();
-
-	for (int i = 0; i < settlements.size(); i++) {
-		delete settlements[i];
-	}
-	settlements.clear();
 }
 
 void Atlas::smoothe_heightmap(void)
@@ -597,6 +588,8 @@ void Atlas::create_vegetation(void)
 	
 void Atlas::create_factions_map(void)
 {
+	factions->clear();
+
 	const glm::vec2 mapscale = {
 		float(factions->width) / SCALE.x,
 		float(factions->height) / SCALE.z
@@ -650,6 +643,7 @@ void Atlas::place_vegetation(long seed)
 
 	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
+	printf("n positions %d\n", positions.size());
 	for (const auto &point : positions) {
 		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, CHANNEL_RED) / 255.f;
 		if (N < 0.5f) { continue; }
@@ -662,34 +656,11 @@ void Atlas::place_vegetation(long seed)
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
 		position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-		Entity *ent = new Entity { position, rotation };
-		ent->scale = 10.f;
-		trees.push_back(ent);
+		struct transformation transform = { position, rotation, 10.f };
+		trees.push_back(transform);
 	}
 }
 	
-void Atlas::place_settlements(long seed)
-{
-	std::random_device rd;
-	std::mt19937 gen(seed);
-	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
-
-	glm::vec2 hmapscale = {
-		float(terragen->heightmap->width) / SCALE.x,
-		float(terragen->heightmap->height) / SCALE.z
-	};
-
-	for (const auto &tile : worldgraph->tiles) {
-		if (tile.site == CASTLE || tile.site == TOWN) {
-			glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
-			position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
-			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-			Entity *ent = new Entity { position, rotation };
-			settlements.push_back(ent);
-		}
-	}
-}
-
 void Atlas::create_mapdata(long seed)
 {
 	clear_entities();
@@ -701,8 +672,6 @@ void Atlas::create_mapdata(long seed)
 
 	create_vegetation();
 	place_vegetation(seed);
-
-	place_settlements(seed);
 
 	create_factions_map();
 }
@@ -757,14 +726,9 @@ const Worldgraph* Atlas::get_worldgraph(void) const
 	return worldgraph;
 }
 
-const std::vector<Entity*>& Atlas::get_trees(void) const
+const std::vector<transformation>& Atlas::get_trees(void) const
 {
 	return trees;
-}
-
-const std::vector<Entity*>& Atlas::get_settlements(void) const
-{
-	return settlements;
 }
 	
 const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const

@@ -4,8 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/geom.h"
-//#include "core/imp.h"
+#include "../core/geom.h"
 
 #include "mapfield.h"
 

@@ -26,10 +26,10 @@
 #include "core/image.h"
 #include "core/voronoi.h"
 #include "core/navigation.h"
-#include "terragen.h"
-#include "worldgraph.h"
-#include "mapfield.h"
-#include "atlas.h"
+#include "geography/terragen.h"
+#include "geography/worldgraph.h"
+#include "geography/mapfield.h"
+#include "geography/atlas.h"
 #include "save.h"
 	
 void Saver::change_directory(const std::string &dir) 

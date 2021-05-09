@@ -18,10 +18,10 @@
 
 #include "extern/poisson/poisson_disk_sampling.h"
 
-#include "core/voronoi.h"
-#include "core/geom.h"
-#include "core/image.h"
-#include "module.h"
+#include "../core/voronoi.h"
+#include "../core/geom.h"
+#include "../core/image.h"
+#include "../module.h"
 #include "terragen.h"
 #include "worldgraph.h"
 
