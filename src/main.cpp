@@ -126,7 +126,7 @@ public:
 	RenderGroup *creatures;
 	BillboardGroup *billboards;
 	std::vector<SettlementNode*> settlements;
-	std::vector<Entity> entities;
+	std::vector<Entity*> entities;
 	Skybox skybox;
 	bool show_factions = false;
 };
@@ -723,6 +723,9 @@ void GameNeedsRefactor::init_campaign(void)
 
 void GameNeedsRefactor::cleanup_campaign(void)
 {
+	for (int i = 0; i < campaign.entities.size(); i++) {
+		delete campaign.entities[i];
+	}
 	campaign.entities.clear();
 
 	// delete in reverse order of initialization
@@ -890,7 +893,7 @@ void GameNeedsRefactor::new_campaign(void)
 	std::mt19937 gen(rd());
 	campaign.seed = dis(gen);
 	//campaign.seed = 1337;
-	campaign.seed = 4998651408012010310;
+	//campaign.seed = 4998651408012010310;
 	//campaign.seed = 8038877013446859113;
 	//campaign.seed = 6900807170427947938;
 
@@ -951,22 +954,19 @@ void GameNeedsRefactor::prepare_campaign(void)
 	ents.push_back(campaign.player);
 	campaign.creatures->add_object(mediaman.load_model("duck.glb"), ents);
 
-	Entity dragon = Entity(glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f));
 	ents.clear();
 	ents.push_back(&campaign.marker);
 	campaign.ordinary->add_object(mediaman.load_model("cone.glb"), ents);
 	ents.clear();
-	ents.push_back(&dragon);
-	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
 
 	auto trees = campaign.atlas->get_trees();
 	ents.clear();
 	printf("n trees %d\n", trees.size());
 	for (int i = 0; i < trees.size(); i++) {
-		Entity entity = Entity(trees[i].position, trees[i].rotation);
-		entity.scale = trees[i].scale;
+		Entity *entity = new Entity(trees[i].position, trees[i].rotation);
+		entity->scale = trees[i].scale;
 		campaign.entities.push_back(entity);
-		ents.push_back(&campaign.entities[i]);
+		ents.push_back(entity);
 	}
 	printf("entities n trees %d\n", ents.size());
 	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
@@ -1003,6 +1003,11 @@ void GameNeedsRefactor::prepare_campaign(void)
 void GameNeedsRefactor::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
+	
+	Entity dragon = Entity(glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f));
+	std::vector<const Entity*> ents;
+	ents.push_back(&dragon);
+	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();
