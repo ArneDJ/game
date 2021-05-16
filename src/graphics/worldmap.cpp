@@ -100,6 +100,11 @@ void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const 
 	factions->reload(factionsmap);
 }
 
+void Worldmap::reload_factionsmap(const Image *factionsmap)
+{
+	factions->reload(factionsmap);
+}
+
 void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &sunposition)
 {
 	fogcolor = fogclr;

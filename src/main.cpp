@@ -506,6 +506,18 @@ void GameNeedsRefactor::prepare_battle(void)
 	}
 	campaign.player->set_target_type(TARGET_NONE);
 
+	// TODO
+	if (tily) {
+		const auto holding_tiles = campaign.atlas->get_holding_tiles();
+		auto search = holding_tiles.find(tily->index);
+		if (search != holding_tiles.end()) {
+			campaign.atlas->colorize_holding(search->second, glm::vec3(1.f, 0.f, 0.f));
+			campaign.worldmap->reload_factionsmap(campaign.atlas->get_factions());
+		} else {
+			printf("error: no holding found\n");
+		}
+	}
+
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false, battle.naval);

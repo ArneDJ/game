@@ -40,6 +40,7 @@ public:
 	const std::vector<transformation>& get_trees(void) const;
 	const struct navigation_soup* get_navsoup(void) const;
 	const std::unordered_map<uint32_t, struct holding>& get_holdings(void) const;
+	const std::unordered_map<uint32_t, uint32_t>& get_holding_tiles(void) const;
 	const Worldgraph* get_worldgraph(void) const;
 public:
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
@@ -48,6 +49,8 @@ public:
 	void load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 public:
 	const struct tile* tile_at_position(const glm::vec2 &position) const;
+public:
+	void colorize_holding(uint32_t holding, const glm::vec3 &color);
 private:
 	Terragen *terragen;
 	Worldgraph *worldgraph;
@@ -61,6 +64,7 @@ private:
 	Image *tree_density;
 private:
 	std::unordered_map<uint32_t, struct holding> holdings; // TODO put in worldgraph
+	std::unordered_map<uint32_t, uint32_t> holding_tiles;
 	Mapfield mapfield;
 	struct navigation_soup navsoup;
 	std::vector<transformation> trees;

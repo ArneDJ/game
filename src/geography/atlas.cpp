@@ -101,6 +101,7 @@ void Atlas::generate(long seedling, const struct worldparams *params)
 {
 auto start = std::chrono::steady_clock::now();
 	holdings.clear();
+	holding_tiles.clear();
 
 	mask->clear();
 	watermap->clear();
@@ -600,19 +601,8 @@ void Atlas::create_factions_map(void)
 	std::uniform_real_distribution<float> color_dist(0.f, 1.f);
 
 	for(auto iter = holdings.begin(); iter != holdings.end(); iter++) {
-		auto &hold = iter->second;
 		glm::vec3 color = { color_dist(gen), color_dist(gen), color_dist(gen) };
-		for (auto tileID : hold.lands) {
-			const struct tile *t = &worldgraph->tiles[tileID]; // TODO use map
-			glm::vec2 a = mapscale * t->center;
-			for (const auto &bord : t->borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				factions->draw_triangle(a, b, c, CHANNEL_RED, 255*color.x);
-				factions->draw_triangle(a, b, c, CHANNEL_GREEN, 255*color.y);
-				factions->draw_triangle(a, b, c, CHANNEL_BLUE, 255*color.z);
-			}
-		}
+		colorize_holding(iter->first, color);
 	}
 }
 
@@ -673,6 +663,13 @@ void Atlas::create_mapdata(long seed)
 	create_vegetation();
 	place_vegetation(seed);
 
+	holding_tiles.clear();
+	for(auto iter = holdings.begin(); iter != holdings.end(); iter++) {
+		auto &hold = iter->second;
+		for (const auto &tile : hold.lands) {
+			holding_tiles[tile] = hold.ID;
+		}
+	}
 	create_factions_map();
 }
 	
@@ -720,6 +717,11 @@ const std::unordered_map<uint32_t, struct holding>& Atlas::get_holdings(void) co
 {
 	return holdings;
 }
+
+const std::unordered_map<uint32_t, uint32_t>& Atlas::get_holding_tiles(void) const
+{
+	return holding_tiles;
+}
 	
 const Worldgraph* Atlas::get_worldgraph(void) const
 {
@@ -739,6 +741,30 @@ const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const
 		return &worldgraph->tiles[result.index];
 	} else {
 		return nullptr;
+	}
+}
+	
+void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
+{
+	const glm::vec2 mapscale = {
+		float(factions->width) / SCALE.x,
+		float(factions->height) / SCALE.z
+	};
+
+	auto search = holdings.find(holding);
+	if (search != holdings.end()) {
+		auto &hold = search->second;
+		for (auto tileID : hold.lands) {
+			const struct tile *t = &worldgraph->tiles[tileID]; // TODO use map
+			glm::vec2 a = mapscale * t->center;
+			for (const auto &bord : t->borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				factions->draw_triangle(a, b, c, CHANNEL_RED, 255*color.x);
+				factions->draw_triangle(a, b, c, CHANNEL_GREEN, 255*color.y);
+				factions->draw_triangle(a, b, c, CHANNEL_BLUE, 255*color.z);
+			}
+		}
 	}
 }
 	
@@ -819,8 +845,6 @@ void Atlas::gen_holds(void)
 	std::vector<struct tile*> candidates;
 	std::unordered_map<const struct tile*, bool> visited;
 	std::unordered_map<const struct tile*, int> depth;
-
-	std::unordered_map<uint32_t, uint32_t> holding_tiles;
 
 	// create the holds
 	for (auto &t : worldgraph->tiles) {
