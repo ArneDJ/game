@@ -8,7 +8,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "logger.h"
 #include "mesh.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))

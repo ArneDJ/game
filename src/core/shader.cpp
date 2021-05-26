@@ -9,7 +9,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "logger.h"
+#include "../extern/aixlog/aixlog.h"
+
 #include "shader.h"
 
 Shader::~Shader(void)
@@ -30,8 +31,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 {
 	std::ifstream file(filepath);
         if (file.fail()) {
-		std::string err = "Shader compile error: failed to open file " + filepath;
-		write_error_log(err);
+		LOG(ERROR, "Shader") << "Shader compile error: failed to open file " + filepath;
 		return;
         }
 
@@ -57,7 +57,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 		std::vector<GLchar> log(len);
 		glGetShaderInfoLog(shader, len, &len, log.data());
 		std::string err(log.begin(), log.end());
-		write_error_log("Shader compilation failed: " + err);
+		LOG(ERROR, "Shader") << "compilation failed: " + err;
 
 		// clean up shader
 		glDeleteShader(shader);
@@ -90,7 +90,7 @@ void Shader::link(void)
 		std::vector<GLchar> log(len);
 		glGetProgramInfoLog(program, len, &len, log.data());
 		std::string err(log.begin(), log.end());
-		write_error_log("Shader program linking failed: " + err);
+		LOG(ERROR, "Shader") << "program linking failed: " + err;
 
 		for (GLuint object : shaders) {
 			glDetachShader(program, object);

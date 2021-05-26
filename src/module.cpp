@@ -12,7 +12,8 @@
 #include "extern/cereal/archives/json.hpp"
 #include "extern/cereal/archives/xml.hpp"
 
-#include "core/logger.h"
+#include "extern/aixlog/aixlog.h"
+
 #include "module.h"
 	
 void Module::load(const std::string &modname)
@@ -48,7 +49,7 @@ void Module::save_world_parameters(const std::string &filepath)
 		cereal::XMLOutputArchive archive(stream);
 		archive(cereal::make_nvp("worldgen_config", params));
 	} else {
-		write_error_log("Module save error: could not save to " + filepath);
+		LOG(ERROR, "Module") << "could not save to " + filepath;
 	}
 }
 
@@ -62,7 +63,7 @@ void Module::load_world_parameters(const std::string &filepath)
 	} else {
 		// file not found 
 		// use default parameters and save the file
-		write_error_log("Module load error: could not open " + filepath + ", resorting to default parameters");
+		LOG(ERROR, "Module") << "could not open " + filepath + ", resorting to default parameters";
 		params = {};
 		save_world_parameters(filepath);
 	}
@@ -78,7 +79,7 @@ void Module::load_colors(const std::string &filepath)
 	} else {
 		// file not found 
 		// use default colorization and save the file
-		write_error_log("Module load error: could not open " + filepath + ", resorting to default colors");
+		LOG(ERROR, "Module") << "could not open " + filepath + ", resorting to default colors";
 		colors = {};
 		save_colors(filepath);
 	}
@@ -92,7 +93,7 @@ void Module::save_colors(const std::string &filepath)
 		cereal::XMLOutputArchive archive(stream);
 		archive(cereal::make_nvp("colors", colors));
 	} else {
-		write_error_log("Module save error: could not save to " + filepath);
+		LOG(ERROR, "Module") << "could not save to " + filepath;
 	}
 }
 
@@ -105,6 +106,6 @@ void Module::load_buildings(const std::string &filepath)
 		archive(cereal::make_nvp("houses", houses));
 	} else {
 		// file not found 
-		write_error_log("Module load error: could not open " + filepath);
+		LOG(ERROR, "Module") << "could not open " + filepath;
 	}
 }

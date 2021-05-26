@@ -15,7 +15,8 @@
 #define DDSKTX_IMPLEMENT
 #include "../extern/ddsktx/dds-ktx.h"
 
-#include "logger.h"
+#include "../extern/aixlog/aixlog.h"
+
 #include "image.h"
 #include "texture.h"
 
@@ -211,8 +212,7 @@ void Texture::load_DDS(const std::string &filepath)
 {
 	FILE *file = fopen(filepath.c_str(), "rb");
 	if (!file) {
-		std::string err = "Texture load error: failed to open file " + filepath;
-		write_error_log(err);
+		LOG(ERROR, "Texture") << "load error: failed to open file " + filepath;
 		return;
 	}
 
@@ -238,7 +238,7 @@ void Texture::DDS_to_texture(const uint8_t *blob, const size_t size)
 	if (ddsktx_parse(&tc, blob, size, &error)) {
 		format = texture_format(tc.format);
 		if (!format) { 
-			write_error_log("DDS error: Invalid texture format");
+			LOG(ERROR, "Texture") << "DDS error: Invalid texture format";
 			return; 
 		}
 
@@ -265,7 +265,7 @@ void Texture::DDS_to_texture(const uint8_t *blob, const size_t size)
 		}
 	} else {
 		std::string err = error.msg;
-		write_error_log("DDS error: " + err);
+		LOG(ERROR, "Texture") << "DDS error: " + err;
 	}
 }
 

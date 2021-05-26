@@ -20,7 +20,8 @@
 
 #include "extern/namegen/namegen.h"
 
-#include "core/logger.h"
+#include "extern/aixlog/aixlog.h"
+
 #include "core/geom.h"
 #include "core/entity.h"
 #include "core/image.h"
@@ -144,7 +145,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 			cereal::make_nvp("holdings", atlas->holdings)
 		);
 	} else {
-		write_error_log("Save error: save file " + filepath + "could not be saved");
+		LOG(ERROR, "Save") << "save file " + filepath + "could not be saved";
 	}
 }
 
@@ -172,7 +173,7 @@ void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav,
 			cereal::make_nvp("holdings", atlas->holdings)
 		);
 	} else {
-		write_error_log("Save error: save file " + filepath + " could not be loaded");
+		LOG(ERROR, "Save") << "save file " + filepath + " could not be loaded";
 		return;
 	}
 

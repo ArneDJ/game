@@ -496,7 +496,7 @@ void GameNeedsRefactor::update_battle(void)
 
 	battle.player->sync();
 
-	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.8f, 0.f));
+	battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.8f, 0.f));
 	battle.camera.update();
 	
 	// update atmosphere

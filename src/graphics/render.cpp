@@ -11,7 +11,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/logger.h"
+#include "../extern/aixlog/aixlog.h"
+
 #include "../core/entity.h"
 #include "../core/shader.h"
 #include "../core/camera.h"
@@ -253,7 +254,7 @@ FrameSystem::FrameSystem(uint16_t w, uint16_t h)
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthmap, 0);
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		write_error_log("Frame system FBO error: incomplete FBO");
+		LOG(ERROR, "Renderer") << "Frame system FBO error: incomplete FBO";
 	}
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
