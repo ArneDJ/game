@@ -41,7 +41,7 @@ class Terrain {
 public:
 	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre, const GLTF::Model *grassmodel);
 	~Terrain(void);
-	void load_materials(const std::vector<const Texture*> textures);
+	void add_material(const std::string &name, const Texture *texture);
 	void reload(const FloatImage *heightmap, const Image *normalmap, const Image *cadastre);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
 	void change_grass(const glm::vec3 &color);
@@ -54,7 +54,7 @@ private:
 	Texture *relief = nullptr;
 	Texture *normals = nullptr;
 	Texture *sitemasks = nullptr;
-	std::vector<const Texture*> materials;
+	std::vector<texture_binding_t> materials;
 	Shader land;
 	Shader water;
 	glm::vec3 scale;

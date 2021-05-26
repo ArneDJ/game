@@ -45,6 +45,16 @@ private:
 	GLenum usage = GL_STATIC_DRAW;
 };
 
+struct texture_binding_t {
+	std::string name;
+	const Texture *texture;
+	texture_binding_t(const std::string &nam, const Texture *text)
+	{
+		name = nam;
+		texture = text;
+	}
+};
+
 GLuint generate_2D_texture(const void *texels, GLsizei width, GLsizei height, GLenum internalformat, GLenum format, GLenum type);
 
 GLuint generate_3D_texture(GLsizei width, GLsizei height, GLsizei depth, GLenum internalformat, GLenum format, GLenum type);

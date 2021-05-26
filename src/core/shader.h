@@ -13,6 +13,7 @@ public:
 	void uniform_vec4(const GLchar *name, glm::vec4 vector) const;
 	void uniform_mat4(const GLchar *name, glm::mat4 matrix) const;
 	void uniform_mat4_array(const GLchar *name, const std::vector<glm::mat4> &matrices) const;
+	GLint uniform_location(const GLchar *name) const;
 private:
 	GLuint program = 0;
 	std::vector<GLuint> shaders;

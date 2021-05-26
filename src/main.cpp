@@ -494,7 +494,7 @@ void Game::update_battle(void)
 
 	battle.player->sync();
 
-	battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.8f, 0.f));
+	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.8f, 0.f));
 	battle.camera.update();
 	
 	// update atmosphere
@@ -696,14 +696,12 @@ void Game::init_battle(void)
 	battle.landscape->load_buildings(house_models);
 	
 	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks(), mediaman.load_model("foliage/grass.glb") };
-	std::vector<const Texture*> materials;
-	materials.push_back(mediaman.load_texture("ground/stone.dds"));
-	materials.push_back(mediaman.load_texture("ground/sand.dds"));
-	materials.push_back(mediaman.load_texture("ground/grass.dds"));
-	materials.push_back(mediaman.load_texture("ground/gravel.dds"));
-	materials.push_back(mediaman.load_texture("ground/stone_normal.dds"));
-	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
-	battle.terrain->load_materials(materials);
+	battle.terrain->add_material("STONEMAP", mediaman.load_texture("ground/stone.dds"));
+	battle.terrain->add_material("SANDMAP", mediaman.load_texture("ground/sand.dds"));
+	battle.terrain->add_material("GRASSMAP", mediaman.load_texture("ground/grass.dds"));
+	battle.terrain->add_material("GRAVELMAP", mediaman.load_texture("ground/gravel.dds"));
+	battle.terrain->add_material("DETAILMAP", mediaman.load_texture("ground/stone_normal.dds"));
+	battle.terrain->add_material("WAVE_BUMPMAP", mediaman.load_texture("ground/water_normal.dds"));
 
 	battle.surface = battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 

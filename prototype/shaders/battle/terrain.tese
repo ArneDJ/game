@@ -8,7 +8,8 @@ out TESSEVAL {
 	float zclipspace;
 } tesseval;
 
-layout(binding = 0) uniform sampler2D DISPLACEMENT;
+uniform sampler2D DISPLACEMENT;
+
 uniform mat4 VP;
 uniform vec3 MAP_SCALE;
 

@@ -144,3 +144,8 @@ void Shader::uniform_mat4_array(const GLchar *name, const std::vector<glm::mat4>
 {
 	glUniformMatrix4fv(glGetUniformLocation(program, name), matrices.size(), GL_FALSE, glm::value_ptr(matrices[0]));
 }
+	
+GLint Shader::uniform_location(const GLchar *name) const
+{
+	return glGetUniformLocation(program, name);
+}

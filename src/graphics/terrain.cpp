@@ -43,6 +43,10 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	sitemasks = new Texture { cadastre };
 	sitemasks->change_wrapping(GL_CLAMP_TO_BORDER);
 
+	add_material("DISPLACEMENT", relief);
+	add_material("NORMALMAP", normals);
+	add_material("SITEMASKS", sitemasks);
+
 	land.compile("shaders/battle/terrain.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/battle/terrain.tesc", GL_TESS_CONTROL_SHADER);
 	land.compile("shaders/battle/terrain.tese", GL_TESS_EVALUATION_SHADER);
@@ -55,18 +59,11 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	water.compile("shaders/battle/water.frag", GL_FRAGMENT_SHADER);
 	water.link();
 
-	//grass = new Grass { grassmodel };
-	auto start = std::chrono::steady_clock::now();
 	grass = new GrassSystem { grassmodel };
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "grass elapsed time: " << elapsed_seconds.count() << "s\n";
 }
 
 Terrain::~Terrain(void)
 {
-	materials.clear();
-
 	delete grass;
 
 	delete patches;
@@ -78,10 +75,14 @@ Terrain::~Terrain(void)
 	delete relief;
 }
 	
-void Terrain::load_materials(const std::vector<const Texture*> textures)
+void Terrain::add_material(const std::string &name, const Texture *texture)
 {
-	materials.clear();
-	materials.insert(materials.begin(), textures.begin(), textures.end());
+	struct texture_binding_t texture_binding = {
+		name,
+		texture
+	};
+
+	materials.push_back(texture_binding);
 }
 
 void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr)
@@ -121,12 +122,10 @@ void Terrain::display_land(const Camera *camera) const
 	land.uniform_float("FOG_FACTOR", fogfactor);
 	land.uniform_vec3("GRASS_COLOR", grasscolor);
 
-	relief->bind(GL_TEXTURE0);
-	normals->bind(GL_TEXTURE1);
-	sitemasks->bind(GL_TEXTURE2);
-
 	for (int i = 0; i < materials.size(); i++) {
-		materials[i]->bind(GL_TEXTURE3 + i);
+		const auto &binding = materials[i];
+		land.uniform_int(binding.name.c_str(), i);
+		binding.texture->bind(GL_TEXTURE0 + i);
 	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -149,6 +148,12 @@ void Terrain::display_water(const Camera *camera, float time) const
 	water.uniform_vec2("WIND_DIR", glm::vec2(0.5, 0.5));
 	water.uniform_vec3("FOG_COLOR", fogcolor);
 	water.uniform_float("FOG_FACTOR", fogfactor);
+
+	for (int i = 0; i < materials.size(); i++) {
+		const auto &binding = materials[i];
+		water.uniform_int(binding.name.c_str(), i);
+		binding.texture->bind(GL_TEXTURE0 + i);
+	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
@@ -245,8 +250,6 @@ GrassSystem::GrassSystem(const GLTF::Model *mod)
 		offset.x += spacing.x;
 		offset.y = min.y;
 	}
-
-	printf("total grass chunks %d\n", chunks.size());
 
 	shader.compile("shaders/battle/grass.vert", GL_VERTEX_SHADER);
 	shader.compile("shaders/battle/grass.frag", GL_FRAGMENT_SHADER);

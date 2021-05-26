@@ -8,11 +8,10 @@ in TESSEVAL {
 
 out vec4 fcolor;
 
-layout(binding = 0) uniform sampler2D DISPLACEMENT;
 layout(binding = 2) uniform sampler2D DEPTHMAP;
-layout(binding = 9) uniform sampler2D NORMALMAP;
+uniform sampler2D WAVE_BUMPMAP;
 
-layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
+//layout(binding = 10) uniform sampler2DArrayShadow SHADOWMAP;
 
 // atmosphere
 uniform vec3 SUN_POS;
@@ -35,6 +34,7 @@ vec3 fog(vec3 color, float dist)
 	return mix(color, FOG_COLOR, amount );
 }
 
+/*
 float filterPCF(vec4 sc)
 {
 	ivec2 size = textureSize(SHADOWMAP, 0).xy;
@@ -83,6 +83,7 @@ float shadow_coef(void)
 
 	return clamp(shadow, 0.1, 1.0);
 }
+*/
 
 vec3 do_specular(vec3 eyedir, vec3 lightdir, vec3 normal)
 {
@@ -111,7 +112,7 @@ void main(void)
 	vec3 color = vec3(0.7, 0.8, 0.9) * vec3(0.7);
 	vec3 shallowcolor = vec3(0.8, 0.95, 1.0) * vec3(0.9);
 
-	vec3 normal = texture(NORMALMAP, 0.05*fragment.position.xz + (0.1*TIME * WIND_DIR)).rbg;
+	vec3 normal = texture(WAVE_BUMPMAP, 0.05*fragment.position.xz + (0.1*TIME * WIND_DIR)).rbg;
 	normal = (normal * 2.0) - 1.0;
 	normal = normalize(normal);
 
@@ -124,9 +125,10 @@ void main(void)
 	float water_dist = 2.0 * near * far / (far + near - (2.0 * gl_FragCoord.z - 1.0) * (far - near));
 	float waterdepth = floor_dist - water_dist;
 
-	color = mix(shallowcolor, color, clamp(waterdepth/40.0, 0.0, 1.0));
+	//color = mix(shallowcolor, color, clamp(waterdepth/40.0, 0.0, 1.0));
 
-	waterdepth = clamp(waterdepth / edge_softness, 0.0, 1.0);
+	//waterdepth = clamp(waterdepth / edge_softness, 0.0, 1.0);
+	waterdepth = 1.0;
 
 	vec3 eyedir = normalize(CAM_POS - fragment.position);
 	vec3 spec = do_specular(eyedir, SUN_POS, normal);
