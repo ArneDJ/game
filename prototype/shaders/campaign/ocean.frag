@@ -51,8 +51,8 @@ vec3 do_diffuse(vec3 lightdir, vec3 normal)
 
 void main(void)
 {
-	vec3 color = vec3(0.7, 0.8, 0.9) * vec3(0.5);
-	vec3 shallowcolor = vec3(0.8, 0.95, 1.0) * vec3(0.5);
+	vec3 color = vec3(0.7, 0.8, 0.9) * vec3(0.3);
+	vec3 shallowcolor = vec3(0.8, 0.95, 1.0) * vec3(0.3);
 
 	vec3 normal = texture(NORMALMAP, 0.05*fragment.position.xz + (0.1*TIME * vec2(0.5, 0.5))).rbg;
 	normal = (normal * 2.0) - 1.0;

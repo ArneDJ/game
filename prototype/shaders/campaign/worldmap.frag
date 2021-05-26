@@ -113,12 +113,12 @@ void main(void)
 	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
 	vec3 snow = texture(SNOWMAP, 100.0 * fragment.texcoord).rgb;
 	vec3 grass = texture(GRASSMAP, 200.0 * fragment.texcoord).rgb;
-	vec3 farms = texture(FARMMAP, 200.0 * fragment.texcoord).rgb;
+	//vec3 farms = texture(FARMMAP, 200.0 * fragment.texcoord).rgb;
 	
 	vec4 mask = texture(MASKMAP, fragment.texcoord);
 	float snowlevel = mask.r;
 	float grasslevel = mask.g;
-	float farmlevel = mask.b;
+	//float farmlevel = mask.b;
 
 	float rainlevel = texture(RAINMAP, fragment.texcoord).r;
 	
@@ -127,7 +127,7 @@ void main(void)
 
 	vec3 color = mix(sand, grass, grasslevel);
 
-	color = mix(color, farms * grassness, farmlevel);
+//	color = mix(color, farms * grassness, farmlevel);
 	color = mix(color, snow, snowlevel);
 	color = mix(color, stone, slope);
 

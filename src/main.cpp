@@ -21,6 +21,8 @@
 // don't move this
 #include "extern/namegen/namegen.h"
 
+#include "extern/aixlog/aixlog.h"
+
 #include "extern/recast/Recast.h"
 #include "extern/recast/DetourNavMesh.h"
 #include "extern/recast/DetourNavMeshQuery.h"
@@ -50,7 +52,6 @@
 
 #include "extern/freetype/freetype-gl.h"
 
-#include "core/logger.h"
 #include "core/geom.h"
 #include "core/image.h"
 #include "core/entity.h"
@@ -160,7 +161,7 @@ private:
 	enum game_state_t state;
 	struct game_settings_t settings;
 	Saver saver;
-	WindowManager windowman;
+	CORE::Window window;
 	InputManager inputman;
 	TextManager *textman;
 	LabelManager *labelman;
@@ -199,6 +200,26 @@ private:
 	void cleanup_battle(void);
 	void teardown_battle(void);
 };
+
+class Engine {
+public:
+	int32_t run(void);
+private:
+	GameNeedsRefactor game;
+};
+
+int32_t Engine::run(void)
+{
+	if (!game.init()) {
+		return EXIT_FAILURE;
+	}
+
+	game.run();
+
+	game.shutdown();
+
+	return EXIT_SUCCESS;
+}
 
 glm::vec2 player_direction(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
 {
@@ -265,7 +286,7 @@ void GameNeedsRefactor::load_settings(void)
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
 	INIReader reader = { INI_SETTINGS_PATH.c_str() };
 	if (reader.ParseError() != 0) { 
-		write_error_log(std::string("Could not load ini file: " + INI_SETTINGS_PATH));
+		LOG(ERROR, "Settings") << "Could not load ini file: " + INI_SETTINGS_PATH;
 	}
 	settings.window_width = reader.GetInteger("", "WINDOW_WIDTH", 1920);
 	settings.window_height = reader.GetInteger("", "WINDOW_HEIGHT", 1080);
@@ -283,16 +304,21 @@ void GameNeedsRefactor::load_settings(void)
 
 bool GameNeedsRefactor::init(void)
 {
+	// initialize the logger
+	auto sink_cout = std::make_shared<AixLog::SinkCout>(AixLog::Severity::trace);
+	auto sink_file = std::make_shared<AixLog::SinkFile>(AixLog::Severity::trace, "error.log");
+	AixLog::Log::init({sink_cout, sink_file});
+
 	// load settings
 	load_settings();
 
 	// initialize window
-	if (!windowman.init(settings.window_width, settings.window_height)) {
+	if (!window.open(settings.window_width, settings.window_height)) {
 		return false;
 	}
 
 	if (settings.fullscreen) {
-		windowman.set_fullscreen();
+		window.set_fullscreen();
 	}
 	
 	SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -312,7 +338,7 @@ bool GameNeedsRefactor::init(void)
 		ImGui::StyleColorsDark();
 
 		// Setup Platform/Renderer bindings
-		ImGui_ImplSDL2_InitForOpenGL(windowman.window, windowman.glcontext);
+		ImGui_ImplSDL2_InitForOpenGL(window.window, window.glcontext);
 		ImGui_ImplOpenGL3_Init("#version 430");
 	}
 
@@ -322,7 +348,7 @@ bool GameNeedsRefactor::init(void)
 		saver.change_directory(savepath);
 		SDL_free(savepath);
 	} else {
-		write_error_log("Save error: could not find user pref path");
+		LOG(ERROR, "Save") << "could not find user pref path";
 		return false;
 	}
 
@@ -391,7 +417,7 @@ void GameNeedsRefactor::shutdown(void)
 
 	renderman.teardown();
 
-	windowman.teardown();
+	window.close();
 }
 
 void GameNeedsRefactor::teardown_campaign(void)
@@ -449,7 +475,7 @@ void GameNeedsRefactor::update_battle(void)
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(windowman.window);
+		ImGui_ImplSDL2_NewFrame(window.window);
 		ImGui::NewFrame();
 		ImGui::Begin("Battle Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
@@ -505,18 +531,6 @@ void GameNeedsRefactor::prepare_battle(void)
 		}
 	}
 	campaign.player->set_target_type(TARGET_NONE);
-
-	// TODO
-	if (tily) {
-		const auto holding_tiles = campaign.atlas->get_holding_tiles();
-		auto search = holding_tiles.find(tily->index);
-		if (search != holding_tiles.end()) {
-			campaign.atlas->colorize_holding(search->second, glm::vec3(1.f, 0.f, 0.f));
-			campaign.worldmap->reload_factionsmap(campaign.atlas->get_factions());
-		} else {
-			printf("error: no holding found\n");
-		}
-	}
 
 	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
 
@@ -637,7 +651,7 @@ void GameNeedsRefactor::run_battle(void)
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		}
 
-		windowman.swap();
+		window.swap();
 		timer.end();
 	}
 	
@@ -700,7 +714,7 @@ void GameNeedsRefactor::init_battle(void)
 
 	battle.physicsman.add_ground_plane(glm::vec3(0.f, -1.f, 0.f));
 	
-	battle.skybox.init(windowman.width, windowman.height);
+	battle.skybox.init(window.width, window.height);
 }
 
 void GameNeedsRefactor::init_campaign(void)
@@ -731,7 +745,7 @@ void GameNeedsRefactor::init_campaign(void)
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	campaign.player = new Army { startpos, 20.f };
 	
-	campaign.skybox.init(windowman.width, windowman.height);
+	campaign.skybox.init(window.width, window.height);
 }
 
 void GameNeedsRefactor::cleanup_campaign(void)
@@ -776,8 +790,6 @@ void GameNeedsRefactor::update_campaign(void)
 	float zoomlevel = campaign.camera.position.y / campaign.atlas->SCALE.y;
 	zoomlevel = glm::clamp(zoomlevel, 0.f, 2.f);
 	float modifier = 200.f * timer.delta * (zoomlevel*zoomlevel);
-	//if (inputman.key_down(SDLK_w)) { campaign.camera.move_forward(modifier); }
-	//if (inputman.key_down(SDLK_s)) { campaign.camera.move_backward(modifier); }
 	if (inputman.key_down(SDLK_w)) { 
 		glm::vec2 dir = glm::normalize(glm::vec2(campaign.camera.direction.x, campaign.camera.direction.z));
 		campaign.camera.position += modifier * glm::vec3(dir.x, 0.f, dir.y);
@@ -849,7 +861,7 @@ void GameNeedsRefactor::update_campaign(void)
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame(windowman.window);
+		ImGui_ImplSDL2_NewFrame(window.window);
 		ImGui::NewFrame();
 		ImGui::Begin("Campaign Debug Mode");
 		ImGui::SetWindowSize(ImVec2(400, 200));
@@ -909,8 +921,6 @@ void GameNeedsRefactor::new_campaign(void)
 	//campaign.seed = 4998651408012010310;
 	//campaign.seed = 8038877013446859113;
 	//campaign.seed = 6900807170427947938;
-
-	write_runtime_log("seed: " + std::to_string(campaign.seed));
 
 	campaign.atlas->generate(campaign.seed, &modular.params);
 
@@ -974,14 +984,12 @@ void GameNeedsRefactor::prepare_campaign(void)
 
 	auto trees = campaign.atlas->get_trees();
 	ents.clear();
-	printf("n trees %d\n", trees.size());
 	for (int i = 0; i < trees.size(); i++) {
 		Entity *entity = new Entity(trees[i].position, trees[i].rotation);
 		entity->scale = trees[i].scale;
 		campaign.entities.push_back(entity);
 		ents.push_back(entity);
 	}
-	printf("entities n trees %d\n", ents.size());
 	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
 
 	btCollisionShape *shape = campaign.collisionman.add_sphere(5.f);
@@ -1048,7 +1056,7 @@ void GameNeedsRefactor::run_campaign(void)
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		}
 
-		windowman.swap();
+		window.swap();
 		timer.end();
 
 		if (state == GS_BATTLE) {
@@ -1082,7 +1090,7 @@ void GameNeedsRefactor::run(void)
 		if (debugmode) {
 			// Start the Dear ImGui frame
 			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplSDL2_NewFrame(windowman.window);
+			ImGui_ImplSDL2_NewFrame(window.window);
 			ImGui::NewFrame();
 			ImGui::Begin("Main Menu Debug Mode");
 			ImGui::SetWindowSize(ImVec2(400, 200));
@@ -1099,7 +1107,7 @@ void GameNeedsRefactor::run(void)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		font_shader.use();
-		glm::mat4 menu_project = glm::ortho(0.0f, float(windowman.width), 0.0f, float(windowman.height));
+		glm::mat4 menu_project = glm::ortho(0.0f, float(window.width), 0.0f, float(window.height));
 		font_shader.uniform_mat4("PROJECT", menu_project);
 		textman->display();
 
@@ -1108,7 +1116,7 @@ void GameNeedsRefactor::run(void)
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		}
 
-		windowman.swap();
+		window.swap();
 
 		if (state == GS_NEW_CAMPAIGN) {
 			new_campaign();
@@ -1121,16 +1129,8 @@ void GameNeedsRefactor::run(void)
 
 int main(int argc, char *argv[])
 {
-	write_start_log();
+	Engine engine;
+	auto status = engine.run();
 
-	GameNeedsRefactor archeon;
-	if (!archeon.init()) {
-		exit(EXIT_FAILURE);
-	}
-	archeon.run();
-	archeon.shutdown();
-
-	write_exit_log();
-
-	return 0;
+	return status;
 }

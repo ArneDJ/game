@@ -12,9 +12,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "../extern/aixlog/aixlog.h"
+
 #define CGLTF_IMPLEMENTATION
 
-#include "logger.h"
 #include "image.h"
 #include "texture.h"
 #include "mesh.h"
@@ -55,7 +56,7 @@ Model::Model(const std::string &filepath)
 		load_data(filepath, data);
 		find_bounds(data);
 	} else {
-		write_error_log("GLTF Mesh import error for "  + filepath + ": ");
+		LOG(ERROR, "GLTF") << filepath;
 		print_gltf_error(result);
 	}
 		
@@ -416,31 +417,31 @@ static void print_gltf_error(cgltf_result error)
 {
 	switch (error) {
 	case cgltf_result_data_too_short:
-		write_error_log("data too short");
+		LOG(ERROR, "GLTF") << "data too short";
 		break;
 	case cgltf_result_unknown_format:
-		write_error_log("unknown format");
+		LOG(ERROR, "GLTF") << "unknown format";
 		break;
 	case cgltf_result_invalid_json:
-		write_error_log("invalid json");
+		LOG(ERROR, "GLTF") << "invalid json";
 		break;
 	case cgltf_result_invalid_gltf:
-		write_error_log("invalid GLTF");
+		LOG(ERROR, "GLTF") << "invalid GLTF";
 		break;
 	case cgltf_result_invalid_options:
-		write_error_log("invalid options");
+		LOG(ERROR, "GLTF") << "invalid options";
 		break;
 	case cgltf_result_file_not_found:
-		write_error_log("file not found");
+		LOG(ERROR, "GLTF") << "file not found";
 		break;
 	case cgltf_result_io_error:
-		write_error_log("io error");
+		LOG(ERROR, "GLTF") << "io error";
 		break;
 	case cgltf_result_out_of_memory:
-		write_error_log("out of memory");
+		LOG(ERROR, "GLTF") << "out of memory";
 		break;
 	case cgltf_result_legacy_gltf:
-		write_error_log("legacy GLTF");
+		LOG(ERROR, "GLTF") << "legacy GLTF";
 		break;
 	};
 }

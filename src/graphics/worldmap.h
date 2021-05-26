@@ -6,6 +6,7 @@ public:
 	void load_materials(const std::vector<const Texture*> textures);
 	void reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap);
 	void reload_factionsmap(const Image *factionsmap);
+	void reload_masks(const Image *mask_image);
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr,  const glm::vec3 &sunposition);
 	void change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush);
 	void set_faction_factor(float factor);

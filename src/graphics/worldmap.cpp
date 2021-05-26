@@ -104,6 +104,11 @@ void Worldmap::reload_factionsmap(const Image *factionsmap)
 {
 	factions->reload(factionsmap);
 }
+	
+void Worldmap::reload_masks(const Image *mask_image)
+{
+	masks->reload(mask_image);
+}
 
 void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &sunposition)
 {

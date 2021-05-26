@@ -713,7 +713,7 @@ const struct navigation_soup* Atlas::get_navsoup(void) const
 	return &navsoup;
 }
 
-const std::unordered_map<uint32_t, struct holding>& Atlas::get_holdings(void) const
+const std::unordered_map<uint32_t, holding_t>& Atlas::get_holdings(void) const
 {
 	return holdings;
 }
@@ -765,6 +765,21 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 				factions->draw_triangle(a, b, c, CHANNEL_BLUE, 255*color.z);
 			}
 		}
+	}
+}
+	
+void Atlas::colorize_farm(const struct tile *tile, uint8_t color)
+{
+	const glm::vec2 mapscale = {
+		float(materialmasks->width) / SCALE.x,
+		float(materialmasks->height) / SCALE.z
+	};
+
+	glm::vec2 a = mapscale * tile->center;
+	for (const auto &bord : tile->borders) {
+		glm::vec2 b = mapscale * bord->c0->position;
+		glm::vec2 c = mapscale * bord->c1->position;
+		materialmasks->draw_triangle(a, b, c, CHANNEL_FARMS, color);
 	}
 }
 	
@@ -852,7 +867,7 @@ void Atlas::gen_holds(void)
 		depth[&t] = 0;
 		if (t.site == TOWN || t.site == CASTLE) {
 			candidates.push_back(&t);
-			struct holding hold;
+			struct holding_t hold;
 			hold.ID = index++;
 			hold.center = t.index;
 			holdings[hold.ID] = hold;

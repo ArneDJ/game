@@ -17,7 +17,8 @@
 #include "../extern/fastgaussianblur/fast_gaussian_blur.h"
 #include "../extern/fastgaussianblur/fast_gaussian_blur_template.h"
 
-#include "logger.h"
+#include "../extern/aixlog/aixlog.h"
+
 #include "geom.h"
 #include "image.h"
 
@@ -75,7 +76,7 @@ Image::~Image(void)
 void Image::copy(const Image *original)
 {
 	if (original->size != size) {
-		write_error_log("Image copy error: size does not match");
+		LOG(ERROR, "Image") << "copy error: size does not match";
 	}
 	
 	std::memcpy(data, original->data, original->size * sizeof(uint8_t));
@@ -273,15 +274,15 @@ void Image::draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t 
 void Image::create_normalmap(const FloatImage *displacement, float strength)
 {
 	if (channels != COLORSPACE_RGB) {
-		write_error_log("Normal map creation error: image is not RGB");
+		LOG(ERROR, "Image") << "Normal map creation error: image is not RGB";
 		return;
 	}
 	if (displacement->channels != COLORSPACE_GRAYSCALE) {
-		write_error_log("Normal map creation error: displacement image is not grayscale");
+		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not grayscale";
 		return;
 	}
 	if (width != displacement->width || height != displacement->height) {
-		write_error_log("Normal map creation error: displacement image is not same resolution as normalmap image");
+		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not same resolution as normalmap image";
 		return;
 	}
 
@@ -322,7 +323,7 @@ FloatImage::~FloatImage(void)
 void FloatImage::copy(const FloatImage *original)
 {
 	if (original->size != size) {
-		write_error_log("Float image copy error: size does not match");
+		LOG(ERROR, "Image") << "Float image copy error: size does not match";
 	}
 	
 	std::memcpy(data, original->data, original->size * sizeof(float));
@@ -446,15 +447,15 @@ void FloatImage::normalize(uint8_t chan)
 void FloatImage::create_normalmap(const FloatImage *displacement, float strength)
 {
 	if (channels != COLORSPACE_RGB) {
-		write_error_log("Normal map creation error: image is not RGB");
+		LOG(ERROR, "Image") << "Normal map creation error: image is not RGB";
 		return;
 	}
 	if (displacement->channels != COLORSPACE_GRAYSCALE) {
-		write_error_log("Normal map creation error: displacement image is not grayscale");
+		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not grayscale";
 		return;
 	}
 	if (width != displacement->width || height != displacement->height) {
-		write_error_log("Normal map creation error: displacement image is not same resolution as normalmap image");
+		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not same resolution as normalmap image";
 		return;
 	}
 

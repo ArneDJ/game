@@ -16,7 +16,8 @@
 #include "ozz/base/io/archive.h"
 #include "ozz/base/io/stream.h"
 
-#include "logger.h"
+#include "../extern/aixlog/aixlog.h"
+
 #include "animation.h"
 	
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
@@ -34,13 +35,12 @@ bool AnimationSampler::load(const std::string &filepath)
 {
 	ozz::io::File file(filepath.c_str(), "rb");
 	if (!file.opened()) {
-		std::string err = "Animation error: cannot open animation file " + filepath;
-		write_error_log(err);
+		LOG(ERROR, "Animation") << "cannot open animation file" + filepath;
 		return false;
 	}
 	ozz::io::IArchive archive(&file);
 	if (!archive.TestTag<ozz::animation::Animation>()) {
-		write_error_log("Animation error: failed to load animation instance from file");
+		LOG(ERROR, "Animation") << "failed to load animation instance file";
 		return false;
 	}
 
@@ -60,7 +60,7 @@ Animator::Animator(const std::string &skeletonpath, const std::vector<std::strin
 		AnimationSampler *sampler = new AnimationSampler;
 		sampler->load(animationpaths[i]);
 		if (num_joints != sampler->animation.num_tracks()) {
-			write_error_log("Animation error: skeleton joints of " + skeletonpath + " and animation tracks of " + animationpaths[i] + " mismatch\n");
+			LOG(ERROR, "Animation") << "skeleton joints of " + skeletonpath + " and animation tracks of " + animationpaths[i] + " mismatch";
 		}
 		// Allocates sampler runtime buffers.
 		sampler->locals.resize(num_soa_joints);
@@ -159,15 +159,14 @@ bool Animator::load_skeleton(const std::string &filepath)
 
 	// Checks file status, which can be closed if filepath.c_str() is invalid.
 	if (!file.opened()) {
-		std::string err = "Animation error: cannot open skeleton file " + filepath;
-		write_error_log(err);
+		LOG(ERROR, "Animation") << "cannot open skeleton file " + filepath;
 		return false;
 	}
 
 	ozz::io::IArchive archive(&file);
 
 	if (!archive.TestTag<ozz::animation::Skeleton>()) {
-		write_error_log("Animation error: archive doesn't contain the expected object type");
+		LOG(ERROR, "Animation") << "archive doesn't contain the expected object type";
 		return false;
 	}
 

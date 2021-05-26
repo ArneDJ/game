@@ -3,10 +3,12 @@
 #include <GL/glew.h>
 #include <GL/gl.h>
 
-#include "logger.h"
+#include "../extern/aixlog/aixlog.h"
 #include "window.h"
+
+using namespace CORE;
 	
-bool WindowManager::init(uint16_t w, uint16_t h)
+bool Window::open(uint16_t w, uint16_t h)
 {
 	width = w;
 	height = h;
@@ -16,25 +18,22 @@ bool WindowManager::init(uint16_t w, uint16_t h)
 	// open the SDL window
 	window = SDL_CreateWindow("game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, SDL_WINDOW_OPENGL);
 	if (window == nullptr) {
-		write_error_log(std::string("SDL Window could not be created!"));
+		LOG(ERROR, "Window") << "SDL Window could not be created!";
 		return false;
 	}
 
 	// create OpenGL context
 	glcontext = SDL_GL_CreateContext(window);
 	if (glcontext == nullptr) {
-		write_error_log(std::string("SDL_GL context could not be created!"));
+		LOG(ERROR, "Window") << "SDL_GL context could not be created!";
 		return false;
 	}
 	// set up GLEW
 	GLenum error = glewInit();
 	if (error != GLEW_OK) {
-		write_error_log(std::string("Could not initialize glew!"));
+		LOG(ERROR, "Window") << "Could not initialize GLEW!";
 		return false;
 	}
-
-	std::string glversion = (const char*)glGetString(GL_VERSION);
-	write_runtime_log("*** OpenGL Version: " + glversion + "***");
 
 	// VSYNC
 	//if (winflags & VSYNC) { SDL_GL_SetSwapInterval(1); }
@@ -42,7 +41,7 @@ bool WindowManager::init(uint16_t w, uint16_t h)
 	return true;
 }
 
-void WindowManager::teardown(void)
+void Window::close(void)
 {
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
@@ -50,12 +49,12 @@ void WindowManager::teardown(void)
 	SDL_Quit();
 }
 
-void WindowManager::swap(void) 
+void Window::swap(void) 
 { 
 	SDL_GL_SwapWindow(window); 
 };
 	
-void WindowManager::set_fullscreen(void)
+void Window::set_fullscreen(void)
 {
 	SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 }
