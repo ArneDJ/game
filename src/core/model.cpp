@@ -129,8 +129,8 @@ void Model::find_bounds(const cgltf_data *data)
 {
 	bool found = false;
 
-	float min = std::numeric_limits<float>::max();
-	float max = std::numeric_limits<float>::min();
+	float min = (std::numeric_limits<float>::max)();
+	float max = (std::numeric_limits<float>::min)();
 	bound_min = { min, min, min };
 	bound_max = { max, max, max };
 
@@ -145,8 +145,8 @@ void Model::find_bounds(const cgltf_data *data)
 					found = true;
 					glm::vec3 min = { accessor->min[0], accessor->min[1], accessor->min[2] };
 					glm::vec3 max = { accessor->max[0], accessor->max[1], accessor->max[2] };
-					bound_min = glm::min(bound_min, min);
-					bound_max = glm::max(bound_max, max);
+					bound_min = (glm::min)(bound_min, min);
+					bound_max = (glm::max)(bound_max, max);
 				}
 			}
 		}
