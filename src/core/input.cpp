@@ -4,7 +4,9 @@
 
 #include "input.h"
 	
-InputManager::InputManager(void)
+using namespace CORE;
+
+Input::Input(void)
 {
 	exit = false;
 	mousegrab = false;
@@ -12,12 +14,12 @@ InputManager::InputManager(void)
 	mousecoords.relative = { 0.f, 0.f };
 }
 	
-bool InputManager::exit_request(void) const
+bool Input::exit_request(void) const
 {
 	return exit;
 }
 
-void InputManager::update(void) 
+void Input::update(void) 
 { 
 	mousewheel = 0;
 
@@ -37,7 +39,7 @@ void InputManager::update(void)
 	sample_relative_mousecoords();
 }
 
-void InputManager::update_keymap(void) 
+void Input::update_keymap(void) 
 {
 	// copy over keymap of current tick to previous keymap
 	for (auto &iter : keymap) {
@@ -45,7 +47,7 @@ void InputManager::update_keymap(void)
 	}
 }
 
-void InputManager::sample_event(const SDL_Event *event)
+void Input::sample_event(const SDL_Event *event)
 {
 	if (event->type == SDL_QUIT) { exit = true; }
 
@@ -68,7 +70,7 @@ void InputManager::sample_event(const SDL_Event *event)
 	}
 }
 
-void InputManager::sample_relative_mousecoords(void) 
+void Input::sample_relative_mousecoords(void) 
 {
 	int x = 0;
 	int y = 0;
@@ -81,7 +83,7 @@ void InputManager::sample_relative_mousecoords(void)
 	}
 }
 
-void InputManager::sample_absolute_mousecoords(void) 
+void Input::sample_absolute_mousecoords(void) 
 {
 	int x = 0;
 	int y = 0;
@@ -90,17 +92,17 @@ void InputManager::sample_absolute_mousecoords(void)
 	mousecoords.absolute.y = float(y);
 }
 
-void InputManager::press_key(uint32_t keyID)
+void Input::press_key(uint32_t keyID)
 {
 	keymap[keyID] = true;
 }
 
-void InputManager::release_key(uint32_t keyID)
+void Input::release_key(uint32_t keyID)
 {
 	keymap[keyID] = false;
 }
 
-bool InputManager::key_down(uint32_t keyID) const
+bool Input::key_down(uint32_t keyID) const
 {
 	// We dont want to use the associative array approach here
 	// because we don't want to create a key if it doesnt exist.
@@ -113,12 +115,12 @@ bool InputManager::key_down(uint32_t keyID) const
 	return false;
 }
 
-bool InputManager::key_pressed(uint32_t keyID) const
+bool Input::key_pressed(uint32_t keyID) const
 {
 	return (key_down(keyID) && !was_key_down(keyID));
 }
 
-bool InputManager::was_key_down(uint32_t keyID) const
+bool Input::was_key_down(uint32_t keyID) const
 {
 	// We dont want to use the associative array approach here
 	// because we don't want to create a key if it doesnt exist.
@@ -131,17 +133,17 @@ bool InputManager::was_key_down(uint32_t keyID) const
 	return false;
 }
 
-glm::vec2 InputManager::abs_mousecoords(void) const
+glm::vec2 Input::abs_mousecoords(void) const
 {
 	return mousecoords.absolute;
 }
 
-glm::vec2 InputManager::rel_mousecoords(void) const
+glm::vec2 Input::rel_mousecoords(void) const
 {
 	return mousecoords.relative;
 }
 
-int InputManager::mousewheel_y(void) const
+int Input::mousewheel_y(void) const
 {
 	return mousewheel;
 }

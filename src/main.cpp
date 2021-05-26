@@ -89,8 +89,6 @@
 #include "army.h"
 //#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
 
-static const glm::vec3 sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
-
 enum game_state_t {
 	GS_TITLE,
 	GS_NEW_CAMPAIGN,
@@ -149,7 +147,7 @@ public:
 	Skybox skybox;
 };
 
-class GameNeedsRefactor {
+class Game {
 public:
 	bool init(void);
 	void run(void);
@@ -162,10 +160,10 @@ private:
 	struct game_settings_t settings;
 	Saver saver;
 	CORE::Window window;
-	InputManager inputman;
+	CORE::Input input;
+	CORE::Timer timer;
 	TextManager *textman;
 	LabelManager *labelman;
-	Timer timer;
 	Debugger debugger;
 	Campaign campaign;
 	Battle battle;
@@ -205,7 +203,7 @@ class Engine {
 public:
 	int32_t run(void);
 private:
-	GameNeedsRefactor game;
+	Game game;
 };
 
 int32_t Engine::run(void)
@@ -266,7 +264,7 @@ static void import_pattern(const std::string &fpath, std::string &pattern)
 	fclose(fp);
 }
 
-void GameNeedsRefactor::set_opengl_states(void)
+void Game::set_opengl_states(void)
 {
 	// set OpenGL states
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -281,7 +279,7 @@ void GameNeedsRefactor::set_opengl_states(void)
 	glLineWidth(5.f);
 }
 
-void GameNeedsRefactor::load_settings(void)
+void Game::load_settings(void)
 {
 	static const std::string INI_SETTINGS_PATH = "settings.ini";
 	INIReader reader = { INI_SETTINGS_PATH.c_str() };
@@ -302,7 +300,7 @@ void GameNeedsRefactor::load_settings(void)
 	settings.module_name = reader.Get("", "MODULE", "native");
 }
 
-bool GameNeedsRefactor::init(void)
+bool Game::init(void)
 {
 	// initialize the logger
 	auto sink_cout = std::make_shared<AixLog::SinkCout>(AixLog::Severity::trace);
@@ -386,7 +384,7 @@ bool GameNeedsRefactor::init(void)
 	return true;
 }
 	
-void GameNeedsRefactor::load_module(void)
+void Game::load_module(void)
 {
 	modular.load(settings.module_name);
 
@@ -396,7 +394,7 @@ void GameNeedsRefactor::load_module(void)
 
 }
 
-void GameNeedsRefactor::shutdown(void)
+void Game::shutdown(void)
 {
 	teardown_campaign();
 
@@ -420,7 +418,7 @@ void GameNeedsRefactor::shutdown(void)
 	window.close();
 }
 
-void GameNeedsRefactor::teardown_campaign(void)
+void Game::teardown_campaign(void)
 {
 	campaign.skybox.teardown();
 
@@ -440,7 +438,7 @@ void GameNeedsRefactor::teardown_campaign(void)
 	delete campaign.watersurface;
 }
 
-void GameNeedsRefactor::teardown_battle(void)
+void Game::teardown_battle(void)
 {
 	battle.skybox.teardown();
 
@@ -456,22 +454,22 @@ void GameNeedsRefactor::teardown_battle(void)
 	delete battle.surface;
 }
 	
-void GameNeedsRefactor::update_battle(void)
+void Game::update_battle(void)
 {
 	// input
-	inputman.update();
-	if (inputman.exit_request()) {
+	input.update();
+	if (input.exit_request()) {
 		state = GS_EXIT;
 	}
 
-	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
+	glm::vec2 rel_mousecoords = settings.look_sensitivity * input.rel_mousecoords();
 	battle.camera.target(rel_mousecoords);
 
 	float modifier = 20.f * timer.delta;
-	if (inputman.key_down(SDLK_w)) { battle.camera.move_forward(modifier); }
-	if (inputman.key_down(SDLK_s)) { battle.camera.move_backward(modifier); }
-	if (inputman.key_down(SDLK_d)) { battle.camera.move_right(modifier); }
-	if (inputman.key_down(SDLK_a)) { battle.camera.move_left(modifier); }
+	if (input.key_down(SDLK_w)) { battle.camera.move_forward(modifier); }
+	if (input.key_down(SDLK_s)) { battle.camera.move_backward(modifier); }
+	if (input.key_down(SDLK_d)) { battle.camera.move_right(modifier); }
+	if (input.key_down(SDLK_a)) { battle.camera.move_left(modifier); }
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -485,9 +483,9 @@ void GameNeedsRefactor::update_battle(void)
 		ImGui::End();
 	}
 
-	battle.player->move(player_direction(battle.camera.direction, inputman.key_down(SDLK_w), inputman.key_down(SDLK_s), inputman.key_down(SDLK_d), inputman.key_down(SDLK_a)));
+	battle.player->move(player_direction(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a)));
 
-	inputman.update_keymap();
+	input.update_keymap();
 
 	// update creatures
 	battle.player->update(battle.physicsman.get_world());
@@ -500,11 +498,11 @@ void GameNeedsRefactor::update_battle(void)
 	battle.camera.update();
 	
 	// update atmosphere
-	battle.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, settings.clouds_enabled);
+	battle.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), settings.clouds_enabled);
 	battle.skybox.update(&battle.camera, timer.elapsed);
 }
 	
-void GameNeedsRefactor::prepare_battle(void)
+void Game::prepare_battle(void)
 {
 	// find the campaign tile the player is on and prepare local scene properties based on it
 	glm::vec2 position = translate_3D_to_2D(campaign.player->position);
@@ -536,7 +534,7 @@ void GameNeedsRefactor::prepare_battle(void)
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
-	battle.terrain->change_atmosphere(sun_position, modular.colors.skybottom, 0.0005f);
+	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
 	battle.physicsman.insert_body(battle.surface);
@@ -614,7 +612,7 @@ void GameNeedsRefactor::prepare_battle(void)
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 }
 
-void GameNeedsRefactor::run_battle(void)
+void Game::run_battle(void)
 {
 	prepare_battle();
 
@@ -658,7 +656,7 @@ void GameNeedsRefactor::run_battle(void)
 	cleanup_battle();
 }
 	
-void GameNeedsRefactor::cleanup_battle(void)
+void Game::cleanup_battle(void)
 {
 	// remove stationary objects from physics
 	for (const auto &stationary : battle.stationaries) {
@@ -683,7 +681,7 @@ void GameNeedsRefactor::cleanup_battle(void)
 	battle.stationaries.clear();
 }
 
-void GameNeedsRefactor::init_battle(void)
+void Game::init_battle(void)
 {
 	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battle.camera.project();
@@ -717,7 +715,7 @@ void GameNeedsRefactor::init_battle(void)
 	battle.skybox.init(window.width, window.height);
 }
 
-void GameNeedsRefactor::init_campaign(void)
+void Game::init_campaign(void)
 {
 	campaign.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	campaign.camera.project();
@@ -748,7 +746,7 @@ void GameNeedsRefactor::init_campaign(void)
 	campaign.skybox.init(window.width, window.height);
 }
 
-void GameNeedsRefactor::cleanup_campaign(void)
+void Game::cleanup_campaign(void)
 {
 	for (int i = 0; i < campaign.entities.size(); i++) {
 		delete campaign.entities[i];
@@ -777,34 +775,34 @@ void GameNeedsRefactor::cleanup_campaign(void)
 	campaign.seanav.cleanup();
 }
 
-void GameNeedsRefactor::update_campaign(void)
+void Game::update_campaign(void)
 {
-	inputman.update();
-	if (inputman.exit_request()) {
+	input.update();
+	if (input.exit_request()) {
 		state = GS_EXIT;
 	}
 	
-	glm::vec2 rel_mousecoords = settings.look_sensitivity * inputman.rel_mousecoords();
+	glm::vec2 rel_mousecoords = settings.look_sensitivity * input.rel_mousecoords();
 	campaign.camera.target(rel_mousecoords);
 
 	float zoomlevel = campaign.camera.position.y / campaign.atlas->SCALE.y;
 	zoomlevel = glm::clamp(zoomlevel, 0.f, 2.f);
 	float modifier = 200.f * timer.delta * (zoomlevel*zoomlevel);
-	if (inputman.key_down(SDLK_w)) { 
+	if (input.key_down(SDLK_w)) { 
 		glm::vec2 dir = glm::normalize(glm::vec2(campaign.camera.direction.x, campaign.camera.direction.z));
 		campaign.camera.position += modifier * glm::vec3(dir.x, 0.f, dir.y);
 	}
-	if (inputman.key_down(SDLK_s)) { 
+	if (input.key_down(SDLK_s)) { 
 		glm::vec2 dir = glm::normalize(glm::vec2(campaign.camera.direction.x, campaign.camera.direction.z));
 		campaign.camera.position -= modifier * glm::vec3(dir.x, 0.f, dir.y);
 	}
-	if (inputman.key_down(SDLK_d)) { campaign.camera.move_right(modifier); }
-	if (inputman.key_down(SDLK_a)) { campaign.camera.move_left(modifier); }
+	if (input.key_down(SDLK_d)) { campaign.camera.move_right(modifier); }
+	if (input.key_down(SDLK_a)) { campaign.camera.move_left(modifier); }
 
 	// scroll forward or backward
 
 	campaign.camera.update();
-	int mousewheel = inputman.mousewheel_y();
+	int mousewheel = input.mousewheel_y();
 	if (mousewheel > 0) {
 		campaign.camera.move_forward(10.0*mousewheel*modifier);
 	}
@@ -820,8 +818,8 @@ void GameNeedsRefactor::update_campaign(void)
 		}
 	}
 
-	if (inputman.key_pressed(SDL_BUTTON_RIGHT) == true && inputman.mouse_grabbed() == false) {
-		glm::vec3 ray = campaign.camera.ndc_to_ray(inputman.abs_mousecoords());
+	if (input.key_pressed(SDL_BUTTON_RIGHT) == true && input.mouse_grabbed() == false) {
+		glm::vec3 ray = campaign.camera.ndc_to_ray(input.abs_mousecoords());
 		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
 		if (result.hit) {
 			campaign.player->set_target_type(TARGET_LAND);
@@ -881,7 +879,7 @@ void GameNeedsRefactor::update_campaign(void)
 		}
 	}
 
-	inputman.update_keymap();
+	input.update_keymap();
 
 	glm::vec3 origin = { campaign.player->position.x, campaign.atlas->SCALE.y, campaign.player->position.z };
 	glm::vec3 end = { campaign.player->position.x, 0.f, campaign.player->position.z };
@@ -889,7 +887,7 @@ void GameNeedsRefactor::update_campaign(void)
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
-	campaign.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, sun_position, false);
+	campaign.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), false);
 	campaign.skybox.update(&campaign.camera, timer.elapsed);
 	
 	float faction_colormix = 0.f;
@@ -910,7 +908,7 @@ void GameNeedsRefactor::update_campaign(void)
 	labelman->set_depth(label_scale > 3.f);
 }
 	
-void GameNeedsRefactor::new_campaign(void)
+void Game::new_campaign(void)
 {
 	// generate a new seed
 	std::random_device rd;
@@ -938,7 +936,7 @@ void GameNeedsRefactor::new_campaign(void)
 	run_campaign();
 }
 	
-void GameNeedsRefactor::load_campaign(void)
+void Game::load_campaign(void)
 {
 	auto start = std::chrono::steady_clock::now();
 	saver.load("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
@@ -950,7 +948,7 @@ void GameNeedsRefactor::load_campaign(void)
 	run_campaign();
 }
 
-void GameNeedsRefactor::prepare_campaign(void)
+void Game::prepare_campaign(void)
 {
 	campaign.atlas->create_mapdata(campaign.seed);
 
@@ -960,7 +958,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
-	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, sun_position);
+	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
 	campaign.collisionman.insert_body(campaign.surface);
@@ -1020,7 +1018,7 @@ void GameNeedsRefactor::prepare_campaign(void)
 	}
 }
 
-void GameNeedsRefactor::run_campaign(void)
+void Game::run_campaign(void)
 {
 	state = GS_CAMPAIGN;
 	
@@ -1067,7 +1065,7 @@ void GameNeedsRefactor::run_campaign(void)
 	cleanup_campaign();
 }
 
-void GameNeedsRefactor::run(void)
+void Game::run(void)
 {
 	// first import the game module
 	load_module();
@@ -1082,8 +1080,8 @@ void GameNeedsRefactor::run(void)
 	textman->add_text("Archeon Prototype", glm::vec3(1.f, 1.f, 1.f), glm::vec2(50.f, 100.f));
 
 	while (state == GS_TITLE) {
-		inputman.update();
-		if (inputman.exit_request()) {
+		input.update();
+		if (input.exit_request()) {
 			state = GS_EXIT;
 		}
 

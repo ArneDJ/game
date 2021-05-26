@@ -1,7 +1,9 @@
 
-class InputManager {
+namespace CORE {
+
+class Input {
 public:
-	InputManager(void);
+	Input(void);
 	void update(void);
 	void update_keymap(void);
 	bool exit_request(void) const;
@@ -28,4 +30,6 @@ private:
 	void sample_relative_mousecoords(void);
 	void sample_absolute_mousecoords(void);
 	void sample_event(const SDL_Event *event);
+};
+
 };

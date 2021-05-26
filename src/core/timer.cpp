@@ -3,6 +3,8 @@
 
 #include "timer.h"
 
+using namespace CORE;
+
 void Timer::begin(void)
 {
 	ticks = std::chrono::steady_clock::now();

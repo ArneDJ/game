@@ -1,4 +1,6 @@
 
+namespace CORE {
+
 class Timer {
 public:
 	float delta = 0.f; // time of a frame in seconds
@@ -11,3 +13,5 @@ private:
 	std::chrono::time_point<std::chrono::steady_clock> ticks; // ugly syntax
 	uint16_t tick_count = 0;
 };
+
+}
