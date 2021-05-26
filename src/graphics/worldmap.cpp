@@ -50,6 +50,13 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	factions = new Texture { factionsmap };
 	factions->change_wrapping(GL_CLAMP_TO_EDGE);
 
+	add_material("DISPLACEMENT", topology);
+	add_material("NAUTICAL_DISPLACEMENT", nautical);
+	add_material("NORMALMAP", normals);
+	add_material("RAINMAP", rain);
+	add_material("MASKMAP", masks);
+	add_material("FACTIONSMAP", factions);
+
 	land.compile("shaders/campaign/worldmap.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/campaign/worldmap.tesc", GL_TESS_CONTROL_SHADER);
 	land.compile("shaders/campaign/worldmap.tese", GL_TESS_EVALUATION_SHADER);
@@ -63,16 +70,18 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	water.link();
 }
 	
-void Worldmap::load_materials(const std::vector<const Texture*> textures)
+void Worldmap::add_material(const std::string &name, const Texture *texture)
 {
-	materials.clear();
-	materials.insert(materials.begin(), textures.begin(), textures.end());
+	struct texture_binding_t texture_binding = {
+		name,
+		texture
+	};
+
+	materials.push_back(texture_binding);
 }
 
 Worldmap::~Worldmap(void)
 {
-	materials.clear();
-
 	delete patches;
 	
 	delete topology;
@@ -129,14 +138,10 @@ void Worldmap::display_land(const Camera *camera) const
 	land.uniform_vec3("GRASS_LUSH", grass_lush);
 	land.uniform_float("FACTION_FACTOR", faction_factor);
 
-	topology->bind(GL_TEXTURE0);
-	normals->bind(GL_TEXTURE1);
-	rain->bind(GL_TEXTURE2);
-	masks->bind(GL_TEXTURE3);
-	factions->bind(GL_TEXTURE4);
-
 	for (int i = 0; i < materials.size(); i++) {
-		materials[i]->bind(GL_TEXTURE5 + i);
+		const auto &binding = materials[i];
+		land.uniform_int(binding.name.c_str(), i);
+		binding.texture->bind(GL_TEXTURE0 + i);
 	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -158,10 +163,10 @@ void Worldmap::display_water(const Camera *camera, float time) const
 	water.uniform_float("FOG_FACTOR", fogfactor);
 	water.uniform_vec3("SUN_POS", sunpos);
 
-	nautical->bind(GL_TEXTURE0);
-
 	for (int i = 0; i < materials.size(); i++) {
-		materials[i]->bind(GL_TEXTURE4 + i);
+		const auto &binding = materials[i];
+		water.uniform_int(binding.name.c_str(), i);
+		binding.texture->bind(GL_TEXTURE0 + i);
 	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

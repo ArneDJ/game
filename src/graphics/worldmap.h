@@ -3,7 +3,8 @@ class Worldmap {
 public:
 	Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap);
 	~Worldmap(void);
-	void load_materials(const std::vector<const Texture*> textures);
+	//void load_materials(const std::vector<const Texture*> textures);
+	void add_material(const std::string &name, const Texture *texture);
 	void reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap);
 	void reload_factionsmap(const Image *factionsmap);
 	void reload_masks(const Image *mask_image);
@@ -21,7 +22,8 @@ private:
 	Texture *normals = nullptr;
 	Texture *masks = nullptr;
 	Texture *factions = nullptr;
-	std::vector<const Texture*> materials;
+	//std::vector<const Texture*> materials;
+	std::vector<texture_binding_t> materials;
 	Shader land;
 	Shader water;
 	glm::vec3 scale;

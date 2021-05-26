@@ -7,17 +7,17 @@ in TESSEVAL {
 
 out vec4 fcolor;
 
-layout(binding = 0) uniform sampler2D DISPLACEMENT;
-layout(binding = 1) uniform sampler2D NORMALMAP;
-layout(binding = 2) uniform sampler2D RAINMAP;
-layout(binding = 3) uniform sampler2D MASKMAP;
-layout(binding = 4) uniform sampler2D FACTIONSMAP;
+uniform sampler2D DISPLACEMENT;
+uniform sampler2D NORMALMAP;
+uniform sampler2D RAINMAP;
+uniform sampler2D MASKMAP;
+uniform sampler2D FACTIONSMAP;
 // material textures
-layout(binding = 5) uniform sampler2D STONEMAP;
-layout(binding = 6) uniform sampler2D SANDMAP;
-layout(binding = 7) uniform sampler2D SNOWMAP;
-layout(binding = 8) uniform sampler2D GRASSMAP;
-layout(binding = 9) uniform sampler2D FARMMAP;
+uniform sampler2D STONEMAP;
+uniform sampler2D SANDMAP;
+uniform sampler2D SNOWMAP;
+uniform sampler2D GRASSMAP;
+//uniform sampler2D FARMMAP;
 
 uniform vec3 CAM_POS;
 uniform vec3 FOG_COLOR;

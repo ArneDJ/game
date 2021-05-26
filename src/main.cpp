@@ -721,14 +721,11 @@ void Game::init_campaign(void)
 	campaign.atlas = new Atlas;
 
 	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions() };
-	std::vector<const Texture*> materials;
-	materials.push_back(mediaman.load_texture("ground/stone.dds"));
-	materials.push_back(mediaman.load_texture("ground/sand.dds"));
-	materials.push_back(mediaman.load_texture("ground/snow.dds"));
-	materials.push_back(mediaman.load_texture("ground/grass.dds"));
-	materials.push_back(mediaman.load_texture("ground/farmland.dds"));
-	materials.push_back(mediaman.load_texture("ground/water_normal.dds"));
-	campaign.worldmap->load_materials(materials);
+	campaign.worldmap->add_material("STONEMAP", mediaman.load_texture("ground/stone.dds"));
+	campaign.worldmap->add_material("SANDMAP", mediaman.load_texture("ground/sand.dds"));
+	campaign.worldmap->add_material("SNOWMAP", mediaman.load_texture("ground/snow.dds"));
+	campaign.worldmap->add_material("GRASSMAP", mediaman.load_texture("ground/grass.dds"));
+	campaign.worldmap->add_material("WATER_BUMPMAP", mediaman.load_texture("ground/water_normal.dds"));
 
 	campaign.surface = campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
 	campaign.watersurface = campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE);
