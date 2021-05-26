@@ -26,12 +26,12 @@ static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *i
 
 static inline int min3(int a, int b, int c)
 {
-	return std::min(a, std::min(b, c));
+	return (std::min)(a, (std::min)(b, c));
 }
 
 static inline int max3(int a, int b, int c)
 {
-	return std::max(a, std::max(b, c));
+	return (std::max)(a, (std::max)(b, c));
 }
 
 // normal image creation
@@ -185,10 +185,10 @@ void Image::draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, u
 	int maxY = max3(int(a.y), int(b.y), int(c.y));
 
 	// Clip against screen bounds
-	minX = std::max(minX, 0);
-	minY = std::max(minY, 0);
-	maxX = std::min(maxX, width - 1);
-	maxY = std::min(maxY, height - 1);
+	minX = (std::max)(minX, 0);
+	minY = (std::max)(minY, 0);
+	maxX = (std::min)(maxX, width - 1);
+	maxY = (std::min)(maxY, height - 1);
 
 	// Triangle setup
 	int A01 = a.y - b.y, B01 = b.x - a.x;
@@ -413,13 +413,13 @@ void FloatImage::normalize(uint8_t chan)
 	const int stepsize = width / nsteps;
 
 	// find min and max
-	float min = std::numeric_limits<float>::max();
-	float max = std::numeric_limits<float>::min();
+	float min = (std::numeric_limits<float>::max)();
+	float max = (std::numeric_limits<float>::min)();
 	for (int x = 0; x < width; x++) {
 		for (int y = 0; y < height; y++) {
 			float value = sample(x, y, chan);
-			min = std::min(min, value);
-			max = std::max(max, value);
+			min = (std::min)(min, value);
+			max = (std::max)(max, value);
 		}
 	}
 
