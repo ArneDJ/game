@@ -1,12 +1,12 @@
 
 class MediaManager {
 public:
-	void change_path(const std::string &path);
-	const Texture* load_texture(const std::string &relpath);
-	const GLTF::Model* load_model(const std::string &relpath);
-	void teardown(void);
+	static void change_path(const std::string &path);
+	static const Texture* load_texture(const std::string &relpath);
+	static const GLTF::Model* load_model(const std::string &relpath);
+	static void teardown(void);
 private:
-	std::string basepath;
-	std::map<uint64_t, Texture*> textures;
-	std::map<uint64_t, GLTF::Model*> models;
+	static std::string basepath;
+	static std::map<uint64_t, Texture*> textures;
+	static std::map<uint64_t, GLTF::Model*> models;
 };

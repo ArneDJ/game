@@ -55,7 +55,7 @@ void RenderGroup::add_object(const GLTF::Model *mod, const std::vector<const Ent
 	objects.push_back(object);
 }
 
-void RenderGroup::display(const Camera *camera) const
+void RenderGroup::display(const CORE::Camera *camera) const
 {
 	shader->use();
 	shader->uniform_mat4("VP", camera->VP);
@@ -196,7 +196,7 @@ void BillboardGroup::add_billboard(const Texture *tex, const std::vector<const E
 	billboards.push_back(billboard);
 }
 
-void BillboardGroup::display(const Camera *camera) const
+void BillboardGroup::display(const CORE::Camera *camera) const
 {
 	shader->use();
 	shader->uniform_vec3("CAM_DIR", camera->direction);

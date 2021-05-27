@@ -14,7 +14,7 @@ public:
 	void delete_navmeshes(void);
 	// to visualize bounding boxes
 	void add_bbox(const glm::vec3 &min, const glm::vec3 &max, const std::vector<const Entity*> &entities);
-	void render_bboxes(const Camera *camera);
+	void render_bboxes(const CORE::Camera *camera);
 	void delete_bboxes(void);
 private:
 	const Shader *shader;

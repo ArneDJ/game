@@ -32,7 +32,6 @@
 enum material_channels {
 	CHANNEL_SNOW = 0,
 	CHANNEL_GRASS,
-	CHANNEL_FARMS,
 	CHANNEL_COUNT
 };
 
@@ -538,19 +537,6 @@ void Atlas::create_materialmasks(void)
 		}
 	}
 
-	// farm lands
-	#pragma omp parallel for
-	for (const auto &t : worldgraph->tiles) {
-		if (t.site == CASTLE || t.site == TOWN) {
-			glm::vec2 a = mapscale * t.center;
-			for (const auto &bord : t.borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				materialmasks->draw_triangle(a, b, c, CHANNEL_FARMS, 255);
-			}
-		}
-	}
-	
 	materialmasks->blur(1.f);
 }
 	
@@ -709,9 +695,9 @@ const Image* Atlas::get_factions(void) const
 	return factions;
 }
 	
-const struct navigation_soup* Atlas::get_navsoup(void) const
+const struct navigation_soup_t& Atlas::get_navsoup(void) const
 {
-	return &navsoup;
+	return navsoup;
 }
 
 const std::unordered_map<uint32_t, holding_t>& Atlas::get_holdings(void) const
@@ -766,21 +752,6 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 				factions->draw_triangle(a, b, c, CHANNEL_BLUE, 255*color.z);
 			}
 		}
-	}
-}
-	
-void Atlas::colorize_farm(const struct tile *tile, uint8_t color)
-{
-	const glm::vec2 mapscale = {
-		float(materialmasks->width) / SCALE.x,
-		float(materialmasks->height) / SCALE.z
-	};
-
-	glm::vec2 a = mapscale * tile->center;
-	for (const auto &bord : tile->borders) {
-		glm::vec2 b = mapscale * bord->c0->position;
-		glm::vec2 c = mapscale * bord->c1->position;
-		materialmasks->draw_triangle(a, b, c, CHANNEL_FARMS, color);
 	}
 }
 	

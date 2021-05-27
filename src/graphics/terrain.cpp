@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <string>
 #include <map>
@@ -22,30 +23,31 @@
 #include "../core/texture.h"
 #include "../core/mesh.h"
 #include "../core/model.h"
+#include "../core/media.h"
 #include "terrain.h"
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre, const GLTF::Model *grassmodel)
+Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
 	glm::vec2 max = { mapscale.x + 5.f, mapscale.z + 5.f };
-	patches = new Mesh { TERRAIN_PATCH_RES, min, max };
 
-	relief = new Texture { heightmap };
-	// special wrapping mode so edges of the map are at height 0
+	patches = std::make_unique<Mesh>(TERRAIN_PATCH_RES , min, max);
+
+	relief = std::make_unique<Texture>(heightmap);
 	relief->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normals = new Texture { normalmap };
+	normals = std::make_unique<Texture>(normalmap);
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 	
-	sitemasks = new Texture { cadastre };
+	sitemasks = std::make_unique<Texture>(cadastre);
 	sitemasks->change_wrapping(GL_CLAMP_TO_BORDER);
 
-	add_material("DISPLACEMENT", relief);
-	add_material("NORMALMAP", normals);
-	add_material("SITEMASKS", sitemasks);
+	add_material("DISPLACEMENT", relief.get());
+	add_material("NORMALMAP", normals.get());
+	add_material("SITEMASKS", sitemasks.get());
 
 	land.compile("shaders/battle/terrain.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/battle/terrain.tesc", GL_TESS_CONTROL_SHADER);
@@ -59,20 +61,11 @@ Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const I
 	water.compile("shaders/battle/water.frag", GL_FRAGMENT_SHADER);
 	water.link();
 
-	grass = new GrassSystem { grassmodel };
+	grass = std::make_unique<GrassSystem>(MediaManager::load_model("foliage/grass.glb"));
 }
 
 Terrain::~Terrain(void)
 {
-	delete grass;
-
-	delete patches;
-
-	delete sitemasks;
-
-	delete normals;
-	
-	delete relief;
 }
 	
 void Terrain::add_material(const std::string &name, const Texture *texture)
@@ -109,7 +102,7 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap, const 
 	grass->refresh(heightmap, scale);
 }
 	
-void Terrain::display_land(const Camera *camera) const
+void Terrain::display_land(const CORE::Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -135,7 +128,7 @@ void Terrain::display_land(const Camera *camera) const
 	//
 }
 
-void Terrain::display_water(const Camera *camera, float time) const
+void Terrain::display_water(const CORE::Camera *camera, float time) const
 {
 	water.use();
 	water.uniform_mat4("VP", camera->VP);
@@ -161,7 +154,7 @@ void Terrain::display_water(const Camera *camera, float time) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 	
-void Terrain::display_grass(const Camera *camera) const
+void Terrain::display_grass(const CORE::Camera *camera) const
 {
 	relief->bind(GL_TEXTURE1);
 	normals->bind(GL_TEXTURE2);
@@ -310,7 +303,7 @@ void GrassSystem::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const
 	fogfactor = fogfctr;
 }
 
-void GrassSystem::display(const Camera *camera, const glm::vec3 &scale) const
+void GrassSystem::display(const CORE::Camera *camera, const glm::vec3 &scale) const
 {
 	glDisable(GL_CULL_FACE);
 

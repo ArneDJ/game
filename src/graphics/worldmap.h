@@ -11,8 +11,8 @@ public:
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr,  const glm::vec3 &sunposition);
 	void change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush);
 	void set_faction_factor(float factor);
-	void display_land(const Camera *camera) const;
-	void display_water(const Camera *camera, float time) const;
+	void display_land(const CORE::Camera *camera) const;
+	void display_water(const CORE::Camera *camera, float time) const;
 private:
 	Mesh *patches = nullptr;
 	FloatImage *normalmap = nullptr;

@@ -147,7 +147,7 @@ void Clouds::generate_noise(void)
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
-void Clouds::update(const Camera *camera, const glm::vec3 &lightpos, float time)
+void Clouds::update(const CORE::Camera *camera, const glm::vec3 &lightpos, float time)
 {
 	volumetric.use();
 

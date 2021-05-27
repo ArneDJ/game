@@ -8,11 +8,14 @@
 
 #include "bullet/btBulletDynamicsCommon.h"
 #include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+#include "bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "../extern/aixlog/aixlog.h"
 
 #include "image.h"
 #include "physics.h"
+
+using namespace PHYSICS;
 
 static const int MAX_SUB_STEPS = 10;
 static const btVector3 GRAVITY = { 0.F, -9.81F, 0.F }; // same gravity as in my house
@@ -250,6 +253,26 @@ btRigidBody* PhysicsManager::add_heightfield(const Image *image, const glm::vec3
 	return body;
 }
 
+void PhysicsManager::insert_ghost_object(btGhostObject *ghost_object)
+{
+	world->addCollisionObject(ghost_object);
+}
+
+void PhysicsManager::add_object(btCollisionObject *object, int groups, int masks)
+{
+	world->addCollisionObject(object, groups, masks);
+}
+	
+void PhysicsManager::add_ghost_object(btGhostObject *object, int groups, int masks)
+{
+	world->addCollisionObject(object, groups, masks);
+}
+	
+void PhysicsManager::add_body(btRigidBody *body, int groups, int masks)
+{
+	world->addRigidBody(body, groups, masks);
+}
+
 void PhysicsManager::insert_body(btRigidBody *body)
 {
 	world->addRigidBody(body);
@@ -260,7 +283,7 @@ void PhysicsManager::remove_body(btRigidBody *body)
 	world->removeCollisionObject(body);
 }
 	
-struct ray_result PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::vec3 &end)
+struct ray_result PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks)
 {
 	struct ray_result result = { false, end, nullptr };
 
@@ -268,13 +291,15 @@ struct ray_result PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::v
 	btVector3 to = vec3_to_bt(end);
 
 	btCollisionWorld::ClosestRayResultCallback callback(from, to);
+	callback.m_collisionFilterGroup = masks;
+	callback.m_collisionFilterMask = masks;
 	//callback.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+	//
 	world->rayTest(from, to, callback);
 	if (callback.hasHit()) {
 		result.hit = true;
 		result.point = bt_to_vec3(callback.m_hitPointWorld);
-		const btCollisionObject *object = callback.m_collisionObject;
-		result.body = btRigidBody::upcast(object);
+		result.object = callback.m_collisionObject;
 	}
 
 	return result;

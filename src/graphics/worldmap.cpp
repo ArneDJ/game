@@ -126,7 +126,7 @@ void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const g
 	sunpos = sunposition;
 }
 
-void Worldmap::display_land(const Camera *camera) const
+void Worldmap::display_land(const CORE::Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -150,7 +150,7 @@ void Worldmap::display_land(const Camera *camera) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void Worldmap::display_water(const Camera *camera, float time) const
+void Worldmap::display_water(const CORE::Camera *camera, float time) const
 {
 	water.use();
 	water.uniform_mat4("VP", camera->VP);

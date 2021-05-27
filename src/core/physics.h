@@ -1,8 +1,20 @@
 
+namespace PHYSICS {
+
+enum collision_group_t {
+    COLLISION_GROUP_NONE = 0,
+    COLLISION_GROUP_WORLD = 1 << 0,
+    COLLISION_GROUP_GHOSTS = 1 << 1,
+    COLLISION_GROUP_ACTOR = 1 << 2,
+    COLLISION_GROUP_HEIGHTMAP = 1 << 3,
+};
+
+};
+
 struct ray_result {
 	bool hit = false;
 	glm::vec3 point; // the point where the ray intersection happened
-	const btRigidBody *body = nullptr; // the body if ray hit
+	const btCollisionObject *object = nullptr; // the body if ray hit
 };
 
 class PhysicsManager {
@@ -21,11 +33,15 @@ public:
 	btCollisionShape* add_capsule(float radius, float height);
 	btCollisionShape* add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	btCollisionShape* add_hull(const std::vector<glm::vec3> &points);
+	void add_object(btCollisionObject *object, int groups, int masks);
+	void add_ghost_object(btGhostObject *object, int groups, int masks);
+	void add_body(btRigidBody *body, int groups, int masks);
 	void insert_body(btRigidBody *body);
 	void remove_body(btRigidBody *body);
+	void insert_ghost_object(btGhostObject *ghost_object);
 	void clear(void);
 	//
-	struct ray_result cast_ray(const glm::vec3 &origin, const glm::vec3 &end);
+	struct ray_result cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks = 0);
 private:
 	btCollisionConfiguration *config;
 	btCollisionDispatcher *dispatcher;

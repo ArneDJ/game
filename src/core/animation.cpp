@@ -19,6 +19,8 @@
 #include "../extern/aixlog/aixlog.h"
 
 #include "animation.h"
+
+using namespace CORE;
 	
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 {

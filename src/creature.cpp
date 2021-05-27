@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "bullet/btBulletDynamicsCommon.h"
+#include "bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "core/entity.h"
 #include "core/image.h"
@@ -82,8 +83,29 @@ btRigidBody* Creature::get_body(void) const
 	return body;
 }
 
-void Creature::move(const glm::vec2 &direction)
+void Creature::move(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
 {
+	glm::vec2 direction = {0.f, 0.f};
+	glm::vec2 dir = glm::normalize(glm::vec2(view.x, view.z));
+	if (forward) {
+		direction.x += dir.x;
+		direction.y += dir.y;
+	}
+	if (backward) {
+		direction.x -= dir.x;
+		direction.y -= dir.y;
+	}
+	if (right) {
+		glm::vec3 tmp(glm::normalize(glm::cross(view, glm::vec3(0.f, 1.f, 0.f))));
+		direction.x += tmp.x;
+		direction.y += tmp.z;
+	}
+	if (left) {
+		glm::vec3 tmp(glm::normalize(glm::cross(view, glm::vec3(0.f, 1.f, 0.f))));
+		direction.x -= tmp.x;
+		direction.y -= tmp.z;
+	}
+
 	velocity.x = speed * direction.x;
 	velocity.z = speed * direction.y;
 }

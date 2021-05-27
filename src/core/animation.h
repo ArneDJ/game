@@ -1,6 +1,8 @@
 
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix);
 
+namespace CORE {
+
 class PlaybackController {
 public:
 	// Current animation time ratio, in the unit interval [0,1], where 0 is the
@@ -78,4 +80,6 @@ private:
 	bool valid = true;
 private:
 	bool load_skeleton(const std::string &filepath);
+};
+
 };

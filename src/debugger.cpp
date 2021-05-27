@@ -114,7 +114,7 @@ void Debugger::add_bbox(const glm::vec3 &min, const glm::vec3 &max, const std::v
 	bboxes.push_back(box);
 }
 
-void Debugger::render_bboxes(const Camera *camera)
+void Debugger::render_bboxes(const CORE::Camera *camera)
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 

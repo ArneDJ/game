@@ -21,7 +21,7 @@ public:
 	~LabelManager(void);
 	void add(const std::string &text, const glm::vec3 &color, const glm::vec3 &position);
 	void clear(void);
-	void display(const Camera *camera) const;
+	void display(const CORE::Camera *camera) const;
 	void set_scale(float scalefactor) { scale = scalefactor; }
 	void set_depth(bool depth) { depthless = depth; }
 private:

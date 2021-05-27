@@ -97,7 +97,7 @@ void Shadow::disable(void)
 	glCullFace(GL_BACK);
 }
 
-void Shadow::update(const Camera *camera, const glm::vec3 &lightpos)
+void Shadow::update(const CORE::Camera *camera, const glm::vec3 &lightpos)
 {
 	const float near = camera->nearclip;
 	const float far = FARCLIP_ADJUST * camera->farclip;

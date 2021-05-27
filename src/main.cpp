@@ -43,6 +43,7 @@
 // define this to make bullet and ozz animation compile on Windows
 #define BT_NO_SIMD_OPERATOR_OVERLOADS
 #include "extern/bullet/btBulletDynamicsCommon.h"
+#include "extern/bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "extern/inih/INIReader.h"
 
@@ -114,13 +115,13 @@ public:
 	long seed;
 	Navigation landnav;
 	Navigation seanav;
-	Camera camera;
+	CORE::Camera camera;
 	btRigidBody *surface;
 	btRigidBody *watersurface;
 	PhysicsManager collisionman;
-	Atlas *atlas;
+	std::unique_ptr<Atlas> atlas;
 	Entity marker;
-	Worldmap *worldmap;
+	std::unique_ptr<Worldmap> worldmap;
 	Army *player;
 	RenderGroup *ordinary;
 	RenderGroup *creatures;
@@ -129,24 +130,56 @@ public:
 	std::vector<Entity*> entities;
 	Skybox skybox;
 	bool show_factions = false;
+public:
+	void teardown(void);
 };
+
+void Campaign::teardown(void)
+{
+	skybox.teardown();
+
+	collisionman.clear();
+
+	delete ordinary;
+	delete creatures;
+	delete billboards;
+
+	delete player;
+
+	delete surface;
+	delete watersurface;
+}
 
 class Battle {
 public:
 	bool naval = false;
-	Camera camera;
+	CORE::Camera camera;
 	RenderGroup *ordinary;
 	BillboardGroup *billboards;
-	Terrain *terrain;
+	std::unique_ptr<Terrain> terrain;
 	btRigidBody *surface;
-	Landscape *landscape;
+	std::unique_ptr<Landscape> landscape;
 	PhysicsManager physicsman;
 	Creature *player;
 	std::vector<StationaryObject*> stationaries;
 	std::vector<Entity> entities;
 	Skybox skybox;
+public:
+	void teardown(void);
 };
 
+void Battle::teardown(void)
+{
+	skybox.teardown();
+
+	physicsman.clear();
+
+	delete ordinary;
+	delete billboards;
+
+	delete surface;
+}
+	
 class Game {
 public:
 	bool init(void);
@@ -168,7 +201,6 @@ private:
 	Campaign campaign;
 	Battle battle;
 	// graphics
-	MediaManager mediaman;
 	RenderManager renderman;
 	Shader object_shader;
 	Shader debug_shader;
@@ -185,7 +217,6 @@ private:
 	void init_campaign(void);
 	void prepare_campaign(void);
 	void run_campaign(void);
-	void teardown_campaign(void);
 	void update_campaign(void);
 	void cleanup_campaign(void);
 	void new_campaign(void);
@@ -196,7 +227,6 @@ private:
 	void run_battle(void);
 	void update_battle(void);
 	void cleanup_battle(void);
-	void teardown_battle(void);
 };
 
 class Engine {
@@ -217,51 +247,6 @@ int32_t Engine::run(void)
 	game.shutdown();
 
 	return EXIT_SUCCESS;
-}
-
-glm::vec2 player_direction(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
-{
-	const Uint8 *keystates = SDL_GetKeyboardState(NULL);
-	glm::vec2 velocity = {0.f, 0.f};
-	glm::vec2 dir = glm::normalize(glm::vec2(view.x, view.z));
-	if (forward) {
-		velocity.x += dir.x;
-		velocity.y += dir.y;
-	}
-	if (backward) {
-		velocity.x -= dir.x;
-		velocity.y -= dir.y;
-	}
-	if (right) {
-		glm::vec3 tmp(glm::normalize(glm::cross(view, glm::vec3(0.f, 1.f, 0.f))));
-		velocity.x += tmp.x;
-		velocity.y += tmp.z;
-	}
-	if (left) {
-		glm::vec3 tmp(glm::normalize(glm::cross(view, glm::vec3(0.f, 1.f, 0.f))));
-		velocity.x -= tmp.x;
-		velocity.y -= tmp.z;
-	}
-	return velocity;
-}
-
-static void import_pattern(const std::string &fpath, std::string &pattern)
-{
-	FILE *fp = fopen(fpath.c_str(), "r");
-	if (!fp) {
-		perror("File opening failed");
-		pattern = "failure";
-		return;
-	}
-
-	int c;
-	while ((c = fgetc(fp)) != EOF) {
-		if (c != '\n') {
-			pattern.append(1, c);
-		}
-	}
-
-	fclose(fp);
 }
 
 void Game::set_opengl_states(void)
@@ -388,7 +373,7 @@ void Game::load_module(void)
 {
 	modular.load(settings.module_name);
 
-	mediaman.change_path(modular.path);
+	MediaManager::change_path(modular.path);
 
 	// load assets
 
@@ -396,11 +381,11 @@ void Game::load_module(void)
 
 void Game::shutdown(void)
 {
-	teardown_campaign();
+	campaign.teardown();
 
-	teardown_battle();
+	battle.teardown();
 
-	mediaman.teardown();
+	MediaManager::teardown();
 
 	if (debugmode) {
 		debugger.teardown();
@@ -418,42 +403,6 @@ void Game::shutdown(void)
 	window.close();
 }
 
-void Game::teardown_campaign(void)
-{
-	campaign.skybox.teardown();
-
-	campaign.collisionman.clear();
-
-	delete campaign.ordinary;
-	delete campaign.creatures;
-	delete campaign.billboards;
-
-	delete campaign.player;
-
-	delete campaign.worldmap;
-
-	delete campaign.atlas;
-
-	delete campaign.surface;
-	delete campaign.watersurface;
-}
-
-void Game::teardown_battle(void)
-{
-	battle.skybox.teardown();
-
-	battle.physicsman.clear();
-
-	delete battle.ordinary;
-	delete battle.billboards;
-
-	delete battle.landscape;
-
-	delete battle.terrain;
-
-	delete battle.surface;
-}
-	
 void Game::update_battle(void)
 {
 	// input
@@ -483,7 +432,7 @@ void Game::update_battle(void)
 		ImGui::End();
 	}
 
-	battle.player->move(player_direction(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a)));
+	battle.player->move(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
 
 	input.update_keymap();
 
@@ -552,7 +501,7 @@ void Game::prepare_battle(void)
 	for (int i = 0; i < battle.entities.size(); i++) {
 		ents.push_back(&battle.entities[i]);
 	}
-	battle.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
+	battle.billboards->add_billboard(MediaManager::load_texture("trees/fir.dds"), ents);
 
 	billboard_shader.use();
 	billboard_shader.uniform_float("FOG_FACTOR", 0.0005f);
@@ -600,7 +549,7 @@ void Game::prepare_battle(void)
 	battle.physicsman.insert_body(battle.player->get_body());
 	ents.clear();
 	ents.push_back(battle.player);
-	battle.ordinary->add_object(mediaman.load_model("capsule.glb"), ents);
+	battle.ordinary->add_object(MediaManager::load_model("capsule.glb"), ents);
 
 	battle.skybox.prepare();
 
@@ -686,22 +635,22 @@ void Game::init_battle(void)
 	battle.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	battle.camera.project();
 
-	battle.landscape = new Landscape { 2048 };
+	battle.landscape = std::make_unique<Landscape>(2048);
 
 	// import all the buildings of the module
 	std::vector<const GLTF::Model*> house_models;
 	for (const auto &house : modular.houses) {
-		house_models.push_back(mediaman.load_model(house.model));
+		house_models.push_back(MediaManager::load_model(house.model));
 	}
 	battle.landscape->load_buildings(house_models);
 	
-	battle.terrain = new Terrain { battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks(), mediaman.load_model("foliage/grass.glb") };
-	battle.terrain->add_material("STONEMAP", mediaman.load_texture("ground/stone.dds"));
-	battle.terrain->add_material("SANDMAP", mediaman.load_texture("ground/sand.dds"));
-	battle.terrain->add_material("GRASSMAP", mediaman.load_texture("ground/grass.dds"));
-	battle.terrain->add_material("GRAVELMAP", mediaman.load_texture("ground/gravel.dds"));
-	battle.terrain->add_material("DETAILMAP", mediaman.load_texture("ground/stone_normal.dds"));
-	battle.terrain->add_material("WAVE_BUMPMAP", mediaman.load_texture("ground/water_normal.dds"));
+	battle.terrain = std::make_unique<Terrain>(battle.landscape->SCALE, battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
+	battle.terrain->add_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
+	battle.terrain->add_material("SANDMAP", MediaManager::load_texture("ground/sand.dds"));
+	battle.terrain->add_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
+	battle.terrain->add_material("GRAVELMAP", MediaManager::load_texture("ground/gravel.dds"));
+	battle.terrain->add_material("DETAILMAP", MediaManager::load_texture("ground/stone_normal.dds"));
+	battle.terrain->add_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 
 	battle.surface = battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
 
@@ -718,14 +667,14 @@ void Game::init_campaign(void)
 	campaign.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	campaign.camera.project();
 
-	campaign.atlas = new Atlas;
+	campaign.atlas = std::make_unique<Atlas>();
 
-	campaign.worldmap = new Worldmap { campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions() };
-	campaign.worldmap->add_material("STONEMAP", mediaman.load_texture("ground/stone.dds"));
-	campaign.worldmap->add_material("SANDMAP", mediaman.load_texture("ground/sand.dds"));
-	campaign.worldmap->add_material("SNOWMAP", mediaman.load_texture("ground/snow.dds"));
-	campaign.worldmap->add_material("GRASSMAP", mediaman.load_texture("ground/grass.dds"));
-	campaign.worldmap->add_material("WATER_BUMPMAP", mediaman.load_texture("ground/water_normal.dds"));
+	campaign.worldmap = std::make_unique<Worldmap>(campaign.atlas->SCALE, campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
+	campaign.worldmap->add_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
+	campaign.worldmap->add_material("SANDMAP", MediaManager::load_texture("ground/sand.dds"));
+	campaign.worldmap->add_material("SNOWMAP", MediaManager::load_texture("ground/snow.dds"));
+	campaign.worldmap->add_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
+	campaign.worldmap->add_material("WATER_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 
 	campaign.surface = campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
 	campaign.watersurface = campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE);
@@ -750,7 +699,6 @@ void Game::cleanup_campaign(void)
 
 	// delete in reverse order of initialization
 	for (int i = 0; i < campaign.settlements.size(); i++) {
-		campaign.collisionman.remove_body(campaign.settlements[i]->body);
 		delete campaign.settlements[i];
 	}
 	campaign.settlements.clear();
@@ -805,7 +753,7 @@ void Game::update_campaign(void)
 		campaign.camera.move_backward(10.0*abs(mousewheel)*modifier);
 	}
 		
-	struct ray_result camresult = campaign.collisionman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z));
+	struct ray_result camresult = campaign.collisionman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z), PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 	if (camresult.hit) {
 		float yoffset = camresult.point.y + 10;
 		if (campaign.camera.position.y < yoffset) {
@@ -815,12 +763,12 @@ void Game::update_campaign(void)
 
 	if (input.key_pressed(SDL_BUTTON_RIGHT) == true && input.mouse_grabbed() == false) {
 		glm::vec3 ray = campaign.camera.ndc_to_ray(input.abs_mousecoords());
-		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray));
+		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray), PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_GHOSTS);
 		if (result.hit) {
 			campaign.player->set_target_type(TARGET_LAND);
 			campaign.marker.position = result.point;
-			if (result.body) {
-				SettlementNode *node = static_cast<SettlementNode*>(result.body->getUserPointer());
+			if (result.object) {
+				SettlementNode *node = static_cast<SettlementNode*>(result.object->getUserPointer());
 				if (node) {
 					campaign.player->set_target_type(TARGET_SETTLEMENT);
 				}
@@ -878,7 +826,7 @@ void Game::update_campaign(void)
 
 	glm::vec3 origin = { campaign.player->position.x, campaign.atlas->SCALE.y, campaign.player->position.z };
 	glm::vec3 end = { campaign.player->position.x, 0.f, campaign.player->position.z };
-	struct ray_result result = campaign.collisionman.cast_ray(origin, end);
+	struct ray_result result = campaign.collisionman.cast_ray(origin, end, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
@@ -919,13 +867,13 @@ void Game::new_campaign(void)
 
 	campaign.atlas->create_land_navigation();
 	const auto land_navsoup = campaign.atlas->get_navsoup();
-	campaign.landnav.build(land_navsoup->vertices, land_navsoup->indices);
+	campaign.landnav.build(land_navsoup.vertices, land_navsoup.indices);
 
 	campaign.atlas->create_sea_navigation();
 	const auto sea_navsoup = campaign.atlas->get_navsoup();
-	campaign.seanav.build(sea_navsoup->vertices, sea_navsoup->indices);
+	campaign.seanav.build(sea_navsoup.vertices, sea_navsoup.indices);
 	
-	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
+	saver.save("game.save", campaign.atlas.get(), &campaign.landnav, &campaign.seanav, campaign.seed);
 	
 	prepare_campaign();
 	run_campaign();
@@ -933,11 +881,7 @@ void Game::new_campaign(void)
 	
 void Game::load_campaign(void)
 {
-	auto start = std::chrono::steady_clock::now();
-	saver.load("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
-	auto end = std::chrono::steady_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end-start;
-	std::cout << "campaign load elapsed time: " << elapsed_seconds.count() << "s\n";
+	saver.load("game.save", campaign.atlas.get(), &campaign.landnav, &campaign.seanav, campaign.seed);
 
 	prepare_campaign();
 	run_campaign();
@@ -956,8 +900,8 @@ void Game::prepare_campaign(void)
 	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
-	campaign.collisionman.insert_body(campaign.surface);
-	campaign.collisionman.insert_body(campaign.watersurface);
+	campaign.collisionman.add_body(campaign.surface, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+	campaign.collisionman.add_body(campaign.watersurface, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 
@@ -968,11 +912,11 @@ void Game::prepare_campaign(void)
 	std::vector<const Entity*> ents;
 
 	ents.push_back(campaign.player);
-	campaign.creatures->add_object(mediaman.load_model("duck.glb"), ents);
+	campaign.creatures->add_object(MediaManager::load_model("duck.glb"), ents);
 
 	ents.clear();
 	ents.push_back(&campaign.marker);
-	campaign.ordinary->add_object(mediaman.load_model("cone.glb"), ents);
+	campaign.ordinary->add_object(MediaManager::load_model("cone.glb"), ents);
 	ents.clear();
 
 	auto trees = campaign.atlas->get_trees();
@@ -983,18 +927,18 @@ void Game::prepare_campaign(void)
 		campaign.entities.push_back(entity);
 		ents.push_back(entity);
 	}
-	campaign.billboards->add_billboard(mediaman.load_texture("trees/fir.dds"), ents);
+	campaign.billboards->add_billboard(MediaManager::load_texture("trees/fir.dds"), ents);
 
 	btCollisionShape *shape = campaign.collisionman.add_sphere(5.f);
 	for (const auto &tile : campaign.atlas->get_worldgraph()->tiles) {
 		if (tile.site == CASTLE || tile.site == TOWN) {
 		glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
 		glm::vec3 origin = { tile.center.x, campaign.atlas->SCALE.y, tile.center.y };
-		struct ray_result result = campaign.collisionman.cast_ray(origin, position);
+		struct ray_result result = campaign.collisionman.cast_ray(origin, position, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 		position.y = result.point.y;
 		SettlementNode *node = new SettlementNode { position, glm::quat(1.f, 0.f, 0.f, 0.f), shape, tile.index };
 		campaign.settlements.push_back(node);
-		campaign.collisionman.insert_body(node->body);
+		campaign.collisionman.add_ghost_object(node->ghost_object, PHYSICS::COLLISION_GROUP_GHOSTS, PHYSICS::COLLISION_GROUP_GHOSTS);
 		}
 	}
 
@@ -1002,12 +946,19 @@ void Game::prepare_campaign(void)
 	for (int i = 0; i < campaign.settlements.size(); i++) {
 		ents.push_back(campaign.settlements[i]);
 	}
-	campaign.ordinary->add_object(mediaman.load_model("map/fort.glb"), ents);
+	campaign.ordinary->add_object(MediaManager::load_model("map/fort.glb"), ents);
 
-	std::string town;
-	std::string fort;
-	import_pattern("modules/native/names/town.txt", town);
-	NameGen::Generator towngen(town.c_str());
+	std::ifstream t("modules/native/names/town.txt");
+	std::stringstream buffer;
+	buffer << t.rdbuf();
+	std::string pattern;
+	for (auto i = 0; i < buffer.str().size(); i++) {
+		char c = buffer.str().at(i);
+		if (c != '\n') {
+			pattern.append(1, c);
+		}
+	}
+	NameGen::Generator towngen(pattern.c_str());
 	for (const auto &ent : campaign.settlements) {
 		labelman->add(towngen.toString(), glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
 	}
@@ -1020,7 +971,7 @@ void Game::run_campaign(void)
 	Entity dragon = Entity(glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f));
 	std::vector<const Entity*> ents;
 	ents.push_back(&dragon);
-	campaign.ordinary->add_object(mediaman.load_model("dragon.glb"), ents);
+	campaign.ordinary->add_object(MediaManager::load_model("dragon.glb"), ents);
 
 	while (state == GS_CAMPAIGN) {
 		timer.begin();

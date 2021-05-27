@@ -84,7 +84,7 @@ private:
 // TODO should not use rigid bodies 
 class SettlementNode : public Entity {
 public:
-	btRigidBody *body = nullptr;
+	btGhostObject *ghost_object = nullptr;
 public:
 	SettlementNode(const glm::vec3 &pos, const glm::quat &rot, btCollisionShape *shape, uint32_t tile)
 	{
@@ -97,22 +97,21 @@ public:
 		transform.setOrigin(vec3_to_bt(pos));
 		transform.setRotation(quat_to_bt(rot));
 
-		btVector3 inertia(0, 0, 0);
-		motionstate = new btDefaultMotionState(transform);
-		btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, motionstate, shape, inertia);
-		body = new btRigidBody(rbInfo);
-
-		// link body to this entity
-		body->setUserPointer(this);
+		ghost_object = new btGhostObject();
+		ghost_object->setCollisionShape(shape);
+		ghost_object->setWorldTransform(transform);
+		// link ghost object to this entity
+		ghost_object->setUserPointer(this);
 	}
 	~SettlementNode(void)
 	{
-		delete motionstate;
-		delete body;
+		//delete ghost_object;
+		//delete motionstate;
+		//delete body;
 	}
 	uint32_t get_tileref(void) const { return tileref; }
 private:
 	btTransform transform;
-	btMotionState *motionstate = nullptr;
+	//btMotionState *motionstate = nullptr;
 	uint32_t tileref = 0;
 };

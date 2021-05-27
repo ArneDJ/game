@@ -25,7 +25,7 @@ public:
 	~GrassSystem(void);
 	void refresh(const FloatImage *heightmap, const glm::vec3 &scale);
 	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr);
-	void display(const Camera *camera, const glm::vec3 &scale) const;
+	void display(const CORE::Camera *camera, const glm::vec3 &scale) const;
 private:
 	std::vector<GrassRoots*> roots;
 	std::vector<GrassChunk*> chunks;
@@ -39,21 +39,21 @@ private:
 
 class Terrain {
 public:
-	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre, const GLTF::Model *grassmodel);
+	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre);
 	~Terrain(void);
 	void add_material(const std::string &name, const Texture *texture);
 	void reload(const FloatImage *heightmap, const Image *normalmap, const Image *cadastre);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
 	void change_grass(const glm::vec3 &color);
-	void display_land(const Camera *camera) const;
-	void display_water(const Camera *camera, float time) const;
-	void display_grass(const Camera *camera) const;
+	void display_land(const CORE::Camera *camera) const;
+	void display_water(const CORE::Camera *camera, float time) const;
+	void display_grass(const CORE::Camera *camera) const;
 private:
-	Mesh *patches = nullptr;
-	GrassSystem *grass = nullptr;
-	Texture *relief = nullptr;
-	Texture *normals = nullptr;
-	Texture *sitemasks = nullptr;
+	std::unique_ptr<Mesh> patches;
+	std::unique_ptr<GrassSystem> grass;
+	std::unique_ptr<Texture> relief;
+	std::unique_ptr<Texture> normals;
+	std::unique_ptr<Texture> sitemasks;
 	std::vector<texture_binding_t> materials;
 	Shader land;
 	Shader water;

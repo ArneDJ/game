@@ -12,7 +12,7 @@ class Shadow {
 public:
 	Shadow(size_t texture_size);
 	~Shadow(void);
-	void update(const Camera *camera, const glm::vec3 &lightpos);
+	void update(const CORE::Camera *camera, const glm::vec3 &lightpos);
 	void enable(void);
 	void bind_depthmap(uint8_t section);
 	void disable(void);

@@ -7,7 +7,7 @@ public:
 	void init(int SW, int SH);
 	void teardown(void);
 	void gen_parameters(float covrg);
-	void update(const Camera *camera, const glm::vec3 &lightpos, float time);
+	void update(const CORE::Camera *camera, const glm::vec3 &lightpos, float time);
 	void bind(GLenum unit) const;
 private:
 	int SCR_WIDTH, SCR_HEIGHT;

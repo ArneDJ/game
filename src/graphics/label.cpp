@@ -142,7 +142,7 @@ void LabelManager::clear(void)
 	glyph_buffer.indices.clear();
 }
 
-void LabelManager::display(const Camera *camera) const
+void LabelManager::display(const CORE::Camera *camera) const
 {
 	if (depthless) {
 		glDisable(GL_DEPTH_TEST);

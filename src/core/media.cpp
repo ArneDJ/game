@@ -19,6 +19,10 @@
 #include "model.h"
 #include "media.h"
 
+std::string MediaManager::basepath;
+std::map<uint64_t, Texture*> MediaManager::textures;
+std::map<uint64_t, GLTF::Model*> MediaManager::models;
+
 static inline bool file_access(const std::string &filepath)
 {
 	std::ifstream file(filepath.c_str());

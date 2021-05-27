@@ -1,4 +1,6 @@
 
+namespace CORE {
+
 class Camera {
 public:
 	glm::vec3 position;
@@ -36,4 +38,6 @@ private:
 	float pitch = 0.f;
 	float yaw = 0.f;
 	// glm::vec4 frustum[6];
+};
+
 };

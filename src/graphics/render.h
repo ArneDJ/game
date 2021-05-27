@@ -61,7 +61,7 @@ public:
 	BillboardGroup(const Shader *shady);
 	~BillboardGroup(void);
 	void add_billboard(const Texture *tex, const std::vector<const Entity*> &ents);
-	void display(const Camera *camera) const;
+	void display(const CORE::Camera *camera) const;
 	void clear(void);
 private:
 	const Shader *shader;
@@ -75,7 +75,7 @@ public:
 	RenderGroup(const Shader *shady);
 	~RenderGroup(void);
 	void add_object(const GLTF::Model *mod, const std::vector<const Entity*> &ents);
-	void display(const Camera *camera) const;
+	void display(const CORE::Camera *camera) const;
 	void clear(void);
 private:
 	const Shader *shader;
