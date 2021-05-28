@@ -203,8 +203,6 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
 	std::uniform_real_distribution<float> density_dist(0.f, 1.f);
 
-	printf("precipitation %f\n", precipitation / 255.f);
-
 	float rain = precipitation / 255.f;
 
 	PoissonGenerator::DefaultPRNG PRNG(seed);

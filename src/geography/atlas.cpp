@@ -620,7 +620,6 @@ void Atlas::place_vegetation(long seed)
 
 	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
 
-	printf("n positions %d\n", positions.size());
 	for (const auto &point : positions) {
 		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, CHANNEL_RED) / 255.f;
 		if (N < 0.5f) { continue; }

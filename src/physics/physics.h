@@ -9,9 +9,7 @@ enum collision_group_t {
     COLLISION_GROUP_HEIGHTMAP = 1 << 3,
 };
 
-};
-
-struct ray_result {
+struct ray_result_t {
 	bool hit = false;
 	glm::vec3 point; // the point where the ray intersection happened
 	const btCollisionObject *object = nullptr; // the body if ray hit
@@ -19,18 +17,15 @@ struct ray_result {
 
 class PhysicsManager {
 public:
-	PhysicsManager(void);
-	~PhysicsManager(void);
-	const btDynamicsWorld* get_world(void) const;
+	PhysicsManager();
+	~PhysicsManager();
+public:
+	const btDynamicsWorld* get_world() const;
 	void update(float timestep);
 	void add_ground_plane(const glm::vec3 &position);
-	btRigidBody* add_heightfield(const FloatImage *image, const glm::vec3 &scale);
-	btRigidBody* add_heightfield(const Image *image, const glm::vec3 &scale);
-	btCollisionShape* add_box(const glm::vec3 &halfextents);
-	btCollisionShape* add_sphere(float radius);
-	btCollisionShape* add_cone(float radius, float height);
-	btCollisionShape* add_cylinder(const glm::vec3 &halfextents);
-	btCollisionShape* add_capsule(float radius, float height);
+	void add_heightfield(const FloatImage *image, const glm::vec3 &scale, int group, int masks);
+	void add_heightfield(const Image *image, const glm::vec3 &scale, int group, int masks);
+	void add_shape(btCollisionShape *shape);
 	btCollisionShape* add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	btCollisionShape* add_hull(const std::vector<glm::vec3> &points);
 	void add_object(btCollisionObject *object, int groups, int masks);
@@ -39,18 +34,21 @@ public:
 	void insert_body(btRigidBody *body);
 	void remove_body(btRigidBody *body);
 	void insert_ghost_object(btGhostObject *ghost_object);
-	void clear(void);
+	void clear();
 	//
-	struct ray_result cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks = 0);
+	struct ray_result_t cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks = 0);
 private:
-	btCollisionConfiguration *config;
-	btCollisionDispatcher *dispatcher;
-	btBroadphaseInterface *broadphase;
-	btConstraintSolver *solver;
-	btDynamicsWorld *world;
+	std::unique_ptr<btCollisionConfiguration> m_config;
+	std::unique_ptr<btCollisionDispatcher> m_dispatcher;
+	std::unique_ptr<btBroadphaseInterface> m_broadphase;
+	std::unique_ptr<btConstraintSolver> m_solver;
+	std::unique_ptr<btDynamicsWorld> m_world;
 private:
-	btAlignedObjectArray<btCollisionShape*> shapes;
-	std::vector<btTriangleMesh*> meshes;
+	btAlignedObjectArray<btCollisionShape*> m_shapes;
+	std::vector<btTriangleMesh*> m_meshes;
+	std::vector<std::unique_ptr<HeightField>> m_heightfields;
+};
+
 };
 
 glm::vec3 body_position(const btRigidBody *body);

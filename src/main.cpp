@@ -43,6 +43,7 @@
 // define this to make bullet and ozz animation compile on Windows
 #define BT_NO_SIMD_OPERATOR_OVERLOADS
 #include "extern/bullet/btBulletDynamicsCommon.h"
+#include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "extern/bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "extern/inih/INIReader.h"
@@ -64,7 +65,6 @@
 #include "core/mesh.h"
 #include "core/texture.h"
 #include "core/model.h"
-#include "core/physics.h"
 #include "core/animation.h"
 #include "core/navigation.h"
 #include "core/voronoi.h"
@@ -76,6 +76,8 @@
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
 #include "graphics/label.h"
+#include "physics/heightfield.h"
+#include "physics/physics.h"
 #include "object.h"
 #include "creature.h"
 #include "debugger.h"
@@ -116,9 +118,7 @@ public:
 	Navigation landnav;
 	Navigation seanav;
 	CORE::Camera camera;
-	btRigidBody *surface;
-	btRigidBody *watersurface;
-	PhysicsManager collisionman;
+	PHYSICS::PhysicsManager collisionman;
 	std::unique_ptr<Atlas> atlas;
 	Entity marker;
 	std::unique_ptr<Worldmap> worldmap;
@@ -145,9 +145,6 @@ void Campaign::teardown(void)
 	delete billboards;
 
 	delete player;
-
-	delete surface;
-	delete watersurface;
 }
 
 class Battle {
@@ -157,9 +154,8 @@ public:
 	RenderGroup *ordinary;
 	BillboardGroup *billboards;
 	std::unique_ptr<Terrain> terrain;
-	btRigidBody *surface;
 	std::unique_ptr<Landscape> landscape;
-	PhysicsManager physicsman;
+	PHYSICS::PhysicsManager physicsman;
 	Creature *player;
 	std::vector<StationaryObject*> stationaries;
 	std::vector<Entity> entities;
@@ -176,8 +172,6 @@ void Battle::teardown(void)
 
 	delete ordinary;
 	delete billboards;
-
-	delete surface;
 }
 	
 class Game {
@@ -486,8 +480,6 @@ void Game::prepare_battle(void)
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
-	battle.physicsman.insert_body(battle.surface);
-
 	// add tree models
 	std::vector<const Entity*> ents;
 	auto trees = battle.landscape->get_trees();
@@ -541,12 +533,14 @@ void Game::prepare_battle(void)
 	}
 	// add stationary objects to physics
 	for (const auto &stationary : battle.stationaries) {
-		battle.physicsman.insert_body(stationary->body);
+		battle.physicsman.add_body(stationary->body, PHYSICS::COLLISION_GROUP_WORLD, PHYSICS::COLLISION_GROUP_ACTOR);
 	}
+	
+	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR);
 
 	// add creatures
 	battle.player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
-	battle.physicsman.insert_body(battle.player->get_body());
+	battle.physicsman.add_body(battle.player->get_body(), PHYSICS::COLLISION_GROUP_ACTOR, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_WORLD);
 	ents.clear();
 	ents.push_back(battle.player);
 	battle.ordinary->add_object(MediaManager::load_model("capsule.glb"), ents);
@@ -619,7 +613,7 @@ void Game::cleanup_battle(void)
 		debugger.delete_bboxes();
 	}
 
-	battle.physicsman.remove_body(battle.surface);
+	battle.physicsman.clear();
 	battle.billboards->clear();
 	battle.ordinary->clear();
 
@@ -652,8 +646,6 @@ void Game::init_battle(void)
 	battle.terrain->add_material("DETAILMAP", MediaManager::load_texture("ground/stone_normal.dds"));
 	battle.terrain->add_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 
-	battle.surface = battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE);
-
 	battle.billboards = new BillboardGroup { &billboard_shader };
 	battle.ordinary = new RenderGroup { &debug_shader };
 
@@ -675,9 +667,6 @@ void Game::init_campaign(void)
 	campaign.worldmap->add_material("SNOWMAP", MediaManager::load_texture("ground/snow.dds"));
 	campaign.worldmap->add_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
 	campaign.worldmap->add_material("WATER_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
-
-	campaign.surface = campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE);
-	campaign.watersurface = campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE);
 
 	campaign.ordinary = new RenderGroup { &debug_shader };
 	campaign.creatures = new RenderGroup { &object_shader };
@@ -712,8 +701,9 @@ void Game::cleanup_campaign(void)
 	if (debugmode) {
 		debugger.delete_navmeshes();
 	}
-	campaign.collisionman.remove_body(campaign.surface);
-	campaign.collisionman.remove_body(campaign.watersurface);
+	
+	campaign.collisionman.clear();
+
 	campaign.landnav.cleanup();
 	campaign.seanav.cleanup();
 }
@@ -753,7 +743,7 @@ void Game::update_campaign(void)
 		campaign.camera.move_backward(10.0*abs(mousewheel)*modifier);
 	}
 		
-	struct ray_result camresult = campaign.collisionman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z), PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+	auto camresult = campaign.collisionman.cast_ray(glm::vec3(campaign.camera.position.x, campaign.atlas->SCALE.y, campaign.camera.position.z), glm::vec3(campaign.camera.position.x, 0.f, campaign.camera.position.z), PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 	if (camresult.hit) {
 		float yoffset = camresult.point.y + 10;
 		if (campaign.camera.position.y < yoffset) {
@@ -763,7 +753,7 @@ void Game::update_campaign(void)
 
 	if (input.key_pressed(SDL_BUTTON_RIGHT) == true && input.mouse_grabbed() == false) {
 		glm::vec3 ray = campaign.camera.ndc_to_ray(input.abs_mousecoords());
-		struct ray_result result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray), PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_GHOSTS);
+		auto result = campaign.collisionman.cast_ray(campaign.camera.position, campaign.camera.position + (1000.f * ray), PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_GHOSTS);
 		if (result.hit) {
 			campaign.player->set_target_type(TARGET_LAND);
 			campaign.marker.position = result.point;
@@ -826,7 +816,7 @@ void Game::update_campaign(void)
 
 	glm::vec3 origin = { campaign.player->position.x, campaign.atlas->SCALE.y, campaign.player->position.z };
 	glm::vec3 end = { campaign.player->position.x, 0.f, campaign.player->position.z };
-	struct ray_result result = campaign.collisionman.cast_ray(origin, end, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+	auto result = campaign.collisionman.cast_ray(origin, end, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 	campaign.player->set_y_offset(result.point.y);
 
 	// update atmosphere
@@ -900,8 +890,8 @@ void Game::prepare_campaign(void)
 	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
-	campaign.collisionman.add_body(campaign.surface, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
-	campaign.collisionman.add_body(campaign.watersurface, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+	campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 
 	campaign.player->teleport(glm::vec2(2010.f, 2010.f));
 
@@ -929,12 +919,13 @@ void Game::prepare_campaign(void)
 	}
 	campaign.billboards->add_billboard(MediaManager::load_texture("trees/fir.dds"), ents);
 
-	btCollisionShape *shape = campaign.collisionman.add_sphere(5.f);
+	btCollisionShape *shape = new btSphereShape(5.f);
+	campaign.collisionman.add_shape(shape);
 	for (const auto &tile : campaign.atlas->get_worldgraph()->tiles) {
 		if (tile.site == CASTLE || tile.site == TOWN) {
 		glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
 		glm::vec3 origin = { tile.center.x, campaign.atlas->SCALE.y, tile.center.y };
-		struct ray_result result = campaign.collisionman.cast_ray(origin, position, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+		auto result = campaign.collisionman.cast_ray(origin, position, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 		position.y = result.point.y;
 		SettlementNode *node = new SettlementNode { position, glm::quat(1.f, 0.f, 0.f, 0.f), shape, tile.index };
 		campaign.settlements.push_back(node);

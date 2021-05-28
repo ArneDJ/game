@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
@@ -7,11 +8,13 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "bullet/btBulletDynamicsCommon.h"
+#include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "core/entity.h"
 #include "core/image.h"
-#include "core/physics.h"
+#include "physics/heightfield.h"
+#include "physics/physics.h"
 #include "creature.h"
 
 class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback {

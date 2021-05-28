@@ -31,6 +31,8 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/core/*.h"
         "${PROJECT_SOURCE_DIR}/src/graphics/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/graphics/*.h"
+        "${PROJECT_SOURCE_DIR}/src/physics/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/physics/*.h"
         "${PROJECT_SOURCE_DIR}/src/geography/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/geography/*.h"
         "${PROJECT_SOURCE_DIR}/src/extern/imgui/*.cpp"
