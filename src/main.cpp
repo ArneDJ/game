@@ -21,8 +21,6 @@
 // don't move this
 #include "extern/namegen/namegen.h"
 
-#include "extern/aixlog/aixlog.h"
-
 #include "extern/recast/Recast.h"
 #include "extern/recast/DetourNavMesh.h"
 #include "extern/recast/DetourNavMeshQuery.h"
@@ -53,6 +51,8 @@
 #include "extern/imgui/imgui_impl_opengl3.h"
 
 #include "extern/freetype/freetype-gl.h"
+
+#include "extern/aixlog/aixlog.h"
 
 #include "core/geom.h"
 #include "core/image.h"
