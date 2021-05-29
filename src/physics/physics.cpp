@@ -139,24 +139,6 @@ btCollisionShape* PhysicsManager::add_hull(const std::vector<glm::vec3> &points)
 	return shape;
 }
 	
-void PhysicsManager::add_ground_plane(const glm::vec3 &position)
-{
-	btCollisionShape *shape = new btStaticPlaneShape(btVector3(0.f, 1.f, 0.f), 0.f);
-	m_shapes.push_back(shape);
-
-	btTransform transform;
-	transform.setIdentity();
-	transform.setOrigin(vec3_to_bt(position));
-
-	btDefaultMotionState *motionstate = new btDefaultMotionState(transform);
-
-	btVector3 inertia(0, 0, 0);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(0.f, motionstate, shape, inertia);
-	btRigidBody *body = new btRigidBody(rbInfo);
-
-	m_world->addRigidBody(body);
-}
-	
 void PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &scale, int  group, int masks)
 {
 	auto heightfield = std::make_unique<HeightField>(image, scale);
