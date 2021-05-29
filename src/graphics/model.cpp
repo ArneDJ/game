@@ -16,7 +16,7 @@
 
 #define CGLTF_IMPLEMENTATION
 
-#include "image.h"
+#include "../core/image.h"
 #include "texture.h"
 #include "mesh.h"
 #include "model.h"

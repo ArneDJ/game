@@ -16,9 +16,9 @@
 
 #include "../core/geom.h"
 #include "../core/image.h"
-#include "../core/texture.h"
-#include "../core/mesh.h"
-#include "../core/model.h"
+#include "../graphics/texture.h"
+#include "../graphics/mesh.h"
+#include "../graphics/model.h"
 #include "sitegen.h"
 #include "landscape.h"
 

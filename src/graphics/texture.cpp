@@ -17,7 +17,7 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "image.h"
+#include "../core/image.h"
 #include "texture.h"
 
 static inline GLenum texture_format(ddsktx_format format);

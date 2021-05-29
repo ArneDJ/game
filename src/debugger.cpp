@@ -26,8 +26,8 @@
 
 #include "core/entity.h"
 #include "core/camera.h"
-#include "core/shader.h"
-#include "core/mesh.h"
+#include "graphics/shader.h"
+#include "graphics/mesh.h"
 #include "debugger.h"
 
 void Debugger::init(const Shader *shady)

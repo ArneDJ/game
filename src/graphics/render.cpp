@@ -14,12 +14,12 @@
 #include "../extern/aixlog/aixlog.h"
 
 #include "../core/entity.h"
-#include "../core/shader.h"
 #include "../core/camera.h"
 #include "../core/image.h"
-#include "../core/texture.h"
-#include "../core/mesh.h"
-#include "../core/model.h"
+#include "shader.h"
+#include "texture.h"
+#include "mesh.h"
+#include "model.h"
 #include "render.h"
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)

@@ -14,10 +14,10 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "../core/entity.h"
-#include "../core/shader.h"
 #include "../core/image.h"
-#include "../core/texture.h"
 #include "../core/camera.h"
+#include "shader.h"
+#include "texture.h"
 #include "clouds.h"
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)

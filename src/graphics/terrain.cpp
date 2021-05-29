@@ -17,13 +17,13 @@
 
 #include "../core/entity.h"
 #include "../core/geom.h"
-#include "../core/shader.h"
 #include "../core/camera.h"
 #include "../core/image.h"
-#include "../core/texture.h"
-#include "../core/mesh.h"
-#include "../core/model.h"
-#include "../core/media.h"
+#include "shader.h"
+#include "texture.h"
+#include "mesh.h"
+#include "model.h"
+#include "../media.h"
 #include "terrain.h"
 
 static const uint32_t TERRAIN_PATCH_RES = 85;

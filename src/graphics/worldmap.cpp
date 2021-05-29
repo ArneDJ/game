@@ -12,11 +12,11 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "../core/entity.h"
-#include "../core/shader.h"
 #include "../core/camera.h"
 #include "../core/image.h"
-#include "../core/texture.h"
-#include "../core/mesh.h"
+#include "shader.h"
+#include "texture.h"
+#include "mesh.h"
 #include "worldmap.h"
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;

@@ -12,9 +12,9 @@
 
 #include "../extern/freetype/freetype-gl.h"
 
-#include "../core/text.h"
-#include "../core/shader.h"
 #include "../core/camera.h"
+#include "text.h"
+#include "shader.h"
 #include "label.h"
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))

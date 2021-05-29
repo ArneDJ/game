@@ -10,8 +10,8 @@
 
 #include "../core/entity.h"
 #include "../core/camera.h"
-#include "../core/shader.h"
-#include "../core/mesh.h"
+#include "shader.h"
+#include "mesh.h"
 #include "clouds.h"
 #include "sky.h"
 
