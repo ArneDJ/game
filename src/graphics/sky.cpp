@@ -8,12 +8,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/entity.h"
-#include "../core/camera.h"
+#include "../util/entity.h"
+#include "../util/camera.h"
 #include "shader.h"
 #include "mesh.h"
 #include "clouds.h"
 #include "sky.h"
+
+namespace GRAPHICS {
 
 static const float DIST_MIN_COVERAGE = 0.F;
 static const float DIST_MAX_COVERAGE = 0.8F;
@@ -78,14 +80,14 @@ void Skybox::colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::
 	clouds_enabled = cloudsenabled;
 }
 
-void Skybox::update(const CORE::Camera *camera, float time)
+void Skybox::update(const UTIL::Camera *camera, float time)
 {
 	if (clouds_enabled && clouded) {
 		clouds.update(camera, sunposition, time);
 	}
 }
 	
-void Skybox::display(const CORE::Camera *camera) const
+void Skybox::display(const UTIL::Camera *camera) const
 {
 	shader.use();
 	shader.uniform_vec3("ZENITH_COLOR", zenith);
@@ -103,3 +105,5 @@ void Skybox::display(const CORE::Camera *camera) const
 	cubemap->draw();
 	glDepthFunc(GL_LESS);
 }
+
+};

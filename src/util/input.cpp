@@ -4,7 +4,7 @@
 
 #include "input.h"
 	
-using namespace CORE;
+namespace UTIL {
 
 Input::Input(void)
 {
@@ -147,3 +147,5 @@ int Input::mousewheel_y(void) const
 {
 	return mousewheel;
 }
+
+};

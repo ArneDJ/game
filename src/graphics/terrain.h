@@ -1,11 +1,12 @@
+namespace GRAPHICS {
 
 // contains a set of random normalized points to be transformed for warparound grass
 class GrassRoots {
 public:
-	GrassRoots(const GLTF::Model *mod, uint32_t count);
+	GrassRoots(const Model *mod, uint32_t count);
 	void display(void) const;
 public:
-	const GLTF::Model *model;
+	const Model *model;
 	TransformBuffer tbuffer;
 };
 
@@ -21,11 +22,11 @@ public:
 
 class GrassSystem {
 public:
-	GrassSystem(const GLTF::Model *mod);
+	GrassSystem(const Model *mod);
 	~GrassSystem(void);
-	void refresh(const FloatImage *heightmap, const glm::vec3 &scale);
+	void refresh(const UTIL::FloatImage *heightmap, const glm::vec3 &scale);
 	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr);
-	void display(const CORE::Camera *camera, const glm::vec3 &scale) const;
+	void display(const UTIL::Camera *camera, const glm::vec3 &scale) const;
 private:
 	std::vector<GrassRoots*> roots;
 	std::vector<GrassChunk*> chunks;
@@ -39,15 +40,15 @@ private:
 
 class Terrain {
 public:
-	Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre);
+	Terrain(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre);
 	~Terrain(void);
 	void add_material(const std::string &name, const Texture *texture);
-	void reload(const FloatImage *heightmap, const Image *normalmap, const Image *cadastre);
+	void reload(const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
 	void change_grass(const glm::vec3 &color);
-	void display_land(const CORE::Camera *camera) const;
-	void display_water(const CORE::Camera *camera, float time) const;
-	void display_grass(const CORE::Camera *camera) const;
+	void display_land(const UTIL::Camera *camera) const;
+	void display_water(const UTIL::Camera *camera, float time) const;
+	void display_grass(const UTIL::Camera *camera) const;
 private:
 	std::unique_ptr<Mesh> patches;
 	std::unique_ptr<GrassSystem> grass;
@@ -64,4 +65,6 @@ private:
 	float fogfactor;
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
+};
+
 };

@@ -1,7 +1,7 @@
 #pragma once
 #include "../extern/cgltf/cgltf.h"
 
-namespace GLTF {
+namespace GRAPHICS {
 
 struct node_t;
 
@@ -56,7 +56,6 @@ private:
 	void find_bounds(const cgltf_data *data);
 };
 
-}
+glm::mat4 global_node_transform(const struct node_t *n);
 
-glm::mat4 global_node_transform(const struct GLTF::node_t *n);
-
+};

@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 
 struct label_batch_t {
 	GLuint VAO, VBO, EBO;
@@ -21,7 +22,7 @@ public:
 	~LabelManager(void);
 	void add(const std::string &text, const glm::vec3 &color, const glm::vec3 &position);
 	void clear(void);
-	void display(const CORE::Camera *camera) const;
+	void display(const UTIL::Camera *camera) const;
 	void set_scale(float scalefactor) { scale = scalefactor; }
 	void set_depth(bool depth) { depthless = depth; }
 private:
@@ -32,4 +33,6 @@ private:
 	Shader shader;
 	float scale = 1.f;
 	bool depthless = false;
+};
+
 };

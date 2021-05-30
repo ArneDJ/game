@@ -20,7 +20,7 @@
 
 #include "animation.h"
 
-using namespace CORE;
+namespace UTIL {
 	
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 {
@@ -221,3 +221,4 @@ void PlaybackController::reset(void)
 	playing = true;
 }
 
+};

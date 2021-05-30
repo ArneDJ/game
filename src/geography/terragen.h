@@ -1,9 +1,9 @@
 
 class Terragen {
 public:
-	FloatImage *heightmap = nullptr;
-	Image *tempmap = nullptr;
-	Image *rainmap = nullptr;
+	UTIL::FloatImage *heightmap = nullptr;
+	UTIL::Image *tempmap = nullptr;
+	UTIL::Image *rainmap = nullptr;
 public:
 	Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres);
 	~Terragen(void);

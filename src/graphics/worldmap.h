@@ -1,21 +1,22 @@
+namespace GRAPHICS {
 
 class Worldmap {
 public:
-	Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap);
+	Worldmap(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *watermap, const UTIL::Image *rainmap, const UTIL::Image *materialmasks, const UTIL::Image *factionsmap);
 	~Worldmap(void);
 	//void load_materials(const std::vector<const Texture*> textures);
 	void add_material(const std::string &name, const Texture *texture);
-	void reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap);
-	void reload_factionsmap(const Image *factionsmap);
-	void reload_masks(const Image *mask_image);
+	void reload(const UTIL::FloatImage *heightmap, const UTIL::Image *watermap, const UTIL::Image *rainmap, const UTIL::Image *materialmasks, const UTIL::Image *factionsmap);
+	void reload_factionsmap(const UTIL::Image *factionsmap);
+	void reload_masks(const UTIL::Image *mask_image);
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr,  const glm::vec3 &sunposition);
 	void change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush);
 	void set_faction_factor(float factor);
-	void display_land(const CORE::Camera *camera) const;
-	void display_water(const CORE::Camera *camera, float time) const;
+	void display_land(const UTIL::Camera *camera) const;
+	void display_water(const UTIL::Camera *camera, float time) const;
 private:
 	Mesh *patches = nullptr;
-	FloatImage *normalmap = nullptr;
+	UTIL::FloatImage *normalmap = nullptr;
 	Texture *topology = nullptr;
 	Texture *nautical = nullptr;
 	Texture *rain = nullptr;
@@ -35,4 +36,6 @@ private:
 	glm::vec3 grass_dry;
 	glm::vec3 grass_lush;
 	float faction_factor;
+};
+
 };

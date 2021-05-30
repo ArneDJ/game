@@ -1,6 +1,8 @@
 #pragma once
 #include <array> // has to be included here to compile on windows
 
+namespace GRAPHICS {
+
 struct depthmap {
 	GLuint FBO;
 	GLuint texture;
@@ -12,7 +14,7 @@ class Shadow {
 public:
 	Shadow(size_t texture_size);
 	~Shadow(void);
-	void update(const CORE::Camera *camera, const glm::vec3 &lightpos);
+	void update(const UTIL::Camera *camera, const glm::vec3 &lightpos);
 	void enable(void);
 	void bind_depthmap(uint8_t section);
 	void disable(void);
@@ -34,4 +36,6 @@ private:
 	std::vector<glm::mat4> biased_shadowspaces;
 	glm::vec4 splitdepth;
 	struct depthmap depth;
+};
+
 };

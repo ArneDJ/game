@@ -12,10 +12,12 @@
 
 #include "../extern/freetype/freetype-gl.h"
 
-#include "../core/camera.h"
+#include "../util/camera.h"
 #include "text.h"
 #include "shader.h"
 #include "label.h"
+
+namespace GRAPHICS {
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
@@ -142,7 +144,7 @@ void LabelManager::clear(void)
 	glyph_buffer.indices.clear();
 }
 
-void LabelManager::display(const CORE::Camera *camera) const
+void LabelManager::display(const UTIL::Camera *camera) const
 {
 	if (depthless) {
 		glDisable(GL_DEPTH_TEST);
@@ -171,3 +173,5 @@ void LabelManager::display(const CORE::Camera *camera) const
 		glEnable(GL_DEPTH_TEST);
 	}
 }
+
+};

@@ -14,6 +14,8 @@
 
 #include "text.h"
 
+namespace GRAPHICS {
+
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 TextManager::TextManager(const std::string &fontpath, size_t fontsize)
@@ -129,3 +131,5 @@ void TextManager::display(void) const
 
 	glDrawElements(GL_TRIANGLES, glyph_buffer.indices.size(), GL_UNSIGNED_INT, NULL);
 }
+
+};

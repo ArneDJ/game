@@ -9,12 +9,12 @@
 #include "entity.h"
 #include "camera.h"
 
-using namespace CORE;
-
 static const glm::vec3 UP_VECTOR = {0.F, 1.F, 0.F};
 static const float MAX_CAMERA_ANGLE = 1.55F;
 static const float MIN_CAMERA_ANGLE = -1.55F;
 static const float CAMERA_MOUSE_MODIFIER = 0.001F;
+
+namespace UTIL {
 
 Camera::Camera(void) 
 {
@@ -114,3 +114,5 @@ void Camera::translate(const glm::vec3 &translation)
 {
 	position = translation;
 }
+
+};

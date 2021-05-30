@@ -1,19 +1,20 @@
+namespace GRAPHICS {
 
 // immutable OpenGL texture
 class Texture {
 public:
 	Texture(void); // create an empty texture
 	Texture(const std::string &filepath); // load image texture from file
-	Texture(const Image *image); // load texture from image memory
-	Texture(const FloatImage *image); // load texture from floating point image
+	Texture(const UTIL::Image *image); // load texture from image memory
+	Texture(const UTIL::FloatImage *image); // load texture from floating point image
 	~Texture(void);
 	// explicitly load texture
 	void load(const std::string &filepath); // from file
 	void bind(GLenum unit) const;
 	// update texture data
-	void reload(const FloatImage *image);
-	void reload(const Image *image);
-	void unload(FloatImage *image);
+	void reload(const UTIL::FloatImage *image);
+	void reload(const UTIL::Image *image);
+	void unload(UTIL::FloatImage *image);
 	// change wrapping method
 	void change_wrapping(GLint wrapping);
 	void change_filtering(GLint filter);
@@ -55,3 +56,5 @@ GLuint generate_2D_texture(const void *texels, GLsizei width, GLsizei height, GL
 GLuint generate_3D_texture(GLsizei width, GLsizei height, GLsizei depth, GLenum internalformat, GLenum format, GLenum type);
 
 void delete_texture(GLuint handle);
+
+};

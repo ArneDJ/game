@@ -16,12 +16,12 @@
 
 #define CGLTF_IMPLEMENTATION
 
-#include "../core/image.h"
+#include "../util/image.h"
 #include "texture.h"
 #include "mesh.h"
 #include "model.h"
 
-using namespace GLTF;
+namespace GRAPHICS {
 
 struct linkage {
 	std::map<const cgltf_node*, struct node_t*> nodes;
@@ -445,3 +445,5 @@ static void print_gltf_error(cgltf_result error)
 		break;
 	};
 }
+
+};

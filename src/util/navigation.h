@@ -1,3 +1,5 @@
+namespace UTIL {
+
 enum sample_poly_areas {
 	SAMPLE_POLYAREA_GROUND,
 	SAMPLE_POLYAREA_WATER,
@@ -55,4 +57,6 @@ private:
 private:
 	void build_all_tiles(void);
 	void remove_all_tiles(void);
+};
+
 };

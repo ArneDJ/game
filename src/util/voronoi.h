@@ -1,3 +1,5 @@
+namespace UTIL {
+
 struct voronoi_cell;
 struct voronoi_vertex;
 struct voronoi_edge;
@@ -32,4 +34,6 @@ public:
 	std::vector<struct voronoi_edge> edges;
 public:
 	void gen_diagram(std::vector<glm::vec2> &locations, glm::vec2 min, glm::vec2 max, uint8_t relaxations);
+};
+
 };

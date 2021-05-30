@@ -13,6 +13,8 @@
 
 #include "shader.h"
 
+namespace GRAPHICS {
+
 Shader::~Shader(void)
 {
 	// detach and delete shader objects
@@ -149,3 +151,5 @@ GLint Shader::uniform_location(const GLchar *name) const
 {
 	return glGetUniformLocation(program, name);
 }
+
+};

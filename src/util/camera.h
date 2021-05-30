@@ -1,5 +1,5 @@
 
-namespace CORE {
+namespace UTIL {
 
 class Camera {
 public:

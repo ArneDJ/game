@@ -13,15 +13,15 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/image.h"
+#include "util/image.h"
 #include "graphics/texture.h"
 #include "graphics/mesh.h"
 #include "graphics/model.h"
 #include "media.h"
 
 std::string MediaManager::basepath;
-std::map<uint64_t, Texture*> MediaManager::textures;
-std::map<uint64_t, GLTF::Model*> MediaManager::models;
+std::map<uint64_t, GRAPHICS::Texture*> MediaManager::textures;
+std::map<uint64_t, GRAPHICS::Model*> MediaManager::models;
 
 static inline bool file_access(const std::string &filepath)
 {
@@ -39,17 +39,17 @@ void MediaManager::teardown(void)
 {
 	// delete textures
 	for (auto it = textures.begin(); it != textures.end(); it++) {
-		Texture *texture = it->second;
+		GRAPHICS::Texture *texture = it->second;
 		delete texture;
 	}
 	// delete models
 	for (auto it = models.begin(); it != models.end(); it++) {
-		GLTF::Model *model = it->second;
+		GRAPHICS::Model *model = it->second;
 		delete model;
 	}
 }
 	
-const GLTF::Model* MediaManager::load_model(const std::string &relpath)
+const GRAPHICS::Model* MediaManager::load_model(const std::string &relpath)
 {
 	std::string filepath = basepath + "models/" + relpath;
 	uint64_t ID = std::hash<std::string>()(filepath);
@@ -59,8 +59,8 @@ const GLTF::Model* MediaManager::load_model(const std::string &relpath)
 	// model not found in map
 	// load new one
 	if (mit == models.end()) {
-		GLTF::Model *model = new GLTF::Model { filepath };
-		std::vector<const Texture*> materials;
+		GRAPHICS::Model *model = new GRAPHICS::Model { filepath };
+		std::vector<const GRAPHICS::Texture*> materials;
 		// load diffuse texture if present
 		std::string diffusepath = relpath.substr(0, relpath.find_last_of('.')) + ".dds";
 		if (file_access(basepath + "textures/" + diffusepath)) {
@@ -76,7 +76,7 @@ const GLTF::Model* MediaManager::load_model(const std::string &relpath)
 	return mit->second;
 }
 
-const Texture* MediaManager::load_texture(const std::string &relpath)
+const GRAPHICS::Texture* MediaManager::load_texture(const std::string &relpath)
 {
 	std::string filepath = basepath + "textures/" + relpath;
 	uint64_t ID = std::hash<std::string>()(filepath);
@@ -86,7 +86,7 @@ const Texture* MediaManager::load_texture(const std::string &relpath)
 	// texture not found in map
 	// load new one
 	if (mit == textures.end()) {
-		Texture *texture = new Texture { filepath };
+		GRAPHICS::Texture *texture = new GRAPHICS::Texture { filepath };
 		textures.insert(std::make_pair(ID, texture));
 
 		return texture;

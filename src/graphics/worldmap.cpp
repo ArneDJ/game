@@ -11,17 +11,19 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/entity.h"
-#include "../core/camera.h"
-#include "../core/image.h"
+#include "../util/entity.h"
+#include "../util/camera.h"
+#include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
 #include "mesh.h"
 #include "worldmap.h"
 
+namespace GRAPHICS {
+
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
-Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap)
+Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *watermap, const UTIL::Image *rainmap, const UTIL::Image *materialmasks, const UTIL::Image *factionsmap)
 {
 	scale = mapscale;
 	faction_factor = 0.f;
@@ -40,7 +42,7 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const FloatImage *heightmap, const
 	rain = new Texture { rainmap };
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normalmap = new FloatImage { heightmap->width, heightmap->height, COLORSPACE_RGB };
+	normalmap = new UTIL::FloatImage { heightmap->width, heightmap->height, UTIL::COLORSPACE_RGB };
 	normals = new Texture { normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
@@ -95,7 +97,7 @@ Worldmap::~Worldmap(void)
 	delete factions;
 }
 
-void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const Image *rainmap, const Image *materialmasks, const Image *factionsmap)
+void Worldmap::reload(const UTIL::FloatImage *heightmap, const UTIL::Image *watermap, const UTIL::Image *rainmap, const UTIL::Image *materialmasks, const UTIL::Image *factionsmap)
 {
 	topology->reload(heightmap);
 	nautical->reload(watermap);
@@ -109,12 +111,12 @@ void Worldmap::reload(const FloatImage *heightmap, const Image *watermap, const 
 	factions->reload(factionsmap);
 }
 
-void Worldmap::reload_factionsmap(const Image *factionsmap)
+void Worldmap::reload_factionsmap(const UTIL::Image *factionsmap)
 {
 	factions->reload(factionsmap);
 }
 	
-void Worldmap::reload_masks(const Image *mask_image)
+void Worldmap::reload_masks(const UTIL::Image *mask_image)
 {
 	masks->reload(mask_image);
 }
@@ -126,7 +128,7 @@ void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const g
 	sunpos = sunposition;
 }
 
-void Worldmap::display_land(const CORE::Camera *camera) const
+void Worldmap::display_land(const UTIL::Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -150,7 +152,7 @@ void Worldmap::display_land(const CORE::Camera *camera) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void Worldmap::display_water(const CORE::Camera *camera, float time) const
+void Worldmap::display_water(const UTIL::Camera *camera, float time) const
 {
 	water.use();
 	water.uniform_mat4("VP", camera->VP);
@@ -185,3 +187,5 @@ void Worldmap::set_faction_factor(float factor)
 {
 	faction_factor = glm::clamp(factor, 0.f, 1.f);
 }
+
+};

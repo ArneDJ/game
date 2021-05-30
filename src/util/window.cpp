@@ -6,7 +6,7 @@
 #include "../extern/aixlog/aixlog.h"
 #include "window.h"
 
-using namespace CORE;
+namespace UTIL {
 	
 bool Window::open(uint16_t w, uint16_t h)
 {
@@ -58,3 +58,5 @@ void Window::set_fullscreen(void)
 {
 	SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 }
+
+};

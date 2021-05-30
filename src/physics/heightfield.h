@@ -3,8 +3,8 @@ namespace PHYSICS {
 
 class HeightField {
 public:
-	HeightField(const FloatImage *image, const glm::vec3 &scale);
-	HeightField(const Image *image, const glm::vec3 &scale);
+	HeightField(const UTIL::FloatImage *image, const glm::vec3 &scale);
+	HeightField(const UTIL::Image *image, const glm::vec3 &scale);
 public:
 	btCollisionObject *object();
 	const btCollisionObject *object() const;

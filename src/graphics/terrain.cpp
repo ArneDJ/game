@@ -15,10 +15,10 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/entity.h"
-#include "../core/geom.h"
-#include "../core/camera.h"
-#include "../core/image.h"
+#include "../util/entity.h"
+#include "../util/geom.h"
+#include "../util/camera.h"
+#include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
 #include "mesh.h"
@@ -26,9 +26,11 @@
 #include "../media.h"
 #include "terrain.h"
 
+namespace GRAPHICS {
+
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const FloatImage *heightmap, const Image *normalmap, const Image *cadastre)
+Terrain::Terrain(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -91,7 +93,7 @@ void Terrain::change_grass(const glm::vec3 &color)
 	grass->colorize(color, fogcolor, sunpos, fogfactor);
 }
 
-void Terrain::reload(const FloatImage *heightmap, const Image *normalmap, const Image *cadastre)
+void Terrain::reload(const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre)
 {
 	relief->reload(heightmap);
 
@@ -102,7 +104,7 @@ void Terrain::reload(const FloatImage *heightmap, const Image *normalmap, const 
 	grass->refresh(heightmap, scale);
 }
 	
-void Terrain::display_land(const CORE::Camera *camera) const
+void Terrain::display_land(const UTIL::Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -128,7 +130,7 @@ void Terrain::display_land(const CORE::Camera *camera) const
 	//
 }
 
-void Terrain::display_water(const CORE::Camera *camera, float time) const
+void Terrain::display_water(const UTIL::Camera *camera, float time) const
 {
 	water.use();
 	water.uniform_mat4("VP", camera->VP);
@@ -154,7 +156,7 @@ void Terrain::display_water(const CORE::Camera *camera, float time) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 	
-void Terrain::display_grass(const CORE::Camera *camera) const
+void Terrain::display_grass(const UTIL::Camera *camera) const
 {
 	relief->bind(GL_TEXTURE1);
 	normals->bind(GL_TEXTURE2);
@@ -162,7 +164,7 @@ void Terrain::display_grass(const CORE::Camera *camera) const
 	grass->display(camera, scale);
 }
 
-GrassRoots::GrassRoots(const GLTF::Model *mod, uint32_t count)
+GrassRoots::GrassRoots(const Model *mod, uint32_t count)
 {
 	model = mod;
 
@@ -207,7 +209,7 @@ GrassChunk::GrassChunk(const GrassRoots *grassroots, const glm::vec3 &min, const
 	scale = translate_3D_to_2D(max) - translate_3D_to_2D(min);
 }
 
-GrassSystem::GrassSystem(const GLTF::Model *mod)
+GrassSystem::GrassSystem(const Model *mod)
 {
 	// generate grass roots
 	int root_res = 8;
@@ -262,7 +264,7 @@ GrassSystem::~GrassSystem(void)
 	roots.clear();
 }
 
-void GrassSystem::refresh(const FloatImage *heightmap, const glm::vec3 &scale)
+void GrassSystem::refresh(const UTIL::FloatImage *heightmap, const glm::vec3 &scale)
 {
 	// update bounding boxes based on new heightmap
 	for (auto &chunk : chunks) {
@@ -280,7 +282,7 @@ void GrassSystem::refresh(const FloatImage *heightmap, const glm::vec3 &scale)
 
 		for (int i = rect_min_x; i < rect_max_x; i++) {
 			for (int j = rect_min_y; j < rect_max_y; j++) {
-				float height = heightmap->sample(i, j, CHANNEL_RED);
+				float height = heightmap->sample(i, j, UTIL::CHANNEL_RED);
 				if (height < min_height) { min_height = height; }
 				if (height > max_height) { max_height = height; }
 			}
@@ -303,7 +305,7 @@ void GrassSystem::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const
 	fogfactor = fogfctr;
 }
 
-void GrassSystem::display(const CORE::Camera *camera, const glm::vec3 &scale) const
+void GrassSystem::display(const UTIL::Camera *camera, const glm::vec3 &scale) const
 {
 	glDisable(GL_CULL_FACE);
 
@@ -339,3 +341,5 @@ void GrassSystem::display(const CORE::Camera *camera, const glm::vec3 &scale) co
 	
 	glEnable(GL_CULL_FACE);
 }
+
+};

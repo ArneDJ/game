@@ -13,8 +13,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/geom.h"
-#include "../core/voronoi.h"
+#include "../util/geom.h"
+#include "../util/voronoi.h"
 #include "sitegen.h"
 
 struct chainsegment {
@@ -168,7 +168,7 @@ void Sitegen::make_diagram(uint32_t tileref)
 		locations.push_back(glm::vec2(dist_x(gen), dist_y(gen)));
 	}
 
-	Voronoi voronoi;
+	UTIL::Voronoi voronoi;
 	voronoi.gen_diagram(locations, area.min, area.max, true);
 
 	districts.resize(voronoi.cells.size());

@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 // contains the parameters and creates the 3D textures
 
 // contains the buffers and textures where the actual clouds are rendered to
@@ -7,7 +8,7 @@ public:
 	void init(int SW, int SH);
 	void teardown(void);
 	void gen_parameters(float covrg);
-	void update(const CORE::Camera *camera, const glm::vec3 &lightpos, float time);
+	void update(const UTIL::Camera *camera, const glm::vec3 &lightpos, float time);
 	void bind(GLenum unit) const;
 private:
 	int SCR_WIDTH, SCR_HEIGHT;
@@ -31,4 +32,6 @@ private:
 private:
 	void init_shaders(void);
 	void generate_noise(void);
+};
+
 };

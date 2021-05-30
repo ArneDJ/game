@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 
 class Skybox {
 public:
@@ -5,8 +6,8 @@ public:
 	void teardown(void);
 	void prepare(void);
 	void colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled);
-	void update(const CORE::Camera *camera, float time);
-	void display(const CORE::Camera *camera) const;
+	void update(const UTIL::Camera *camera, float time);
+	void display(const UTIL::Camera *camera) const;
 private:
 	glm::vec3 zenith, horizon;
 	glm::vec3 sunposition;
@@ -15,4 +16,6 @@ private:
 	Shader shader;
 	Mesh *cubemap = nullptr;
 	Clouds clouds;
+};
+
 };

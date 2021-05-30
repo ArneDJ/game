@@ -1,6 +1,8 @@
 #pragma once
 #include "../extern/fastnoise/FastNoise.h"
 
+namespace UTIL {
+
 enum color_channel : uint8_t {
 	CHANNEL_RED = 0,
 	CHANNEL_GREEN = 1,
@@ -73,4 +75,6 @@ public:
 	void cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
 	void normalize(uint8_t chan);
 	void create_normalmap(const FloatImage *displacement, float strength);
+};
+
 };

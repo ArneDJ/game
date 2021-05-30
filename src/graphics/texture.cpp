@@ -17,8 +17,10 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../core/image.h"
+#include "../util/image.h"
 #include "texture.h"
+
+namespace GRAPHICS {
 
 static inline GLenum texture_format(ddsktx_format format);
 
@@ -89,7 +91,7 @@ Texture::Texture(const std::string &filepath)
 	load_DDS(filepath);
 }
 	
-Texture::Texture(const Image *image)
+Texture::Texture(const UTIL::Image *image)
 {
 	target = GL_TEXTURE_2D;
 	handle = 0;
@@ -120,7 +122,7 @@ Texture::Texture(const Image *image)
 	handle = generate_2D_texture(image->data, image->width, image->height, internalformat, format, type);
 }
 
-Texture::Texture(const FloatImage *image)
+Texture::Texture(const UTIL::FloatImage *image)
 {
 	target = GL_TEXTURE_2D;
 	handle = 0;
@@ -189,19 +191,19 @@ void Texture::bind(GLenum unit) const
 	glBindTexture(target, handle);
 }
 	
-void Texture::reload(const FloatImage *image)
+void Texture::reload(const UTIL::FloatImage *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_FLOAT, image->data);
 }
 
-void Texture::reload(const Image *image)
+void Texture::reload(const UTIL::Image *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_UNSIGNED_BYTE, image->data);
 }
 
-void Texture::unload(FloatImage *image)
+void Texture::unload(UTIL::FloatImage *image)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, handle);
@@ -320,3 +322,4 @@ static inline GLenum texture_format(ddsktx_format format)
 	}
 }
 
+};

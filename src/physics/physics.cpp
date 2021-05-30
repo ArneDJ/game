@@ -13,7 +13,7 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../core/image.h"
+#include "../util/image.h"
 #include "heightfield.h"
 #include "physics.h"
 
@@ -139,7 +139,7 @@ btCollisionShape* PhysicsManager::add_hull(const std::vector<glm::vec3> &points)
 	return shape;
 }
 	
-void PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &scale, int  group, int masks)
+void PhysicsManager::add_heightfield(const UTIL::FloatImage *image, const glm::vec3 &scale, int  group, int masks)
 {
 	auto heightfield = std::make_unique<HeightField>(image, scale);
 
@@ -148,7 +148,7 @@ void PhysicsManager::add_heightfield(const FloatImage *image, const glm::vec3 &s
 	m_heightfields.push_back(std::move(heightfield));
 }
 
-void PhysicsManager::add_heightfield(const Image *image, const glm::vec3 &scale, int  group, int masks)
+void PhysicsManager::add_heightfield(const UTIL::Image *image, const glm::vec3 &scale, int  group, int masks)
 {
 	auto heightfield = std::make_unique<HeightField>(image, scale);
 

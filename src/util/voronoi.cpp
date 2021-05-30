@@ -16,6 +16,8 @@
 
 #include "voronoi.h"
 
+namespace UTIL {
+
 static void prune_vertices(std::vector<const struct voronoi_vertex*> &v)
 {
 	auto end = v.end();
@@ -209,3 +211,5 @@ void Voronoi::gen_diagram(std::vector<glm::vec2> &locations, glm::vec2 min, glm:
 
 	jcv_diagram_free(&diagram);
 }
+
+};

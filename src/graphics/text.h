@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 
 struct glyph_batch_t {
 	GLuint VAO, VBO, EBO;
@@ -26,4 +27,6 @@ private:
 	texture_font_t *font;
 	glyph_buffer_t glyph_buffer;
 	glyph_batch_t glyph_batch;
+};
+
 };

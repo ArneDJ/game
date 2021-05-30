@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 
 // only used for debugging
 struct vertex {
@@ -52,4 +53,6 @@ public:
 class CubeMesh : public Mesh {
 public:
 	CubeMesh(const glm::vec3 &min, const glm::vec3 &max);
+};
+
 };

@@ -6,8 +6,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "core/geom.h"
-#include "core/entity.h"
+#include "util/geom.h"
+#include "util/entity.h"
 #include "army.h"
 
 Pathfinder::Pathfinder(const glm::vec2 &start) 

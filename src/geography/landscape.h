@@ -1,6 +1,6 @@
 
 struct building_t {
-	const GLTF::Model *model;
+	const GRAPHICS::Model *model;
 	glm::vec3 bounds;
 	std::vector<struct transformation> transforms;
 };
@@ -16,25 +16,25 @@ public:
 	Landscape(uint16_t heightres);
 	~Landscape(void);
 public:
-	void load_buildings(const std::vector<const GLTF::Model*> &house_models);
+	void load_buildings(const std::vector<const GRAPHICS::Model*> &house_models);
 public:
 	void clear(void);
 	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled, bool nautical);
 public:
-	const FloatImage* get_heightmap(void) const;
-	const Image* get_normalmap(void) const;
-	const Image* get_sitemasks(void) const;
+	const UTIL::FloatImage* get_heightmap(void) const;
+	const UTIL::Image* get_normalmap(void) const;
+	const UTIL::Image* get_sitemasks(void) const;
 	const std::vector<transformation>& get_trees(void) const;
 	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
-	FloatImage *heightmap = nullptr;
-	FloatImage *container = nullptr;
-	Image *valleymap = nullptr;
+	UTIL::FloatImage *heightmap = nullptr;
+	UTIL::FloatImage *container = nullptr;
+	UTIL::Image *valleymap = nullptr;
 private:
-	Image *normalmap = nullptr;
-	Image *density = nullptr;
-	Image *sitemasks = nullptr;
+	UTIL::Image *normalmap = nullptr;
+	UTIL::Image *density = nullptr;
+	UTIL::Image *sitemasks = nullptr;
 	Sitegen sitegen;
 private:
 	std::vector<transformation> trees;

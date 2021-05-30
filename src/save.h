@@ -58,8 +58,8 @@ struct navmesh_record {
 class Saver {
 public:
 	void change_directory(const std::string &dir);
-	void save(const std::string &filename, const Atlas *atlas, const Navigation *landnav, const Navigation *seanav, const long seed);
-	void load(const std::string &filename, Atlas *atlas, Navigation *landnav, Navigation *seanav, long &seed);
+	void save(const std::string &filename, const Atlas *atlas, const UTIL::Navigation *landnav, const UTIL::Navigation *seanav, const long seed);
+	void load(const std::string &filename, Atlas *atlas, UTIL::Navigation *landnav, UTIL::Navigation *seanav, long &seed);
 private:
 	std::string directory;
 	struct floatimage_record topology;

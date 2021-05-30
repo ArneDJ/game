@@ -3,7 +3,7 @@
 
 #include "timer.h"
 
-using namespace CORE;
+namespace UTIL {
 
 void Timer::begin(void)
 {
@@ -23,3 +23,5 @@ void Timer::end(void)
 		ms_per_frame = uint32_t(1000 * delta);
 	}
 }
+
+};

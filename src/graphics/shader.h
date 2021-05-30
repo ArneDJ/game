@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 
 class Shader {
 public:
@@ -17,4 +18,6 @@ public:
 private:
 	GLuint program = 0;
 	std::vector<GLuint> shaders;
+};
+
 };

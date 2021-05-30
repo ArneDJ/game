@@ -10,9 +10,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/entity.h"
-#include "../core/camera.h"
+#include "../util/entity.h"
+#include "../util/camera.h"
 #include "shadow.h"
+
+namespace GRAPHICS {
 
 static const glm::mat4 SCALE_BIAS = {
 	0.5F, 0.0F, 0.0F, 0.0F, 
@@ -97,7 +99,7 @@ void Shadow::disable(void)
 	glCullFace(GL_BACK);
 }
 
-void Shadow::update(const CORE::Camera *camera, const glm::vec3 &lightpos)
+void Shadow::update(const UTIL::Camera *camera, const glm::vec3 &lightpos)
 {
 	const float near = camera->nearclip;
 	const float far = FARCLIP_ADJUST * camera->farclip;
@@ -206,3 +208,5 @@ void Shadow::bind_depthmap(uint8_t section)
 	glClearDepth(1.f);
 	glClear(GL_DEPTH_BUFFER_BIT);
 }
+
+};

@@ -13,12 +13,14 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../core/entity.h"
-#include "../core/image.h"
-#include "../core/camera.h"
+#include "../util/entity.h"
+#include "../util/image.h"
+#include "../util/camera.h"
 #include "shader.h"
 #include "texture.h"
 #include "clouds.h"
+
+namespace GRAPHICS {
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 
@@ -147,7 +149,7 @@ void Clouds::generate_noise(void)
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
-void Clouds::update(const CORE::Camera *camera, const glm::vec3 &lightpos, float time)
+void Clouds::update(const UTIL::Camera *camera, const glm::vec3 &lightpos, float time)
 {
 	volumetric.use();
 
@@ -210,3 +212,5 @@ void Clouds::bind(GLenum unit) const
 	glActiveTexture(unit);
 	glBindTexture(GL_TEXTURE_2D, blurred_cloudscape);
 }
+
+};

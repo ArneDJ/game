@@ -13,14 +13,16 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../core/entity.h"
-#include "../core/camera.h"
-#include "../core/image.h"
+#include "../util/entity.h"
+#include "../util/camera.h"
+#include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
 #include "mesh.h"
 #include "model.h"
 #include "render.h"
+
+namespace GRAPHICS {
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 
@@ -34,7 +36,7 @@ RenderGroup::~RenderGroup(void)
 	clear();
 }
 
-void RenderGroup::add_object(const GLTF::Model *mod, const std::vector<const Entity*> &ents)
+void RenderGroup::add_object(const Model *mod, const std::vector<const Entity*> &ents)
 {
 	struct RenderObject *object = new RenderObject;
 	object->model = mod;
@@ -55,7 +57,7 @@ void RenderGroup::add_object(const GLTF::Model *mod, const std::vector<const Ent
 	objects.push_back(object);
 }
 
-void RenderGroup::display(const CORE::Camera *camera) const
+void RenderGroup::display(const UTIL::Camera *camera) const
 {
 	shader->use();
 	shader->uniform_mat4("VP", camera->VP);
@@ -196,7 +198,7 @@ void BillboardGroup::add_billboard(const Texture *tex, const std::vector<const E
 	billboards.push_back(billboard);
 }
 
-void BillboardGroup::display(const CORE::Camera *camera) const
+void BillboardGroup::display(const UTIL::Camera *camera) const
 {
 	shader->use();
 	shader->uniform_vec3("CAM_DIR", camera->direction);
@@ -358,3 +360,5 @@ void FrameSystem::copy_depthmap(void)
 	glDispatchCompute(INT_CEIL(width, 32), INT_CEIL(height, 32), 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
+
+};

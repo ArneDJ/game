@@ -20,9 +20,9 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../core/geom.h"
-#include "../core/image.h"
-#include "../core/voronoi.h"
+#include "../util/geom.h"
+#include "../util/image.h"
+#include "../util/voronoi.h"
 #include "../module.h"
 #include "terragen.h"
 #include "worldgraph.h"
@@ -61,19 +61,19 @@ Atlas::Atlas(void)
 	};
 	worldgraph = new Worldgraph { area };
 
-	watermap = new Image { WATERMAP_RES, WATERMAP_RES, COLORSPACE_GRAYSCALE };
+	watermap = new UTIL::Image { WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE };
 
-	container = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
-	detail = new FloatImage { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
+	container = new UTIL::FloatImage { terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE };
+	detail = new UTIL::FloatImage { terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE };
 
-	mask = new Image { terragen->heightmap->width, terragen->heightmap->height, COLORSPACE_GRAYSCALE };
+	mask = new UTIL::Image { terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE };
 	
-	materialmasks = new Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT };
+	materialmasks = new UTIL::Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT };
 	
-	vegetation = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
-	tree_density = new Image { RAINMAP_RES, RAINMAP_RES, COLORSPACE_GRAYSCALE };
+	vegetation = new UTIL::Image { RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE };
+	tree_density = new UTIL::Image { RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE };
 
-	factions = new Image { FACTIONSMAP_RES, FACTIONSMAP_RES, COLORSPACE_RGB };
+	factions = new UTIL::Image { FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB };
 }
 
 Atlas::~Atlas(void)
@@ -161,7 +161,7 @@ void Atlas::smoothe_heightmap(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
@@ -172,11 +172,11 @@ void Atlas::smoothe_heightmap(void)
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap->width; i++) {
 		for (int j = 0; j < terragen->heightmap->height; j++) {
-			uint8_t color = mask->sample(i, j, CHANNEL_RED);
-			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
-			float b = container->sample(i, j, CHANNEL_RED);
+			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
+			float h = terragen->heightmap->sample(i, j, UTIL::CHANNEL_RED);
+			float b = container->sample(i, j, UTIL::CHANNEL_RED);
 			h = glm::mix(h, b, color / 255.f);
-			terragen->heightmap->plot(i, j, CHANNEL_RED, h);
+			terragen->heightmap->plot(i, j, UTIL::CHANNEL_RED, h);
 		}
 	}
 
@@ -199,7 +199,7 @@ void Atlas::plateau_heightmap(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
@@ -222,7 +222,7 @@ void Atlas::plateau_heightmap(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
@@ -232,9 +232,9 @@ void Atlas::plateau_heightmap(void)
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap->width; i++) {
 		for (int j = 0; j < terragen->heightmap->height; j++) {
-			uint8_t color = mask->sample(i, j, CHANNEL_RED);
-			float h = terragen->heightmap->sample(i, j, CHANNEL_RED);
-			terragen->heightmap->plot(i, j, CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
+			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
+			float h = terragen->heightmap->sample(i, j, UTIL::CHANNEL_RED);
+			terragen->heightmap->plot(i, j, UTIL::CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
 		}
 	}
 	
@@ -256,7 +256,7 @@ void Atlas::oregony_heightmap(long seed)
 	cellnoise.SetFrequency(0.06f);
 	cellnoise.SetCellularReturnType(FastNoise::Distance2Mul);
 	cellnoise.SetGradientPerturbAmp(10.f);
-	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
+	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	FastNoise billow;
 	billow.SetSeed(seed);
@@ -266,7 +266,7 @@ void Atlas::oregony_heightmap(long seed)
 	billow.SetFractalOctaves(6);
 	billow.SetFractalLacunarity(2.5f);
 	billow.SetGradientPerturbAmp(40.f);
-	detail->noise(&billow, glm::vec2(1.f, 1.f), CHANNEL_RED);
+	detail->noise(&billow, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
@@ -276,7 +276,7 @@ void Atlas::oregony_heightmap(long seed)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, color);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
@@ -286,13 +286,13 @@ void Atlas::oregony_heightmap(long seed)
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap->width; i++) {
 		for (int j = 0; j < terragen->heightmap->height; j++) {
-			uint8_t color = mask->sample(i, j, CHANNEL_RED);
-			float height = terragen->heightmap->sample(i, j, CHANNEL_RED);
-			float m = container->sample(i, j, CHANNEL_RED);
-			float d = detail->sample(i, j, CHANNEL_RED);
+			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
+			float height = terragen->heightmap->sample(i, j, UTIL::CHANNEL_RED);
+			float m = container->sample(i, j, UTIL::CHANNEL_RED);
+			float d = detail->sample(i, j, UTIL::CHANNEL_RED);
 			m = 0.3f * glm::mix(d, m, 0.5f);
 			height += (color / 255.f) * m;
-			terragen->heightmap->plot(i, j, CHANNEL_RED, height);
+			terragen->heightmap->plot(i, j, UTIL::CHANNEL_RED, height);
 		}
 	}
 
@@ -314,7 +314,7 @@ void Atlas::erode_heightmap(float ocean_level)
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_line(a.x, a.y, b.x, b.y, CHANNEL_RED, 255);
+			mask->draw_line(a.x, a.y, b.x, b.y, UTIL::CHANNEL_RED, 255);
 		}
 	}
 
@@ -323,13 +323,13 @@ void Atlas::erode_heightmap(float ocean_level)
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap->width; x++) {
 		for (int y = 0; y < terragen->heightmap->height; y++) {
-			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				float height = terragen->heightmap->sample(x, y, UTIL::CHANNEL_RED);
 				float erosion = glm::clamp(1.f - (masker/255.f), 0.9f, 1.f);
 				//float eroded = glm::clamp(0.8f*height, 0.f, 1.f);
 				//height = glm::mix(height, eroded, 1.f);
-				terragen->heightmap->plot(x, y, CHANNEL_RED, erosion*height);
+				terragen->heightmap->plot(x, y, UTIL::CHANNEL_RED, erosion*height);
 			}
 		}
 	}
@@ -344,18 +344,18 @@ void Atlas::erode_heightmap(float ocean_level)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap->width; x++) {
 		for (int y = 0; y < terragen->heightmap->height; y++) {
-			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				float height = terragen->heightmap->sample(x, y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height, 0.f, ocean_level);
-				terragen->heightmap->plot(x, y, CHANNEL_RED, height);
+				terragen->heightmap->plot(x, y, UTIL::CHANNEL_RED, height);
 			}
 		}
 	}
@@ -377,7 +377,7 @@ void Atlas::clamp_heightmap(float land_level)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
@@ -390,18 +390,18 @@ void Atlas::clamp_heightmap(float land_level)
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, CHANNEL_RED, 0);
+			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
 		}
 	}
 
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap->width; x++) {
 		for (int y = 0; y < terragen->heightmap->height; y++) {
-			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(x, y, CHANNEL_RED);
+				float height = terragen->heightmap->sample(x, y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height, land_level, 1.f);
-				terragen->heightmap->plot(x, y, CHANNEL_RED, height);
+				terragen->heightmap->plot(x, y, UTIL::CHANNEL_RED, height);
 			}
 		}
 	}
@@ -424,7 +424,7 @@ auto start = std::chrono::steady_clock::now();
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, CHANNEL_RED, 255);
+			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 255);
 		}
 	}
 
@@ -435,11 +435,11 @@ auto start = std::chrono::steady_clock::now();
 	};
 	for (int x = 0; x < watermap->width; x++) {
 		for (int y = 0; y < watermap->height; y++) {
-			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(scale.x*x, scale.y*y, CHANNEL_RED);
+				float height = terragen->heightmap->sample(scale.x*x, scale.y*y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height - 0.005f, 0.f, 1.f);
-				watermap->plot(x, y, CHANNEL_RED, 255*height);
+				watermap->plot(x, y, UTIL::CHANNEL_RED, 255*height);
 			}
 		}
 	}
@@ -456,7 +456,7 @@ auto start = std::chrono::steady_clock::now();
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
@@ -466,7 +466,7 @@ auto start = std::chrono::steady_clock::now();
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, CHANNEL_RED, 0);
+			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
 		}
 	}
 
@@ -477,16 +477,16 @@ auto start = std::chrono::steady_clock::now();
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, CHANNEL_RED, 255);
+				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
 
 	for (int x = 0; x < watermap->width; x++) {
 		for (int y = 0; y < watermap->height; y++) {
-			uint8_t masker = mask->sample(x, y, CHANNEL_RED);
+			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				watermap->plot(x, y, CHANNEL_RED, 255*(ocean_level));
+				watermap->plot(x, y, UTIL::CHANNEL_RED, 255*(ocean_level));
 			}
 		}
 	}
@@ -558,7 +558,7 @@ void Atlas::create_vegetation(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				vegetation->draw_triangle(a, b, c, CHANNEL_RED, 0);
+				vegetation->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 0);
 			}
 		}
 	}
@@ -569,7 +569,7 @@ void Atlas::create_vegetation(void)
 		if (bord.coast || bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			vegetation->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_RED, 0);
+			vegetation->draw_thick_line(a.x, a.y, b.x, b.y, 1, UTIL::CHANNEL_RED, 0);
 		}
 	}
 }
@@ -618,19 +618,19 @@ void Atlas::place_vegetation(long seed)
 	fastnoise.SetFractalOctaves(2);
 	fastnoise.SetFrequency(0.05f);
 
-	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), CHANNEL_RED);
+	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	for (const auto &point : positions) {
-		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, CHANNEL_RED) / 255.f;
+		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, UTIL::CHANNEL_RED) / 255.f;
 		if (N < 0.5f) { continue; }
 
-		float P = vegetation->sample(point.x * vegetation->width, point.y * vegetation->height, CHANNEL_RED) / 255.f;
+		float P = vegetation->sample(point.x * vegetation->width, point.y * vegetation->height, UTIL::CHANNEL_RED) / 255.f;
 
 		//P *= rain * rain;
 		float R = density_dist(gen);
 		if ( R > P ) { continue; }
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
-		position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, CHANNEL_RED);
+		position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 		struct transformation transform = { position, rotation, 10.f };
 		trees.push_back(transform);
@@ -659,37 +659,37 @@ void Atlas::create_mapdata(long seed)
 	create_factions_map();
 }
 	
-const FloatImage* Atlas::get_heightmap(void) const
+const UTIL::FloatImage* Atlas::get_heightmap(void) const
 {
 	return terragen->heightmap;
 }
 
-const Image* Atlas::get_rainmap(void) const
+const UTIL::Image* Atlas::get_rainmap(void) const
 {
 	return terragen->rainmap;
 }
 
-const Image* Atlas::get_tempmap(void) const
+const UTIL::Image* Atlas::get_tempmap(void) const
 {
 	return terragen->tempmap;
 }
 
-const Image* Atlas::get_vegetation(void) const
+const UTIL::Image* Atlas::get_vegetation(void) const
 {
 	return vegetation;
 }
 	
-const Image* Atlas::get_watermap(void) const
+const UTIL::Image* Atlas::get_watermap(void) const
 {
 	return watermap;
 }
 
-const Image* Atlas::get_materialmasks(void) const
+const UTIL::Image* Atlas::get_materialmasks(void) const
 {
 	return materialmasks;
 }
 
-const Image* Atlas::get_factions(void) const
+const UTIL::Image* Atlas::get_factions(void) const
 {
 	return factions;
 }
@@ -746,9 +746,9 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 			for (const auto &bord : t->borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				factions->draw_triangle(a, b, c, CHANNEL_RED, 255*color.x);
-				factions->draw_triangle(a, b, c, CHANNEL_GREEN, 255*color.y);
-				factions->draw_triangle(a, b, c, CHANNEL_BLUE, 255*color.z);
+				factions->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255*color.x);
+				factions->draw_triangle(a, b, c, UTIL::CHANNEL_GREEN, 255*color.y);
+				factions->draw_triangle(a, b, c, UTIL::CHANNEL_BLUE, 255*color.z);
 			}
 		}
 	}

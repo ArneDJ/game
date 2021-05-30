@@ -18,9 +18,9 @@
 
 #include "../extern/poisson/poisson_disk_sampling.h"
 
-#include "../core/voronoi.h"
-#include "../core/geom.h"
-#include "../core/image.h"
+#include "../util/voronoi.h"
+#include "../util/geom.h"
+#include "../util/image.h"
 #include "../module.h"
 #include "terragen.h"
 #include "worldgraph.h"
@@ -231,13 +231,13 @@ void Worldgraph::gen_diagram(long seed, float radius)
 	}
 }
 
-void Worldgraph::gen_relief(const FloatImage *heightmap, const struct worldparams *params)
+void Worldgraph::gen_relief(const UTIL::FloatImage *heightmap, const struct worldparams *params)
 {
 	const float scale_x = float(heightmap->width) / area.max.x;
 	const float scale_y = float(heightmap->height) / area.max.y;
 
 	for (struct tile &t : tiles) {
-		float height = heightmap->sample(scale_x*t.center.x, scale_y*t.center.y, CHANNEL_RED);
+		float height = heightmap->sample(scale_x*t.center.x, scale_y*t.center.y, UTIL::CHANNEL_RED);
 		t.land = (height < params->graph.lowland) ? false : true;
 		t.amp = glm::smoothstep(params->graph.lowland, params->graph.highland, height);
 		if (height < params->graph.lowland) {
@@ -786,7 +786,7 @@ void Worldgraph::erode_mountains(void)
 	}
 }
 
-void Worldgraph::gen_properties(const Image *temperatures, const Image *rainfall)
+void Worldgraph::gen_properties(const UTIL::Image *temperatures, const UTIL::Image *rainfall)
 {
 	// assign local tile amplitude
 	// higher amplitude means more mountain terrain
@@ -815,8 +815,8 @@ void Worldgraph::gen_properties(const Image *temperatures, const Image *rainfall
 	};
 
 	for (struct tile &t : tiles) {
-		t.precipitation = rainfall->sample(scale_rain.x*t.center.x, scale_rain.y*t.center.y, CHANNEL_RED);
-		t.temperature = temperatures->sample(scale_temp.x*t.center.x, scale_temp.y*t.center.y, CHANNEL_RED);
+		t.precipitation = rainfall->sample(scale_rain.x*t.center.x, scale_rain.y*t.center.y, UTIL::CHANNEL_RED);
+		t.temperature = temperatures->sample(scale_temp.x*t.center.x, scale_temp.y*t.center.y, UTIL::CHANNEL_RED);
 	}
 }
 

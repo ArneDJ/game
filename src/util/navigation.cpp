@@ -26,6 +26,8 @@
 #define MAX_PATHPOLY 256 // max number of polygons in a path
 #define MAX_PATHVERT 512 // most verts in a path
 
+namespace UTIL {
+
 class Navbuilder {
 public:
 	Navbuilder(void)
@@ -724,3 +726,4 @@ uint8_t* Navbuilder::alloc_navdata(const int tx, const int ty, float *bmin, floa
 	return navdata;
 }
 
+};

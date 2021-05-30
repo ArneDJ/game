@@ -1,3 +1,4 @@
+namespace GRAPHICS {
 
 class FrameSystem {
 public:
@@ -37,7 +38,7 @@ private:
 };
 
 struct RenderObject {
-	const GLTF::Model *model;
+	const Model *model;
 	std::vector<const Entity*> entities;
 	bool instanced = false;
 	TransformBuffer tbuffer;
@@ -61,7 +62,7 @@ public:
 	BillboardGroup(const Shader *shady);
 	~BillboardGroup(void);
 	void add_billboard(const Texture *tex, const std::vector<const Entity*> &ents);
-	void display(const CORE::Camera *camera) const;
+	void display(const UTIL::Camera *camera) const;
 	void clear(void);
 private:
 	const Shader *shader;
@@ -74,8 +75,8 @@ class RenderGroup {
 public:
 	RenderGroup(const Shader *shady);
 	~RenderGroup(void);
-	void add_object(const GLTF::Model *mod, const std::vector<const Entity*> &ents);
-	void display(const CORE::Camera *camera) const;
+	void add_object(const Model *mod, const std::vector<const Entity*> &ents);
+	void display(const UTIL::Camera *camera) const;
 	void clear(void);
 private:
 	const Shader *shader;
@@ -91,4 +92,6 @@ public:
 	void final_render(void);
 private:
 	FrameSystem *framesystem;
+};
+
 };

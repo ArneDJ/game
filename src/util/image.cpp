@@ -22,6 +22,8 @@
 #include "geom.h"
 #include "image.h"
 
+namespace UTIL {
+
 static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *image);
 
 static inline int min3(int a, int b, int c)
@@ -491,3 +493,5 @@ static glm::vec3 filter_normal(int x, int y, float strength, const FloatImage *i
 
 	return normal;
 }
+
+};

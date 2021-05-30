@@ -22,11 +22,11 @@
 
 #include "extern/aixlog/aixlog.h"
 
-#include "core/geom.h"
-#include "core/entity.h"
-#include "core/image.h"
-#include "core/voronoi.h"
-#include "core/navigation.h"
+#include "util/geom.h"
+#include "util/entity.h"
+#include "util/image.h"
+#include "util/voronoi.h"
+#include "util/navigation.h"
 #include "geography/terragen.h"
 #include "geography/worldgraph.h"
 #include "geography/mapfield.h"
@@ -38,11 +38,11 @@ void Saver::change_directory(const std::string &dir)
 	directory = dir; 
 }
 
-void Saver::save(const std::string &filename, const Atlas *atlas, const Navigation *landnav, const Navigation *seanav, const long seed)
+void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Navigation *landnav, const UTIL::Navigation *seanav, const long seed)
 {
 	const std::string filepath = directory + filename;
 
-	const FloatImage *heightmap = atlas->get_heightmap();
+	const auto heightmap = atlas->get_heightmap();
 	topology.width = heightmap->width;
 	topology.height = heightmap->height;
 	topology.channels = heightmap->channels;
@@ -50,7 +50,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	topology.data.resize(heightmap->size);
 	std::copy(heightmap->data, heightmap->data + heightmap->size, topology.data.begin());
 
-	const Image *tempmap = atlas->get_tempmap();
+	const auto tempmap = atlas->get_tempmap();
 	temperature.width = tempmap->width;
 	temperature.height = tempmap->height;
 	temperature.channels = tempmap->channels;
@@ -58,7 +58,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	temperature.data.resize(tempmap->size);
 	std::copy(tempmap->data, tempmap->data + tempmap->size, temperature.data.begin());
 
-	const Image *rainmap = atlas->get_rainmap();
+	const auto rainmap = atlas->get_rainmap();
 	rain.width = rainmap->width;
 	rain.height = rainmap->height;
 	rain.channels = rainmap->channels;
@@ -66,7 +66,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	rain.data.resize(rainmap->size);
 	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
 
-	const Image *waterimage = atlas->get_watermap();
+	const auto waterimage = atlas->get_watermap();
 	watermap.width = waterimage->width;
 	watermap.height = waterimage->height;
 	watermap.channels = waterimage->channels;
@@ -74,7 +74,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	watermap.data.resize(waterimage->size);
 	std::copy(waterimage->data, waterimage->data + waterimage->size, watermap.data.begin());
 
-	const Worldgraph *worldgraph = atlas->get_worldgraph();
+	const auto worldgraph = atlas->get_worldgraph();
 
 	// save the campaign navigation data
 	{
@@ -149,7 +149,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const Navigati
 	}
 }
 
-void Saver::load(const std::string &filename, Atlas *atlas, Navigation *landnav, Navigation *seanav, long &seed)
+void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *landnav, UTIL::Navigation *seanav, long &seed)
 {
 	const std::string filepath = directory + filename;
 

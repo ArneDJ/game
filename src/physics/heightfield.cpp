@@ -10,12 +10,12 @@
 #include "bullet/btBulletDynamicsCommon.h"
 #include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 
-#include "../core/image.h"
+#include "../util/image.h"
 #include "heightfield.h"
 
 namespace PHYSICS {
 
-HeightField::HeightField(const FloatImage *image, const glm::vec3 &scale)
+HeightField::HeightField(const UTIL::FloatImage *image, const glm::vec3 &scale)
 {
 	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width, image->height, image->data, 1.f, 0.f, 1.f, 1, PHY_FLOAT, false);
 
@@ -38,7 +38,7 @@ HeightField::HeightField(const FloatImage *image, const glm::vec3 &scale)
 	m_object->setWorldTransform(transform);
 }
 
-HeightField::HeightField(const Image *image, const glm::vec3 &scale)
+HeightField::HeightField(const UTIL::Image *image, const glm::vec3 &scale)
 {
 	float yscale = scale.y / 255.f; // adjust scale
 

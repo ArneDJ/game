@@ -54,16 +54,16 @@
 
 #include "extern/aixlog/aixlog.h"
 
-#include "core/geom.h"
-#include "core/image.h"
-#include "core/entity.h"
-#include "core/camera.h"
-#include "core/window.h"
-#include "core/input.h"
-#include "core/timer.h"
-#include "core/animation.h"
-#include "core/navigation.h"
-#include "core/voronoi.h"
+#include "util/geom.h"
+#include "util/image.h"
+#include "util/entity.h"
+#include "util/camera.h"
+#include "util/window.h"
+#include "util/input.h"
+#include "util/timer.h"
+#include "util/animation.h"
+#include "util/navigation.h"
+#include "util/voronoi.h"
 #include "graphics/text.h"
 #include "graphics/shader.h"
 #include "graphics/mesh.h"
@@ -90,7 +90,7 @@
 #include "geography/landscape.h"
 #include "save.h"
 #include "army.h"
-//#include "core/sound.h" // TODO replace SDL_Mixer with OpenAL
+//#include "util/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum game_state_t {
 	GS_TITLE,
@@ -113,29 +113,29 @@ struct game_settings_t {
 };
 
 struct shader_group_t {
-	Shader object;
-	Shader debug;
-	Shader billboard;
-	Shader font;
-	Shader depth;
-	Shader copy;
+	GRAPHICS::Shader object;
+	GRAPHICS::Shader debug;
+	GRAPHICS::Shader billboard;
+	GRAPHICS::Shader font;
+	GRAPHICS::Shader depth;
+	GRAPHICS::Shader copy;
 };
 
 class Campaign {
 public:
 	long seed;
-	Navigation landnav;
-	Navigation seanav;
-	CORE::Camera camera;
+	UTIL::Navigation landnav;
+	UTIL::Navigation seanav;
+	UTIL::Camera camera;
 	PHYSICS::PhysicsManager collisionman;
 	std::unique_ptr<Atlas> atlas;
-	std::unique_ptr<Worldmap> worldmap;
 	// graphics
-	std::unique_ptr<LabelManager> labelman;
-	std::unique_ptr<RenderGroup> ordinary;
-	std::unique_ptr<RenderGroup> creatures;
-	std::unique_ptr<BillboardGroup> billboards;
-	Skybox skybox;
+	std::unique_ptr<GRAPHICS::Worldmap> worldmap;
+	std::unique_ptr<GRAPHICS::LabelManager> labelman;
+	std::unique_ptr<GRAPHICS::RenderGroup> ordinary;
+	std::unique_ptr<GRAPHICS::RenderGroup> creatures;
+	std::unique_ptr<GRAPHICS::BillboardGroup> billboards;
+	GRAPHICS::Skybox skybox;
 	// entities
 	Entity marker;
 	std::unique_ptr<Army> player;
@@ -143,7 +143,7 @@ public:
 	std::vector<Entity*> entities;
 	bool show_factions = false;
 public:
-	void init(const CORE::Window *window, const struct shader_group_t *shaders);
+	void init(const UTIL::Window *window, const struct shader_group_t *shaders);
 	void load_assets();
 	void add_armies();
 	void add_trees();
@@ -151,7 +151,7 @@ public:
 	void cleanup();
 	void teardown();
 public:
-	void update_camera(const CORE::Input *input, float sensitivity, float delta);
+	void update_camera(const UTIL::Input *input, float sensitivity, float delta);
 	void update_labels();
 	void update_faction_map();
 	void offset_entities();
@@ -160,23 +160,23 @@ private:
 	void collide_camera();
 };
 	
-void Campaign::init(const CORE::Window *window, const struct shader_group_t *shaders)
+void Campaign::init(const UTIL::Window *window, const struct shader_group_t *shaders)
 {
 	atlas = std::make_unique<Atlas>();
 
-	worldmap = std::make_unique<Worldmap>(atlas->SCALE, atlas->get_heightmap(), atlas->get_watermap(), atlas->get_rainmap(), atlas->get_materialmasks(), atlas->get_factions());
+	worldmap = std::make_unique<GRAPHICS::Worldmap>(atlas->SCALE, atlas->get_heightmap(), atlas->get_watermap(), atlas->get_rainmap(), atlas->get_materialmasks(), atlas->get_factions());
 
-	ordinary = std::make_unique<RenderGroup>(&shaders->debug);
-	creatures = std::make_unique<RenderGroup>(&shaders->object);
+	ordinary = std::make_unique<GRAPHICS::RenderGroup>(&shaders->debug);
+	creatures = std::make_unique<GRAPHICS::RenderGroup>(&shaders->object);
 
-	billboards = std::make_unique<BillboardGroup>(&shaders->billboard);
+	billboards = std::make_unique<GRAPHICS::BillboardGroup>(&shaders->billboard);
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	player = std::make_unique<Army>(startpos, 20.f);
 	
 	skybox.init(window->width, window->height);
 	
-	labelman = std::make_unique<LabelManager>("fonts/diablo.ttf", 30);
+	labelman = std::make_unique<GRAPHICS::LabelManager>("fonts/diablo.ttf", 30);
 
 	load_assets();
 }
@@ -301,7 +301,7 @@ void Campaign::collide_camera()
 	}
 }
 	
-void Campaign::update_camera(const CORE::Input *input, float sensitivity, float delta)
+void Campaign::update_camera(const UTIL::Input *input, float sensitivity, float delta)
 {
 	glm::vec2 rel_mousecoords = sensitivity * input->rel_mousecoords();
 	camera.target(rel_mousecoords);
@@ -409,20 +409,20 @@ void Campaign::change_player_target(const glm::vec3 &ray)
 class Battle {
 public:
 	bool naval = false;
-	CORE::Camera camera;
+	UTIL::Camera camera;
 	PHYSICS::PhysicsManager physicsman;
 	std::unique_ptr<Landscape> landscape;
 	// graphics
-	std::unique_ptr<RenderGroup> ordinary;
-	std::unique_ptr<BillboardGroup> billboards;
-	std::unique_ptr<Terrain> terrain;
-	Skybox skybox;
+	std::unique_ptr<GRAPHICS::RenderGroup> ordinary;
+	std::unique_ptr<GRAPHICS::BillboardGroup> billboards;
+	std::unique_ptr<GRAPHICS::Terrain> terrain;
+	GRAPHICS::Skybox skybox;
 	// entities
 	Creature *player;
 	std::vector<StationaryObject*> stationaries;
 	std::vector<Entity> entities;
 public:
-	void init(const Module *mod, const CORE::Window *window, const struct shader_group_t *shaders);
+	void init(const Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders);
 	void load_assets(const Module *mod);
 	void add_creatures();
 	void add_buildings();
@@ -431,14 +431,16 @@ public:
 	void teardown();
 };
 	
-void Battle::init(const Module *mod, const CORE::Window *window, const struct shader_group_t *shaders)
+void Battle::init(const Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders)
 {
 	landscape = std::make_unique<Landscape>(2048);
 
+	terrain = std::make_unique<GRAPHICS::Terrain>(landscape->SCALE, landscape->get_heightmap(), landscape->get_normalmap(), landscape->get_sitemasks());
+
 	load_assets(mod);
 
-	billboards = std::make_unique<BillboardGroup>(&shaders->billboard);
-	ordinary = std::make_unique<RenderGroup>(&shaders->debug);
+	billboards = std::make_unique<GRAPHICS::BillboardGroup>(&shaders->billboard);
+	ordinary = std::make_unique<GRAPHICS::RenderGroup>(&shaders->debug);
 
 	skybox.init(window->width, window->height);
 }
@@ -446,13 +448,12 @@ void Battle::init(const Module *mod, const CORE::Window *window, const struct sh
 void Battle::load_assets(const Module *mod)
 {
 	// import all the buildings of the module
-	std::vector<const GLTF::Model*> house_models;
+	std::vector<const GRAPHICS::Model*> house_models;
 	for (const auto &house : mod->houses) {
 		house_models.push_back(MediaManager::load_model(house.model));
 	}
 	landscape->load_buildings(house_models);
 	
-	terrain = std::make_unique<Terrain>(landscape->SCALE, landscape->get_heightmap(), landscape->get_normalmap(), landscape->get_sitemasks());
 	terrain->add_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
 	terrain->add_material("SANDMAP", MediaManager::load_texture("ground/sand.dds"));
 	terrain->add_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
@@ -478,7 +479,7 @@ void Battle::add_buildings()
 	const auto houses = landscape->get_houses();
 	for (const auto &house : houses) {
 		std::vector<const Entity*> house_entities;
-		const GLTF::Model *model = house.model;
+		const GRAPHICS::Model *model = house.model;
 		// get collision shape
 		std::vector<glm::vec3> positions;
 		std::vector<uint16_t> indices;
@@ -568,15 +569,15 @@ private:
 	enum game_state_t state;
 	struct game_settings_t settings;
 	Saver saver;
-	CORE::Window window;
-	CORE::Input input;
-	CORE::Timer timer;
-	TextManager *textman;
+	UTIL::Window window;
+	UTIL::Input input;
+	UTIL::Timer timer;
+	GRAPHICS::TextManager *textman;
 	Debugger debugger;
 	Campaign campaign;
 	Battle battle;
 	// graphics
-	RenderManager renderman;
+	GRAPHICS::RenderManager renderman;
 	struct shader_group_t shaders;
 private:
 	void load_settings();
@@ -594,26 +595,6 @@ private:
 	void run_battle();
 	void update_battle();
 };
-
-class Engine {
-public:
-	int32_t run();
-private:
-	Game game;
-};
-
-int32_t Engine::run()
-{
-	if (!game.init()) {
-		return EXIT_FAILURE;
-	}
-
-	game.run();
-
-	game.shutdown();
-
-	return EXIT_SUCCESS;
-}
 
 void Game::set_opengl_states()
 {
@@ -701,7 +682,7 @@ bool Game::init()
 		return false;
 	}
 
-	textman = new TextManager { "fonts/exocet.ttf", 40 };
+	textman = new GRAPHICS::TextManager { "fonts/exocet.ttf", 40 };
 
 	load_shaders();
 
@@ -1160,8 +1141,14 @@ void Game::run()
 
 int main(int argc, char *argv[])
 {
-	Engine engine;
-	auto status = engine.run();
+	Game archeon;
+	if (!archeon.init()) {
+		return EXIT_FAILURE;
+	}
 
-	return status;
+	archeon.run();
+
+	archeon.shutdown();
+
+	return EXIT_SUCCESS;
 }

@@ -10,6 +10,8 @@
 
 #include "mesh.h"
 
+namespace GRAPHICS {
+
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 static size_t typesize(GLenum type);
@@ -331,3 +333,5 @@ static size_t typesize(GLenum type)
 
 	return 0;
 }
+
+};
