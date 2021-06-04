@@ -153,7 +153,7 @@ void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *la
 {
 	const std::string filepath = directory + filename;
 
-	Worldgraph *worldgraph = atlas->worldgraph;
+	Worldgraph *worldgraph = atlas->worldgraph.get();
 
 	std::ifstream stream(filepath, std::ios::binary);
 

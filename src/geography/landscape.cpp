@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <random>
 #include <algorithm>
@@ -70,27 +71,20 @@ static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths,
 
 Landscape::Landscape(uint16_t heightres)
 {
-	heightmap = new UTIL::FloatImage { heightres, heightres, UTIL::COLORSPACE_GRAYSCALE };
-	normalmap = new UTIL::Image { heightres, heightres, UTIL::COLORSPACE_RGB };
-	valleymap = new UTIL::Image { heightres, heightres, UTIL::COLORSPACE_RGB };
+	heightmap = std::make_unique<UTIL::FloatImage>(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
+	normalmap = std::make_unique<UTIL::Image>(heightres, heightres, UTIL::COLORSPACE_RGB);
+	valleymap = std::make_unique<UTIL::Image>(heightres, heightres, UTIL::COLORSPACE_RGB);
 
-	container = new UTIL::FloatImage { heightres, heightres, UTIL::COLORSPACE_GRAYSCALE };
+	container = std::make_unique<UTIL::FloatImage>(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
 	
-	density = new UTIL::Image { DENSITY_MAP_RES, DENSITY_MAP_RES, UTIL::COLORSPACE_GRAYSCALE };
+	density = std::make_unique<UTIL::Image>(DENSITY_MAP_RES, DENSITY_MAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	sitemasks = new UTIL::Image { SITEMASK_RES, SITEMASK_RES, UTIL::COLORSPACE_GRAYSCALE };
+	sitemasks = std::make_unique<UTIL::Image>(SITEMASK_RES, SITEMASK_RES, UTIL::COLORSPACE_GRAYSCALE);
 }
 
 Landscape::~Landscape(void)
 {
 	clear();
-
-	delete sitemasks;
-	delete density;
-	delete heightmap;
-	delete valleymap;
-	delete normalmap;
-	delete container;
 }
 	
 void Landscape::load_buildings(const std::vector<const GRAPHICS::Model*> &house_models)
@@ -142,7 +136,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	gen_heightmap(local_seed, amplitude);
 
 	// create the normalmap
-	normalmap->create_normalmap(heightmap, 32.f);
+	normalmap->create_normalmap(heightmap.get(), 32.f);
 
 	// if scene is a town generate the site
 	if (site_radius > 0) {
@@ -157,7 +151,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 
 const UTIL::FloatImage* Landscape::get_heightmap(void) const
 {
-	return heightmap;
+	return heightmap.get();
 }
 	
 const std::vector<transformation>& Landscape::get_trees(void) const
@@ -172,12 +166,12 @@ const std::vector<building_t>& Landscape::get_houses(void) const
 
 const UTIL::Image* Landscape::get_normalmap(void) const
 {
-	return normalmap;
+	return normalmap.get();
 }
 
 const UTIL::Image* Landscape::get_sitemasks(void) const
 {
-	return sitemasks;
+	return sitemasks.get();
 }
 
 void Landscape::gen_forest(int32_t seed, uint8_t precipitation) 
@@ -330,7 +324,7 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	// apply blur
 	// to simulate erosion and sediment we mix a blurred image with the original heightmap based on the height (lower areas receive more blur, higher areas less)
 	// this isn't an accurate erosion model but it is fast and looks decent enough
-	container->copy(heightmap);
+	container->copy(heightmap.get());
 	container->blur(params.sediment_blur);
 
 	for (int i = 0; i < heightmap->size; i++) {

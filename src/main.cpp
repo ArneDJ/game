@@ -77,6 +77,7 @@
 #include "graphics/label.h"
 #include "physics/heightfield.h"
 #include "physics/physics.h"
+#include "physics/bumper.h"
 #include "media.h"
 #include "object.h"
 #include "creature.h"
@@ -466,7 +467,7 @@ void Battle::add_creatures()
 {
 	player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
 
-	physicsman.add_body(player->get_body(), PHYSICS::COLLISION_GROUP_ACTOR, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_WORLD);
+	physicsman.add_body(player->get_body(), PHYSICS::COLLISION_GROUP_ACTOR, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_WORLD | PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 
 	std::vector<const Entity*> ents;
 	ents.push_back(player);
@@ -779,6 +780,9 @@ void Game::update_battle()
 	}
 
 	battle.player->move(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
+	if (input.key_down(SDLK_SPACE)) {
+		battle.player->jump();
+	}
 
 	input.update_keymap();
 
@@ -789,7 +793,8 @@ void Game::update_battle()
 
 	battle.player->sync();
 
-	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.8f, 0.f));
+	battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
+	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.f, 0.f));
 	battle.camera.update();
 	
 	// update atmosphere

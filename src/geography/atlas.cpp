@@ -29,7 +29,7 @@
 #include "mapfield.h"
 #include "atlas.h"
 
-enum material_channels {
+enum material_channels_t {
 	CHANNEL_SNOW = 0,
 	CHANNEL_GRASS,
 	CHANNEL_COUNT
@@ -53,48 +53,32 @@ static const uint16_t FACTIONSMAP_RES = 2048;
 
 Atlas::Atlas(void)
 {
-	terragen = new Terragen { LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES };
+	terragen = std::make_unique<Terragen>(LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES);
 
 	struct rectangle area = {
 		glm::vec2(0.F, 0.F),
 		glm::vec2(SCALE.x, SCALE.z)
 	};
-	worldgraph = new Worldgraph { area };
+	worldgraph = std::make_unique<Worldgraph>(area);
 
-	watermap = new UTIL::Image { WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE };
+	watermap = std::make_unique<UTIL::Image>(WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	container = new UTIL::FloatImage { terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE };
-	detail = new UTIL::FloatImage { terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE };
+	container = std::make_unique<UTIL::FloatImage>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
+	detail = std::make_unique<UTIL::FloatImage>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
 
-	mask = new UTIL::Image { terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE };
+	mask = std::make_unique<UTIL::Image>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
 	
-	materialmasks = new UTIL::Image { MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT };
+	materialmasks = std::make_unique<UTIL::Image>(MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT);
 	
-	vegetation = new UTIL::Image { RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE };
-	tree_density = new UTIL::Image { RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE };
+	vegetation = std::make_unique<UTIL::Image>(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
+	tree_density = std::make_unique<UTIL::Image>(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	factions = new UTIL::Image { FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB };
+	factions = std::make_unique<UTIL::Image>(FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB);
 }
 
 Atlas::~Atlas(void)
 {
 	clear_entities();
-
-	delete factions;
-
-	delete terragen;
-	delete worldgraph;
-
-	delete watermap;
-
-	delete container;
-	delete detail;
-	delete mask;
-	
-	delete materialmasks;
-
-	delete vegetation;
-	delete tree_density;
 }
 
 void Atlas::generate(long seedling, const struct worldparams *params)
@@ -110,7 +94,7 @@ auto start = std::chrono::steady_clock::now();
 	terragen->generate(seedling, params);
 
 	// then generate the world graph data (mountains, seas, rivers, etc)
-	worldgraph->generate(seedling, params, terragen);
+	worldgraph->generate(seedling, params, terragen.get());
 
 	// generate holds based on generated world data
 	gen_holds();
@@ -142,7 +126,7 @@ void Atlas::smoothe_heightmap(void)
 		float(mask->height) / SCALE.z
 	};
 
-	container->copy(terragen->heightmap);
+	container->copy(terragen->heightmap.get());
 	container->blur(MAP_BLUR_STRENGTH);
 
 	// create the mask that influences the blur mix
@@ -542,7 +526,7 @@ void Atlas::create_materialmasks(void)
 	
 void Atlas::create_vegetation(void)
 {
-	vegetation->copy(terragen->rainmap);
+	vegetation->copy(terragen->rainmap.get());
 
 	// water and mountain tiles don't have vegetation
 	const glm::vec2 mapscale = {
@@ -661,37 +645,37 @@ void Atlas::create_mapdata(long seed)
 	
 const UTIL::FloatImage* Atlas::get_heightmap(void) const
 {
-	return terragen->heightmap;
+	return terragen->heightmap.get();
 }
 
 const UTIL::Image* Atlas::get_rainmap(void) const
 {
-	return terragen->rainmap;
+	return terragen->rainmap.get();
 }
 
 const UTIL::Image* Atlas::get_tempmap(void) const
 {
-	return terragen->tempmap;
+	return terragen->tempmap.get();
 }
 
 const UTIL::Image* Atlas::get_vegetation(void) const
 {
-	return vegetation;
+	return vegetation.get();
 }
 	
 const UTIL::Image* Atlas::get_watermap(void) const
 {
-	return watermap;
+	return watermap.get();
 }
 
 const UTIL::Image* Atlas::get_materialmasks(void) const
 {
-	return materialmasks;
+	return materialmasks.get();
 }
 
 const UTIL::Image* Atlas::get_factions(void) const
 {
-	return factions;
+	return factions.get();
 }
 	
 const struct navigation_soup_t& Atlas::get_navsoup(void) const
@@ -711,7 +695,7 @@ const std::unordered_map<uint32_t, uint32_t>& Atlas::get_holding_tiles(void) con
 	
 const Worldgraph* Atlas::get_worldgraph(void) const
 {
-	return worldgraph;
+	return worldgraph.get();
 }
 
 const std::vector<transformation>& Atlas::get_trees(void) const

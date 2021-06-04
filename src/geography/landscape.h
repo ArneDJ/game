@@ -28,13 +28,13 @@ public:
 	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
-	UTIL::FloatImage *heightmap = nullptr;
-	UTIL::FloatImage *container = nullptr;
-	UTIL::Image *valleymap = nullptr;
+	std::unique_ptr<UTIL::FloatImage> heightmap;
+	std::unique_ptr<UTIL::FloatImage> container;
+	std::unique_ptr<UTIL::Image> valleymap;
 private:
-	UTIL::Image *normalmap = nullptr;
-	UTIL::Image *density = nullptr;
-	UTIL::Image *sitemasks = nullptr;
+	std::unique_ptr<UTIL::Image> normalmap;
+	std::unique_ptr<UTIL::Image> density;
+	std::unique_ptr<UTIL::Image> sitemasks;
 	Sitegen sitegen;
 private:
 	std::vector<transformation> trees;

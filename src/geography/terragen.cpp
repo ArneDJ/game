@@ -1,4 +1,5 @@
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <random>
 #include <algorithm>
@@ -20,18 +21,11 @@ static inline float gauss(float a, float b, float c, float x);
 
 Terragen::Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
-	heightmap = new UTIL::FloatImage { heightres, heightres, UTIL::COLORSPACE_GRAYSCALE };
-	rainmap = new UTIL::Image { rainres, rainres, UTIL::COLORSPACE_GRAYSCALE };
-	tempmap = new UTIL::Image { tempres, tempres, UTIL::COLORSPACE_GRAYSCALE };
+	heightmap = std::make_unique<UTIL::FloatImage>(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
+	rainmap = std::make_unique<UTIL::Image>(rainres, rainres, UTIL::COLORSPACE_GRAYSCALE);
+	tempmap = std::make_unique<UTIL::Image>(tempres, tempres, UTIL::COLORSPACE_GRAYSCALE);
 }
 
-Terragen::~Terragen(void)
-{
-	delete heightmap;
-	delete tempmap;
-	delete rainmap;
-}
-	
 void Terragen::generate(long seed, const struct worldparams *params)
 {
 	heightmap->clear();

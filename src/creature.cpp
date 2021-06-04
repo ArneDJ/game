@@ -15,75 +15,24 @@
 #include "util/image.h"
 #include "physics/heightfield.h"
 #include "physics/physics.h"
+#include "physics/bumper.h"
+
 #include "creature.h"
-
-class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback {
-public:
-	ClosestNotMe(btRigidBody *body) : btCollisionWorld::ClosestRayResultCallback(btVector3(0.0, 0.0, 0.0), btVector3(0.0, 0.0, 0.0))
-	{
-		me = body;
-	}
-	virtual btScalar addSingleResult(btCollisionWorld::LocalRayResult &rayResult, bool normalInWorldSpace)
-	{
-		if (rayResult.m_collisionObject == me) { return 1.0; }
-
-		return ClosestRayResultCallback::addSingleResult(rayResult, normalInWorldSpace);
-	}
-protected:
-	btRigidBody *me;
-};
 
 Creature::Creature(const glm::vec3 &pos, const glm::quat &rot)
 {
 	position = pos;
 	rotation = rot;
 
-	speed = 6.f;
-	velocity = { 0.f, 0.f, 0.f };
+	m_velocity = { 0.f, 0.f, 0.f };
+	m_speed = 6.f;
 
-	transform.setIdentity();
-
-	btScalar mass(1.f);
-
-	//rigidbody is dynamic if and only if mass is non zero, otherwise static
-	bool dynamic = (mass != 0.f);
-
-	// The total height is height+2*radius, so the height is just the height between the center of each 'sphere' of the capsule caps
-	shape = new btCapsuleShape(0.25f, 1.3f);
-
-	btVector3 inertia(0, 0, 0);
-	if (dynamic) {
-		shape->calculateLocalInertia(mass, inertia);
-	}
-
-	transform.setOrigin(vec3_to_bt(pos));
-	transform.setRotation(quat_to_bt(rot));
-
-	// using motionstate is recommended, it provides interpolation capabilities, and only synchronizes 'active' objects
-	motionstate = new btDefaultMotionState(transform);
-	btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionstate, shape, inertia);
-	body = new btRigidBody(rbInfo);
-	body->setSleepingThresholds(0.f, 0.f);
-	body->setAngularFactor(0.f);
-	body->setFriction(0.f);
-	body->setRestitution(0.f);
-
-	body->setActivationState(DISABLE_DEACTIVATION);
-
-	// link body to this entity
-	body->setUserPointer(this);
+	m_bumper = std::make_unique<PHYSICS::Bumper>(pos, 0.5f, 2.f);
 }
 
-Creature::~Creature(void)
+btRigidBody* Creature::get_body() const
 {
-	delete motionstate;
-	delete body;
-	delete shape;
-}
-	
-btRigidBody* Creature::get_body(void) const
-{
-	return body;
+	return m_bumper->body();
 }
 
 void Creature::move(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
@@ -109,38 +58,23 @@ void Creature::move(const glm::vec3 &view, bool forward, bool backward, bool rig
 		direction.y -= tmp.z;
 	}
 
-	velocity.x = speed * direction.x;
-	velocity.z = speed * direction.y;
+	m_velocity.x = m_speed * direction.x;
+	m_velocity.z = m_speed * direction.y;
+
+	m_bumper->set_velocity(m_velocity.x, m_velocity.z);
+}
+
+void Creature::jump()
+{
+	m_bumper->jump();
 }
 
 void Creature::update(const btDynamicsWorld *world)
 {
-	ClosestNotMe ray_callback(body);
-
-	world->rayTest(body->getWorldTransform().getOrigin(), body->getWorldTransform().getOrigin() - btVector3(0.0f, 1.f, 0.0f), ray_callback);
-	if (ray_callback.hasHit()) {
-		float fraction = ray_callback.m_closestHitFraction;
-		glm::vec3 current_pos = bt_to_vec3(body->getWorldTransform().getOrigin());
-		float hit_pos = current_pos.y - fraction * 1.f; 
-
-		body->getWorldTransform().getOrigin().setX(current_pos.x);
-		body->getWorldTransform().getOrigin().setY(hit_pos+1.f);
-		body->getWorldTransform().getOrigin().setZ(current_pos.z);
-
-		velocity.y = 0.f;
-	} else {
-		velocity.y = body->getLinearVelocity().getY();
-	}
-
-	body->setLinearVelocity(vec3_to_bt(velocity));
-
-	velocity.x = 0.f;
-	velocity.z = 0.f;
+	m_bumper->update(world);
 }
 
-void Creature::sync(void)
+void Creature::sync()
 {
-	motionstate->getWorldTransform(transform);
-	position = bt_to_vec3(transform.getOrigin());
-	rotation = bt_to_quat(transform.getRotation());
+	position = m_bumper->position();
 }
