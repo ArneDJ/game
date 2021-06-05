@@ -9,7 +9,7 @@ layout(location = 4) in vec4 weights;
 out vec3 normal;
 out vec2 texcoords;
 
-layout(binding = 10) uniform samplerBuffer joint_matrix_tbo;
+layout(binding = 20) uniform samplerBuffer joint_matrix_tbo;
 
 uniform mat4 VP;
 uniform mat4 MODEL;
@@ -34,6 +34,7 @@ void main(void)
 	skin += weights.y * fetch_joint_matrix(int(joints.y));
 	skin += weights.z * fetch_joint_matrix(int(joints.z));
 	skin += weights.w * fetch_joint_matrix(int(joints.w));
+	//mat4 skin = 1.0 * fetch_joint_matrix(int(0));
 
 	normal = vnormal;
 	texcoords = vtexcoords;

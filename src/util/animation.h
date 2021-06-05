@@ -59,7 +59,8 @@ public:
 // skeleton animation
 class Animator {
 public:
-	std::vector<AnimationSampler*> samplers;
+	std::map<uint32_t, std::unique_ptr<AnimationSampler>> samplers;
+	//std::vector<AnimationSampler*> samplers;
 	// marices for skinning
 	// buffer of model space matrices.
 	// multiply these with model's inverse binds and send to vertex shader for skinning
@@ -69,10 +70,8 @@ public:
 	//
 	ozz::animation::Skeleton skeleton;
 public:
-	Animator(const std::string &skeletonpath, const std::vector<std::string> &animationpaths);
-	~Animator(void);
-	void update(float delta);
-	void print_transforms(void);
+	Animator(const std::string &skeletonpath, const std::vector<std::pair<uint32_t, std::string>> &animationpaths);
+	void update(float delta, uint32_t first, uint32_t second, float mix);
 	bool is_valid(void) const { return valid; }
 private:
 	// Blending job bind pose threshold.

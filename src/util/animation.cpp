@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <map>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -52,17 +53,17 @@ bool AnimationSampler::load(const std::string &filepath)
 	return true;
 }
 	
-Animator::Animator(const std::string &skeletonpath, const std::vector<std::string> &animationpaths)
+Animator::Animator(const std::string &skeletonpath, const std::vector<std::pair<uint32_t, std::string>> &animationpaths)
 {
 	valid = load_skeleton(skeletonpath);
 	const int num_soa_joints = skeleton.num_soa_joints();
 	const int num_joints = skeleton.num_joints();
 
-	for (int i = 0; i < animationpaths.size(); i++) {
-		AnimationSampler *sampler = new AnimationSampler;
-		sampler->load(animationpaths[i]);
+	for (const auto &path : animationpaths) {
+		auto sampler = std::make_unique<AnimationSampler>();
+		sampler->load(path.second);
 		if (num_joints != sampler->animation.num_tracks()) {
-			LOG(ERROR, "Animation") << "skeleton joints of " + skeletonpath + " and animation tracks of " + animationpaths[i] + " mismatch";
+			LOG(ERROR, "Animation") << "skeleton joints of " + skeletonpath + " and animation tracks of " + path.second + " mismatch";
 		}
 		// Allocates sampler runtime buffers.
 		sampler->locals.resize(num_soa_joints);
@@ -70,7 +71,7 @@ Animator::Animator(const std::string &skeletonpath, const std::vector<std::strin
 		// Allocates a cache that matches animation requirements.
 		sampler->cache.Resize(num_joints);
 
-		samplers.push_back(sampler);
+		samplers[path.first] = std::move(sampler);
 	}
 
 	// Allocates local space runtime buffers of blended data.
@@ -80,25 +81,30 @@ Animator::Animator(const std::string &skeletonpath, const std::vector<std::strin
 	models.resize(num_joints);
 }
 	
-Animator::~Animator(void)
+void Animator::update(float delta, uint32_t first, uint32_t second, float mix)
 {
-	for (int i = 0; i < samplers.size(); i++) {
-		delete samplers[i];
+	// update blend ratio
+	for (auto it = samplers.begin(); it != samplers.end(); it++) {
+		auto sampler = it->second.get();
+		if (it->first == first) {
+			sampler->weight = 1.f - mix;
+		} else if (it->first == second) {
+			sampler->weight = mix;
+		} else {
+			sampler->weight = 0.f;
+		}
 	}
-}
-	
-void Animator::update(float delta)
-{
+
 	// Updates and samples all animations to their respective local space
 	// transform buffers.
-	for (int i = 0; i < samplers.size(); i++) {
-		AnimationSampler *sampler = samplers[i];
+	for (auto it = samplers.begin(); it != samplers.end(); it++) {
+		auto sampler = it->second.get();
 
 		// Updates animations time.
 		sampler->controller.update(sampler->animation, delta);
 
 		// Early out if this sampler weight makes it irrelevant during blending.
-		if (samplers[i]->weight <= 0.f) {
+		if (sampler->weight <= 0.f) {
 			continue;
 		}
 
@@ -122,10 +128,11 @@ void Animator::update(float delta)
 
 	// Prepares blending layers.
 	std::vector<ozz::animation::BlendingJob::Layer> layers;
-	layers.resize(samplers.size());
-	for (int i = 0; i < samplers.size(); i++) {
-		layers[i].transform = ozz::make_span(samplers[i]->locals);
-		layers[i].weight = samplers[i]->weight;
+	for (auto it = samplers.begin(); it != samplers.end(); it++) {
+		ozz::animation::BlendingJob::Layer layer;
+		layer.transform = ozz::make_span(it->second->locals);
+		layer.weight = it->second->weight;
+		layers.push_back(layer);
 	}
 
 	// Setups blending job.

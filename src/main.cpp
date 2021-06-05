@@ -115,6 +115,7 @@ struct game_settings_t {
 
 struct shader_group_t {
 	GRAPHICS::Shader object;
+	GRAPHICS::Shader creature;
 	GRAPHICS::Shader debug;
 	GRAPHICS::Shader billboard;
 	GRAPHICS::Shader font;
@@ -415,6 +416,7 @@ public:
 	std::unique_ptr<Landscape> landscape;
 	// graphics
 	std::unique_ptr<GRAPHICS::RenderGroup> ordinary;
+	std::unique_ptr<GRAPHICS::RenderGroup> creatures;
 	std::unique_ptr<GRAPHICS::BillboardGroup> billboards;
 	std::unique_ptr<GRAPHICS::Terrain> terrain;
 	GRAPHICS::Skybox skybox;
@@ -442,6 +444,7 @@ void Battle::init(const Module *mod, const UTIL::Window *window, const struct sh
 
 	billboards = std::make_unique<GRAPHICS::BillboardGroup>(&shaders->billboard);
 	ordinary = std::make_unique<GRAPHICS::RenderGroup>(&shaders->debug);
+	creatures = std::make_unique<GRAPHICS::RenderGroup>(&shaders->creature);
 
 	skybox.init(window->width, window->height);
 }
@@ -465,13 +468,13 @@ void Battle::load_assets(const Module *mod)
 	
 void Battle::add_creatures()
 {
-	player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f) };
+	player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), MediaManager::load_model("fox.glb") };
 
 	physicsman.add_body(player->get_body(), PHYSICS::COLLISION_GROUP_ACTOR, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_WORLD | PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 
 	std::vector<const Entity*> ents;
 	ents.push_back(player);
-	ordinary->add_object(MediaManager::load_model("capsule.glb"), ents);
+	creatures->add_object(MediaManager::load_model("fox.glb"), ents);
 }
 	
 void Battle::add_buildings()
@@ -543,6 +546,7 @@ void Battle::cleanup()
 	physicsman.clear();
 	billboards->clear();
 	ordinary->clear();
+	creatures->clear();
 
 	// delete stationaries
 	for (int i = 0; i < stationaries.size(); i++) {
@@ -704,6 +708,10 @@ void Game::load_shaders()
 	shaders.object.compile("shaders/object.frag", GL_FRAGMENT_SHADER);
 	shaders.object.link();
 
+	shaders.creature.compile("shaders/creature.vert", GL_VERTEX_SHADER);
+	shaders.creature.compile("shaders/creature.frag", GL_FRAGMENT_SHADER);
+	shaders.creature.link();
+
 	shaders.billboard.compile("shaders/billboard.vert", GL_VERTEX_SHADER);
 	shaders.billboard.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
 	shaders.billboard.link();
@@ -791,7 +799,7 @@ void Game::update_battle()
 
 	battle.physicsman.update(timer.delta);
 
-	battle.player->sync();
+	battle.player->sync(timer.delta);
 
 	battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
 	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.f, 0.f));
@@ -873,6 +881,10 @@ void Game::run_battle()
 		renderman.bind_FBO();
 	
 		battle.ordinary->display(&battle.camera);
+
+		const auto instancebuf = battle.player->joints();
+		instancebuf->bind(GL_TEXTURE20);
+		battle.creatures->display(&battle.camera);
 
 		if (debugmode) {
 			//debugger.render_bboxes(&battle.camera);
