@@ -23,12 +23,12 @@ public:
 	uint16_t width = 0;
 	uint16_t height = 0;
 	uint8_t channels = 0;
-	uint8_t *data = nullptr;
-	size_t size = 0;
+	std::vector<uint8_t> data;
 public:
-	Image(const std::string &filepath);
+	Image();
 	Image(uint16_t w, uint16_t h, uint8_t chan);
-	~Image(void);
+public:
+	void resize(uint16_t w, uint16_t h, uint8_t chan);
 	void copy(const Image *original);
 	uint8_t sample(uint16_t x, uint16_t y, uint8_t chan) const;
 	void plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color);
@@ -47,9 +47,12 @@ public:
 	void draw_filled_circle(int x0, int y0, int radius, uint8_t chan, uint8_t color);
 	void draw_thick_line(int x0, int y0, int x1, int y1, int radius, uint8_t chan, uint8_t color);
 	void create_normalmap(const FloatImage *displacement, float strength);
-private:
-	bool malloced = false;
-private:
+public:
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(width, height, channels, data);
+	}
 };
 
 // floating point image, used mostly for high precision heightmaps
@@ -59,6 +62,7 @@ public:
 	uint16_t height = 0;
 	uint8_t channels = 0;
 	float *data = nullptr;
+	//std::vector<float> data;
 	size_t size = 0;
 public:
 	FloatImage(uint16_t w, uint16_t h, uint8_t chan);

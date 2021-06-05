@@ -42,7 +42,7 @@ HeightField::HeightField(const UTIL::Image *image, const glm::vec3 &scale)
 {
 	float yscale = scale.y / 255.f; // adjust scale
 
-	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width, image->height, image->data, 1.f, 0.f, 1.f, 1, PHY_UCHAR, false);
+	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width, image->height, image->data.data(), 1.f, 0.f, 1.f, 1, PHY_UCHAR, false);
 
 	btVector3 scaling = { 
 		scale.x / float(image->width), 

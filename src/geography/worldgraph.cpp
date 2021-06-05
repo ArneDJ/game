@@ -116,7 +116,7 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 		correct_walls();
 	}
 
-	gen_properties(terra->tempmap.get(), terra->rainmap.get());
+	gen_properties(&terra->tempmap, &terra->rainmap);
 
 	gen_sites(seed, params);
 }

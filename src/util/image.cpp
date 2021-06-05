@@ -9,6 +9,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../extern/cereal/types/unordered_map.hpp"
+#include "../extern/cereal/types/vector.hpp"
+#include "../extern/cereal/types/memory.hpp"
+#include "../extern/cereal/archives/binary.hpp"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "../extern/stbimage/stb_image.h"
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -35,6 +40,13 @@ static inline int max3(int a, int b, int c)
 {
 	return (std::max)(a, (std::max)(b, c));
 }
+	
+Image::Image()
+{
+	width = 0;
+	height = 0;
+	channels = 0;
+}
 
 // normal image creation
 Image::Image(uint16_t w, uint16_t h, uint8_t chan)
@@ -43,55 +55,45 @@ Image::Image(uint16_t w, uint16_t h, uint8_t chan)
 	height = h;
 	channels = chan;
 
-	size = width * height * channels;
+	auto size = width * height * channels;
 
-	data = new uint8_t[size];
-	malloced = false;
+	//data = new uint8_t[size];
+	data.resize(size);
+
+	clear();
+}
+
+void Image::resize(uint16_t w, uint16_t h, uint8_t chan)
+{
+	width = w;
+	height = h;
+	channels = chan;
+
+	data.clear();
+	data.resize(width * height * channels);
 
 	clear();
 }
 	
-// load from file
-Image::Image(const std::string &filepath)
-{
-	int w, h, chan;
-	data = stbi_load(filepath.c_str(), &w, &h, &chan, 0);
-	malloced = true;
-
-	width = w;
-	height = h;
-	channels = chan;
-	size = width * height * channels;
-}
-
-Image::~Image(void)
-{
-	if (data) {
-		if (malloced) {
-			stbi_image_free(data);
-		} else {
-			delete [] data;
-		}
-	}
-}
-	
 void Image::copy(const Image *original)
 {
-	if (original->size != size) {
-		LOG(ERROR, "Image") << "copy error: size does not match";
-	}
-	
-	std::memcpy(data, original->data, original->size * sizeof(uint8_t));
+	width = original->width;
+	height = original->height;
+	channels = original->channels;
+
+	data.clear();
+	data.resize(original->data.size());
+	std::copy(original->data.begin(), original->data.end(), data.begin());
 }
 
 void Image::clear(void)
 {
-	std::memset(data, 0, size);
+	std::fill(data.begin(), data.end(), 0);
 }
 	
 void Image::write(const std::string &filepath) const
 {
-	stbi_write_png(filepath.c_str(), width, height, channels, data, channels*width);
+	stbi_write_png(filepath.c_str(), width, height, channels, data.data(), channels*width);
 }
 
 uint8_t Image::sample(uint16_t x, uint16_t y, uint8_t chan) const
@@ -100,7 +102,9 @@ uint8_t Image::sample(uint16_t x, uint16_t y, uint8_t chan) const
 
 	if (x >= width || y >= height) { return 0; }
 
-	const size_t index = y * width * channels + x * channels + chan;
+	const auto index = y * width * channels + x * channels + chan;
+
+	if (index >= data.size()) { return 0; }
 
 	return data[index];
 }
@@ -111,15 +115,21 @@ void Image::plot(uint16_t x, uint16_t y, uint8_t chan, uint8_t color)
 
 	if (x >= width || y >= height) { return; }
 
-	const size_t index = y * width * channels + x * channels + chan;
+	const auto index = y * width * channels + x * channels + chan;
+
+	if (index >= data.size()) { return; }
+
 	data[index] = color;
 }
 	
 void Image::blur(float sigma)
 {
-	uint8_t *blurred = new uint8_t[size];
-	fast_gaussian_blur_template(data, blurred, width, height, channels, sigma);
-	std::memcpy(data, blurred, size);
+	uint8_t *blurred = new uint8_t[data.size()];
+	uint8_t *input = data.data();
+
+	fast_gaussian_blur_template(input, blurred, width, height, channels, sigma);
+
+	std::swap(input, blurred);
 
 	delete [] blurred;
 }

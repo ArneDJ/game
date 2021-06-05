@@ -1,18 +1,4 @@
 
-struct image_record {
-	uint16_t width;
-	uint16_t height;
-	uint8_t channels;
-	size_t size;
-	std::vector<uint8_t> data;
-
-	template <class Archive>
-	void serialize(Archive &archive)
-	{
-		archive(CEREAL_NVP(width), CEREAL_NVP(height), CEREAL_NVP(channels), CEREAL_NVP(size), CEREAL_NVP(data));
-	}
-};
-
 struct floatimage_record {
 	uint16_t width;
 	uint16_t height;
@@ -63,9 +49,6 @@ public:
 private:
 	std::string directory;
 	struct floatimage_record topology;
-	struct image_record watermap;
-	struct image_record temperature;
-	struct image_record rain;
 	struct navmesh_record navmesh_land;
 	struct navmesh_record navmesh_sea;
 };

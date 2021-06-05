@@ -31,6 +31,7 @@
 #include "geography/worldgraph.h"
 #include "geography/mapfield.h"
 #include "geography/atlas.h"
+
 #include "save.h"
 	
 void Saver::change_directory(const std::string &dir) 
@@ -49,30 +50,6 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Na
 	topology.size = heightmap->size;
 	topology.data.resize(heightmap->size);
 	std::copy(heightmap->data, heightmap->data + heightmap->size, topology.data.begin());
-
-	const auto tempmap = atlas->get_tempmap();
-	temperature.width = tempmap->width;
-	temperature.height = tempmap->height;
-	temperature.channels = tempmap->channels;
-	temperature.size = tempmap->size;
-	temperature.data.resize(tempmap->size);
-	std::copy(tempmap->data, tempmap->data + tempmap->size, temperature.data.begin());
-
-	const auto rainmap = atlas->get_rainmap();
-	rain.width = rainmap->width;
-	rain.height = rainmap->height;
-	rain.channels = rainmap->channels;
-	rain.size = rainmap->size;
-	rain.data.resize(rainmap->size);
-	std::copy(rainmap->data, rainmap->data + rainmap->size, rain.data.begin());
-
-	const auto waterimage = atlas->get_watermap();
-	watermap.width = waterimage->width;
-	watermap.height = waterimage->height;
-	watermap.channels = waterimage->channels;
-	watermap.size = waterimage->size;
-	watermap.data.resize(waterimage->size);
-	std::copy(waterimage->data, waterimage->data + waterimage->size, watermap.data.begin());
 
 	const auto worldgraph = atlas->get_worldgraph();
 
@@ -133,9 +110,9 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Na
 		cereal::BinaryOutputArchive archive(stream);
 		archive(
 			cereal::make_nvp("topology", topology), 
-			cereal::make_nvp("rain", rain), 
-			cereal::make_nvp("temperature", temperature),
-			cereal::make_nvp("watermap", watermap),
+			cereal::make_nvp("rain", atlas->terragen->rainmap), 
+			cereal::make_nvp("temperature", atlas->terragen->tempmap),
+			cereal::make_nvp("watermap", atlas->watermap),
 			cereal::make_nvp("seed", seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
@@ -161,9 +138,9 @@ void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *la
 		cereal::BinaryInputArchive archive(stream);
 		archive(
 			cereal::make_nvp("topology", topology), 
-			cereal::make_nvp("rain", rain), 
-			cereal::make_nvp("temperature", temperature),
-			cereal::make_nvp("watermap", watermap),
+			cereal::make_nvp("rain", atlas->terragen->rainmap), 
+			cereal::make_nvp("temperature", atlas->terragen->tempmap),
+			cereal::make_nvp("watermap", atlas->watermap),
 			cereal::make_nvp("seed", seed),
 			cereal::make_nvp("tiles", worldgraph->tiles),
 			cereal::make_nvp("corners", worldgraph->corners),
@@ -179,12 +156,6 @@ void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *la
 
 	atlas->load_heightmap(topology.width, topology.height, topology.data);
 
-	atlas->load_rainmap(rain.width, rain.height, rain.data);
-
-	atlas->load_tempmap(temperature.width, temperature.height, temperature.data);
-
-	atlas->load_watermap(watermap.width, watermap.height, watermap.data);
-	
 	// load campaign the navigation data
 	landnav->alloc(navmesh_land.origin, navmesh_land.tilewidth, navmesh_land.tileheight, navmesh_land.maxtiles, navmesh_land.maxpolys);
 	for (const auto &tilemesh : navmesh_land.tilemeshes) {

@@ -44,9 +44,6 @@ public:
 	const Worldgraph* get_worldgraph(void) const;
 public:
 	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
-	void load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
-	void load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
-	void load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data);
 public:
 	const struct tile* tile_at_position(const glm::vec2 &position) const;
 public:
@@ -54,7 +51,7 @@ public:
 private:
 	std::unique_ptr<Terragen> terragen;
 	std::unique_ptr<Worldgraph> worldgraph;
-	std::unique_ptr<UTIL::Image> watermap; // heightmap of ocean, seas and rivers
+	UTIL::Image watermap; // heightmap of ocean, seas and rivers
 	std::unique_ptr<UTIL::Image> vegetation;
 	std::unique_ptr<UTIL::Image> factions; // color map of factions
 	std::unique_ptr<UTIL::Image> materialmasks;

@@ -61,7 +61,7 @@ Atlas::Atlas(void)
 	};
 	worldgraph = std::make_unique<Worldgraph>(area);
 
-	watermap = std::make_unique<UTIL::Image>(WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
+	watermap.resize(WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
 	container = std::make_unique<UTIL::FloatImage>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
 	detail = std::make_unique<UTIL::FloatImage>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
@@ -88,7 +88,7 @@ auto start = std::chrono::steady_clock::now();
 	holding_tiles.clear();
 
 	mask->clear();
-	watermap->clear();
+	watermap.clear();
 
 	// first generate the world heightmap, rain and temperature data
 	terragen->generate(seedling, params);
@@ -414,16 +414,16 @@ auto start = std::chrono::steady_clock::now();
 
 	// now create the heightmap of the water based on the land heightmap
 	const glm::vec2 scale = {
-		float(terragen->heightmap->width) / float(watermap->width) ,
-		float(terragen->heightmap->height) / float(watermap->height)
+		float(terragen->heightmap->width) / float(watermap.width) ,
+		float(terragen->heightmap->height) / float(watermap.height)
 	};
-	for (int x = 0; x < watermap->width; x++) {
-		for (int y = 0; y < watermap->height; y++) {
+	for (int x = 0; x < watermap.width; x++) {
+		for (int y = 0; y < watermap.height; y++) {
 			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap->sample(scale.x*x, scale.y*y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height - 0.005f, 0.f, 1.f);
-				watermap->plot(x, y, UTIL::CHANNEL_RED, 255*height);
+				watermap.plot(x, y, UTIL::CHANNEL_RED, 255*height);
 			}
 		}
 	}
@@ -466,11 +466,11 @@ auto start = std::chrono::steady_clock::now();
 		}
 	}
 
-	for (int x = 0; x < watermap->width; x++) {
-		for (int y = 0; y < watermap->height; y++) {
+	for (int x = 0; x < watermap.width; x++) {
+		for (int y = 0; y < watermap.height; y++) {
 			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				watermap->plot(x, y, UTIL::CHANNEL_RED, 255*(ocean_level));
+				watermap.plot(x, y, UTIL::CHANNEL_RED, 255*(ocean_level));
 			}
 		}
 	}
@@ -526,7 +526,7 @@ void Atlas::create_materialmasks(void)
 	
 void Atlas::create_vegetation(void)
 {
-	vegetation->copy(terragen->rainmap.get());
+	vegetation->copy(&terragen->rainmap);
 
 	// water and mountain tiles don't have vegetation
 	const glm::vec2 mapscale = {
@@ -650,12 +650,12 @@ const UTIL::FloatImage* Atlas::get_heightmap(void) const
 
 const UTIL::Image* Atlas::get_rainmap(void) const
 {
-	return terragen->rainmap.get();
+	return &terragen->rainmap;
 }
 
 const UTIL::Image* Atlas::get_tempmap(void) const
 {
-	return terragen->tempmap.get();
+	return &terragen->tempmap;
 }
 
 const UTIL::Image* Atlas::get_vegetation(void) const
@@ -665,7 +665,7 @@ const UTIL::Image* Atlas::get_vegetation(void) const
 	
 const UTIL::Image* Atlas::get_watermap(void) const
 {
-	return watermap.get();
+	return &watermap;
 }
 
 const UTIL::Image* Atlas::get_materialmasks(void) const
@@ -744,33 +744,6 @@ void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<fl
 		std::copy(data.begin(), data.end(), terragen->heightmap->data);
 	} else {
 		LOG(ERROR, "Atlas") << "could not load height map";
-	}
-}
-
-void Atlas::load_rainmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
-{
-	if (width == terragen->rainmap->width && height == terragen->rainmap->height && data.size() == terragen->rainmap->size) {
-		std::copy(data.begin(), data.end(), terragen->rainmap->data);
-	} else {
-		LOG(ERROR, "Atlas") << "could not load rain map";
-	}
-}
-
-void Atlas::load_tempmap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
-{
-	if (width == terragen->tempmap->width && height == terragen->tempmap->height && data.size() == terragen->tempmap->size) {
-		std::copy(data.begin(), data.end(), terragen->tempmap->data);
-	} else {
-		LOG(ERROR, "Atlas") << "could not load temperature map";
-	}
-}
-
-void Atlas::load_watermap(uint16_t width, uint16_t height, const std::vector<uint8_t> &data)
-{
-	if (width == watermap->width && height == watermap->height && data.size() == watermap->size) {
-		std::copy(data.begin(), data.end(), watermap->data);
-	} else {
-		LOG(ERROR, "Atlas") << "could not load water map";
 	}
 }
 
