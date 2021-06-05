@@ -313,32 +313,46 @@ void Image::create_normalmap(const FloatImage *displacement, float strength)
 	}
 }
 
+FloatImage::FloatImage()
+{
+	width = 0;
+	height = 0;
+	channels = 0;
+}
+
 FloatImage::FloatImage(uint16_t w, uint16_t h, uint8_t chan)
 {
 	width = w;
 	height = h;
 	channels = chan;
 
-	size = width * height * channels;
-	data = new float[size];
+	auto size = width * height * channels;
+	data.resize(size);
 
 	clear();
 }
 
-FloatImage::~FloatImage(void)
+void FloatImage::resize(uint16_t w, uint16_t h, uint8_t chan)
 {
-	if (data) {
-		delete [] data;
-	}
+	width = w;
+	height = h;
+	channels = chan;
+
+	data.clear();
+	data.resize(width * height * channels);
+
+	clear();
 }
 
 void FloatImage::copy(const FloatImage *original)
 {
-	if (original->size != size) {
-		LOG(ERROR, "Image") << "Float image copy error: size does not match";
-	}
-	
-	std::memcpy(data, original->data, original->size * sizeof(float));
+	width = original->width;
+	height = original->height;
+	channels = original->channels;
+
+	data.clear();
+	data.resize(original->data.size());
+	std::copy(original->data.begin(), original->data.end(), data.begin());
 }
 
 float FloatImage::sample(uint16_t x, uint16_t y, uint8_t chan) const
@@ -364,16 +378,19 @@ void FloatImage::plot(uint16_t x, uint16_t y, uint8_t chan, float color)
 
 void FloatImage::blur(float sigma)
 {
-	float *blurred = new float[size];
-	fast_gaussian_blur_template(data, blurred, width, height, channels, sigma);
-	std::memcpy(data, blurred, size * sizeof(float));
+	float *blurred = new float[data.size()];
+	float *input = data.data();
+
+	fast_gaussian_blur_template(input, blurred, width, height, channels, sigma);
+
+	std::swap(input, blurred);
 
 	delete [] blurred;
 }
 
 void FloatImage::clear(void)
 {
-	std::memset(data, 0, size * sizeof(float));
+	std::fill(data.begin(), data.end(), 0);
 }
 
 void FloatImage::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)

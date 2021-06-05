@@ -21,18 +21,14 @@ static inline float gauss(float a, float b, float c, float x);
 
 Terragen::Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
-	heightmap = std::make_unique<UTIL::FloatImage>(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
-	/*
-	rainmap = std::make_unique<UTIL::Image>(rainres, rainres, UTIL::COLORSPACE_GRAYSCALE);
-	tempmap = std::make_unique<UTIL::Image>(tempres, tempres, UTIL::COLORSPACE_GRAYSCALE);
-	*/
+	heightmap.resize(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
 	rainmap.resize(rainres, rainres, UTIL::COLORSPACE_GRAYSCALE);
 	tempmap.resize(tempres, tempres, UTIL::COLORSPACE_GRAYSCALE);
 }
 
 void Terragen::generate(long seed, const struct worldparams *params)
 {
-	heightmap->clear();
+	heightmap.clear();
 	gen_heightmap(seed, params);
 
 	tempmap.clear();
@@ -54,7 +50,7 @@ void Terragen::gen_heightmap(long seed, const struct worldparams *params)
 	fastnoise.SetFractalLacunarity(params->height.lacunarity);
 	fastnoise.SetGradientPerturbAmp(params->height.perturbamp);
 
-	heightmap->noise(&fastnoise, params->height.sampling_scale, UTIL::CHANNEL_RED);
+	heightmap.noise(&fastnoise, params->height.sampling_scale, UTIL::CHANNEL_RED);
 }
 
 void Terragen::gen_tempmap(long seed, const struct worldparams *params)
@@ -82,12 +78,12 @@ void Terragen::gen_rainmap(long seed, const struct worldparams *params)
 	// create the land mask image
 	// land is white (255), sea is black (0)
 	glm::vec2 scale = {
-		heightmap->width / rainmap.width,
-		heightmap->height / rainmap.height,
+		heightmap.width / rainmap.width,
+		heightmap.height / rainmap.height,
 	};
 	for (int i = 0; i < rainmap.width; i++) {
 		for (int j = 0; j < rainmap.height; j++) {
-			float height = heightmap->sample(scale.x * i, scale.y * j, UTIL::CHANNEL_RED);
+			float height = heightmap.sample(scale.x * i, scale.y * j, UTIL::CHANNEL_RED);
 			uint8_t color = (height > params->graph.lowland) ? 255 : 0;
 			rainmap.plot(i, j, UTIL::CHANNEL_RED, color);
 		}

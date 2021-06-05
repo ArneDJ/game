@@ -298,7 +298,7 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	// mix two noise images based on height
-	for (int i = 0; i < heightmap->size; i++) {
+	for (int i = 0; i < heightmap->data.size(); i++) {
 		float height = heightmap->data[i];
 		height *= height;
 		float cell = container->data[i];
@@ -327,7 +327,7 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	container->copy(heightmap.get());
 	container->blur(params.sediment_blur);
 
-	for (int i = 0; i < heightmap->size; i++) {
+	for (int i = 0; i < heightmap->data.size(); i++) {
 		float height = heightmap->data[i];
 		float blurry = container->data[i];
 		height = glm::mix(blurry, height, height);

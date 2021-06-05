@@ -1,11 +1,7 @@
 
 class Terragen {
 public:
-	std::unique_ptr<UTIL::FloatImage> heightmap;
-	/*
-	std::unique_ptr<UTIL::Image> tempmap;
-	std::unique_ptr<UTIL::Image> rainmap;
-	*/
+	UTIL::FloatImage heightmap;
 	UTIL::Image tempmap;
 	UTIL::Image rainmap;
 public:

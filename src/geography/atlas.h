@@ -43,8 +43,6 @@ public:
 	const std::unordered_map<uint32_t, uint32_t>& get_holding_tiles(void) const;
 	const Worldgraph* get_worldgraph(void) const;
 public:
-	void load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data);
-public:
 	const struct tile* tile_at_position(const glm::vec2 &position) const;
 public:
 	void colorize_holding(uint32_t holding, const glm::vec3 &color);

@@ -105,7 +105,7 @@ void Worldgraph::generate(long seed, const struct worldparams *params, const Ter
 	// now do the world generation
 	gen_diagram(seed, params->graph.poisson_disk_radius);
 
-	gen_relief(terra->heightmap.get(), params);
+	gen_relief(&terra->heightmap, params);
 
 	gen_rivers(params);
 

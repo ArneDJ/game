@@ -61,12 +61,11 @@ public:
 	uint16_t width = 0;
 	uint16_t height = 0;
 	uint8_t channels = 0;
-	float *data = nullptr;
-	//std::vector<float> data;
-	size_t size = 0;
+	std::vector<float> data;
 public:
+	FloatImage();
 	FloatImage(uint16_t w, uint16_t h, uint8_t chan);
-	~FloatImage(void);
+	void resize(uint16_t w, uint16_t h, uint8_t chan);
 	void copy(const FloatImage *original);
 	float sample(uint16_t x, uint16_t y, uint8_t chan) const;
 	void plot(uint16_t x, uint16_t y, uint8_t chan, float color);
@@ -79,6 +78,12 @@ public:
 	void cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan);
 	void normalize(uint8_t chan);
 	void create_normalmap(const FloatImage *displacement, float strength);
+public:
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(width, height, channels, data);
+	}
 };
 
 };

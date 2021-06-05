@@ -150,7 +150,7 @@ Texture::Texture(const UTIL::FloatImage *image)
 		break;
 	}
 
-	handle = generate_2D_texture(image->data, image->width, image->height, internalformat, format, type);
+	handle = generate_2D_texture(image->data.data(), image->width, image->height, internalformat, format, type);
 }
 
 Texture::~Texture(void)
@@ -194,7 +194,7 @@ void Texture::bind(GLenum unit) const
 void Texture::reload(const UTIL::FloatImage *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_FLOAT, image->data);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_FLOAT, image->data.data());
 }
 
 void Texture::reload(const UTIL::Image *image)
@@ -207,7 +207,7 @@ void Texture::unload(UTIL::FloatImage *image)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, handle);
-	glGetTexImage(GL_TEXTURE_2D, 0, format, GL_FLOAT, image->data);
+	glGetTexImage(GL_TEXTURE_2D, 0, format, GL_FLOAT, image->data.data());
 }
 
 void Texture::load_DDS(const std::string &filepath)

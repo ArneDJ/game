@@ -43,13 +43,15 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Na
 {
 	const std::string filepath = directory + filename;
 
+	/*
 	const auto heightmap = atlas->get_heightmap();
 	topology.width = heightmap->width;
 	topology.height = heightmap->height;
 	topology.channels = heightmap->channels;
-	topology.size = heightmap->size;
-	topology.data.resize(heightmap->size);
-	std::copy(heightmap->data, heightmap->data + heightmap->size, topology.data.begin());
+	topology.size = heightmap->data.size();
+	topology.data.resize(heightmap->data.size());
+	std::copy(heightmap->data.data(), heightmap->data.data() + heightmap->data.size(), topology.data.begin());
+	*/
 
 	const auto worldgraph = atlas->get_worldgraph();
 
@@ -109,7 +111,7 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Na
 	if (stream.is_open()) {
 		cereal::BinaryOutputArchive archive(stream);
 		archive(
-			cereal::make_nvp("topology", topology), 
+			cereal::make_nvp("topology", atlas->terragen->heightmap), 
 			cereal::make_nvp("rain", atlas->terragen->rainmap), 
 			cereal::make_nvp("temperature", atlas->terragen->tempmap),
 			cereal::make_nvp("watermap", atlas->watermap),
@@ -137,7 +139,7 @@ void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *la
 	if (stream.is_open()) {
 		cereal::BinaryInputArchive archive(stream);
 		archive(
-			cereal::make_nvp("topology", topology), 
+			cereal::make_nvp("topology", atlas->terragen->heightmap), 
 			cereal::make_nvp("rain", atlas->terragen->rainmap), 
 			cereal::make_nvp("temperature", atlas->terragen->tempmap),
 			cereal::make_nvp("watermap", atlas->watermap),
@@ -153,8 +155,6 @@ void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *la
 		LOG(ERROR, "Save") << "save file " + filepath + " could not be loaded";
 		return;
 	}
-
-	atlas->load_heightmap(topology.width, topology.height, topology.data);
 
 	// load campaign the navigation data
 	landnav->alloc(navmesh_land.origin, navmesh_land.tilewidth, navmesh_land.tileheight, navmesh_land.maxtiles, navmesh_land.maxpolys);

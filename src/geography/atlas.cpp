@@ -63,10 +63,10 @@ Atlas::Atlas(void)
 
 	watermap.resize(WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	container = std::make_unique<UTIL::FloatImage>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
-	detail = std::make_unique<UTIL::FloatImage>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
+	container = std::make_unique<UTIL::FloatImage>(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
+	detail = std::make_unique<UTIL::FloatImage>(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
 
-	mask = std::make_unique<UTIL::Image>(terragen->heightmap->width, terragen->heightmap->height, UTIL::COLORSPACE_GRAYSCALE);
+	mask = std::make_unique<UTIL::Image>(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
 	
 	materialmasks = std::make_unique<UTIL::Image>(MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT);
 	
@@ -126,7 +126,7 @@ void Atlas::smoothe_heightmap(void)
 		float(mask->height) / SCALE.z
 	};
 
-	container->copy(terragen->heightmap.get());
+	container->copy(&terragen->heightmap);
 	container->blur(MAP_BLUR_STRENGTH);
 
 	// create the mask that influences the blur mix
@@ -154,13 +154,13 @@ void Atlas::smoothe_heightmap(void)
 
 	// now mix the original map with the blurred version based on the mask
 	#pragma omp parallel for
-	for (int i = 0; i < terragen->heightmap->width; i++) {
-		for (int j = 0; j < terragen->heightmap->height; j++) {
+	for (int i = 0; i < terragen->heightmap.width; i++) {
+		for (int j = 0; j < terragen->heightmap.height; j++) {
 			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
-			float h = terragen->heightmap->sample(i, j, UTIL::CHANNEL_RED);
+			float h = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
 			float b = container->sample(i, j, UTIL::CHANNEL_RED);
 			h = glm::mix(h, b, color / 255.f);
-			terragen->heightmap->plot(i, j, UTIL::CHANNEL_RED, h);
+			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, h);
 		}
 	}
 
@@ -214,11 +214,11 @@ void Atlas::plateau_heightmap(void)
 	mask->blur(10.f);
 
 	#pragma omp parallel for
-	for (int i = 0; i < terragen->heightmap->width; i++) {
-		for (int j = 0; j < terragen->heightmap->height; j++) {
+	for (int i = 0; i < terragen->heightmap.width; i++) {
+		for (int j = 0; j < terragen->heightmap.height; j++) {
 			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
-			float h = terragen->heightmap->sample(i, j, UTIL::CHANNEL_RED);
-			terragen->heightmap->plot(i, j, UTIL::CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
+			float h = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
+			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
 		}
 	}
 	
@@ -268,15 +268,15 @@ void Atlas::oregony_heightmap(long seed)
 	mask->blur(3.f);
 
 	#pragma omp parallel for
-	for (int i = 0; i < terragen->heightmap->width; i++) {
-		for (int j = 0; j < terragen->heightmap->height; j++) {
+	for (int i = 0; i < terragen->heightmap.width; i++) {
+		for (int j = 0; j < terragen->heightmap.height; j++) {
 			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
-			float height = terragen->heightmap->sample(i, j, UTIL::CHANNEL_RED);
+			float height = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
 			float m = container->sample(i, j, UTIL::CHANNEL_RED);
 			float d = detail->sample(i, j, UTIL::CHANNEL_RED);
 			m = 0.3f * glm::mix(d, m, 0.5f);
 			height += (color / 255.f) * m;
-			terragen->heightmap->plot(i, j, UTIL::CHANNEL_RED, height);
+			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, height);
 		}
 	}
 
@@ -305,15 +305,15 @@ void Atlas::erode_heightmap(float ocean_level)
 	mask->blur(0.6f);
 	// let the rivers erode the land heightmap
 	#pragma omp parallel for
-	for (int x = 0; x < terragen->heightmap->width; x++) {
-		for (int y = 0; y < terragen->heightmap->height; y++) {
+	for (int x = 0; x < terragen->heightmap.width; x++) {
+		for (int y = 0; y < terragen->heightmap.height; y++) {
 			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(x, y, UTIL::CHANNEL_RED);
+				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				float erosion = glm::clamp(1.f - (masker/255.f), 0.9f, 1.f);
 				//float eroded = glm::clamp(0.8f*height, 0.f, 1.f);
 				//height = glm::mix(height, eroded, 1.f);
-				terragen->heightmap->plot(x, y, UTIL::CHANNEL_RED, erosion*height);
+				terragen->heightmap.plot(x, y, UTIL::CHANNEL_RED, erosion*height);
 			}
 		}
 	}
@@ -333,13 +333,13 @@ void Atlas::erode_heightmap(float ocean_level)
 		}
 	}
 	#pragma omp parallel for
-	for (int x = 0; x < terragen->heightmap->width; x++) {
-		for (int y = 0; y < terragen->heightmap->height; y++) {
+	for (int x = 0; x < terragen->heightmap.width; x++) {
+		for (int y = 0; y < terragen->heightmap.height; y++) {
 			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(x, y, UTIL::CHANNEL_RED);
+				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height, 0.f, ocean_level);
-				terragen->heightmap->plot(x, y, UTIL::CHANNEL_RED, height);
+				terragen->heightmap.plot(x, y, UTIL::CHANNEL_RED, height);
 			}
 		}
 	}
@@ -379,13 +379,13 @@ void Atlas::clamp_heightmap(float land_level)
 	}
 
 	#pragma omp parallel for
-	for (int x = 0; x < terragen->heightmap->width; x++) {
-		for (int y = 0; y < terragen->heightmap->height; y++) {
+	for (int x = 0; x < terragen->heightmap.width; x++) {
+		for (int y = 0; y < terragen->heightmap.height; y++) {
 			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(x, y, UTIL::CHANNEL_RED);
+				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height, land_level, 1.f);
-				terragen->heightmap->plot(x, y, UTIL::CHANNEL_RED, height);
+				terragen->heightmap.plot(x, y, UTIL::CHANNEL_RED, height);
 			}
 		}
 	}
@@ -414,14 +414,14 @@ auto start = std::chrono::steady_clock::now();
 
 	// now create the heightmap of the water based on the land heightmap
 	const glm::vec2 scale = {
-		float(terragen->heightmap->width) / float(watermap.width) ,
-		float(terragen->heightmap->height) / float(watermap.height)
+		float(terragen->heightmap.width) / float(watermap.width) ,
+		float(terragen->heightmap.height) / float(watermap.height)
 	};
 	for (int x = 0; x < watermap.width; x++) {
 		for (int y = 0; y < watermap.height; y++) {
 			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
-				float height = terragen->heightmap->sample(scale.x*x, scale.y*y, UTIL::CHANNEL_RED);
+				float height = terragen->heightmap.sample(scale.x*x, scale.y*y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height - 0.005f, 0.f, 1.f);
 				watermap.plot(x, y, UTIL::CHANNEL_RED, 255*height);
 			}
@@ -581,8 +581,8 @@ void Atlas::place_vegetation(long seed)
 {
 	// spawn the forest
 	glm::vec2 hmapscale = {
-		float(terragen->heightmap->width) / SCALE.x,
-		float(terragen->heightmap->height) / SCALE.z
+		float(terragen->heightmap.width) / SCALE.x,
+		float(terragen->heightmap.height) / SCALE.z
 	};
 
 	std::random_device rd;
@@ -614,7 +614,7 @@ void Atlas::place_vegetation(long seed)
 		float R = density_dist(gen);
 		if ( R > P ) { continue; }
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
-		position.y = SCALE.y * terragen->heightmap->sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_RED);
+		position.y = SCALE.y * terragen->heightmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 		struct transformation transform = { position, rotation, 10.f };
 		trees.push_back(transform);
@@ -645,7 +645,7 @@ void Atlas::create_mapdata(long seed)
 	
 const UTIL::FloatImage* Atlas::get_heightmap(void) const
 {
-	return terragen->heightmap.get();
+	return &terragen->heightmap;
 }
 
 const UTIL::Image* Atlas::get_rainmap(void) const
@@ -738,15 +738,6 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 	}
 }
 	
-void Atlas::load_heightmap(uint16_t width, uint16_t height, const std::vector<float> &data)
-{
-	if (width == terragen->heightmap->width && height == terragen->heightmap->height && data.size() == terragen->heightmap->size) {
-		std::copy(data.begin(), data.end(), terragen->heightmap->data);
-	} else {
-		LOG(ERROR, "Atlas") << "could not load height map";
-	}
-}
-
 void Atlas::gen_mapfield(void)
 {
 	std::vector<glm::vec2> vertdata;
