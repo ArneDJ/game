@@ -42,8 +42,8 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap,
 	rain = new Texture { rainmap };
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normalmap = new UTIL::FloatImage { heightmap->width, heightmap->height, UTIL::COLORSPACE_RGB };
-	normals = new Texture { normalmap };
+	normalmap.resize(heightmap->width, heightmap->height, UTIL::COLORSPACE_RGB);
+	normals = new Texture { &normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	masks = new Texture { materialmasks };
@@ -90,7 +90,6 @@ Worldmap::~Worldmap(void)
 	delete rain;
 
 	delete normals;
-	delete normalmap;
 
 	delete masks;
 
@@ -103,8 +102,8 @@ void Worldmap::reload(const UTIL::FloatImage *heightmap, const UTIL::Image *wate
 	nautical->reload(watermap);
 	rain->reload(rainmap);
 
-	normalmap->create_normalmap(heightmap, 32.f);
-	normals->reload(normalmap);
+	normalmap.create_normalmap(heightmap, 32.f);
+	normals->reload(&normalmap);
 
 	masks->reload(materialmasks);
 

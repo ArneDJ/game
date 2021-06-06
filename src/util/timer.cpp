@@ -5,12 +5,12 @@
 
 namespace UTIL {
 
-void Timer::begin(void)
+void Timer::begin()
 {
 	ticks = std::chrono::steady_clock::now();
 }
 
-void Timer::end(void)
+void Timer::end()
 {
 	auto timenow = std::chrono::steady_clock::now();
 	std::chrono::duration<float> duration = timenow - ticks;

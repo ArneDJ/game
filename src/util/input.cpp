@@ -6,7 +6,7 @@
 	
 namespace UTIL {
 
-Input::Input(void)
+Input::Input()
 {
 	exit = false;
 	mousegrab = false;
@@ -14,12 +14,12 @@ Input::Input(void)
 	mousecoords.relative = { 0.f, 0.f };
 }
 	
-bool Input::exit_request(void) const
+bool Input::exit_request() const
 {
 	return exit;
 }
 
-void Input::update(void) 
+void Input::update() 
 { 
 	mousewheel = 0;
 
@@ -39,7 +39,7 @@ void Input::update(void)
 	sample_relative_mousecoords();
 }
 
-void Input::update_keymap(void) 
+void Input::update_keymap() 
 {
 	// copy over keymap of current tick to previous keymap
 	for (auto &iter : keymap) {
@@ -70,7 +70,7 @@ void Input::sample_event(const SDL_Event *event)
 	}
 }
 
-void Input::sample_relative_mousecoords(void) 
+void Input::sample_relative_mousecoords() 
 {
 	int x = 0;
 	int y = 0;
@@ -83,7 +83,7 @@ void Input::sample_relative_mousecoords(void)
 	}
 }
 
-void Input::sample_absolute_mousecoords(void) 
+void Input::sample_absolute_mousecoords() 
 {
 	int x = 0;
 	int y = 0;
@@ -133,17 +133,17 @@ bool Input::was_key_down(uint32_t keyID) const
 	return false;
 }
 
-glm::vec2 Input::abs_mousecoords(void) const
+glm::vec2 Input::abs_mousecoords() const
 {
 	return mousecoords.absolute;
 }
 
-glm::vec2 Input::rel_mousecoords(void) const
+glm::vec2 Input::rel_mousecoords() const
 {
 	return mousecoords.relative;
 }
 
-int Input::mousewheel_y(void) const
+int Input::mousewheel_y() const
 {
 	return mousewheel;
 }

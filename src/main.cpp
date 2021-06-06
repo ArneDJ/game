@@ -849,7 +849,6 @@ void Game::prepare_battle()
 
 	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR);
 
-
 	shaders.billboard.use();
 	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
 	shaders.billboard.uniform_vec3("FOG_COLOR", modular.colors.skybottom);

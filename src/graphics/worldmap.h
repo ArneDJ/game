@@ -16,7 +16,7 @@ public:
 	void display_water(const UTIL::Camera *camera, float time) const;
 private:
 	Mesh *patches = nullptr;
-	UTIL::FloatImage *normalmap = nullptr;
+	UTIL::FloatImage normalmap;
 	Texture *topology = nullptr;
 	Texture *nautical = nullptr;
 	Texture *rain = nullptr;

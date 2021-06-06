@@ -74,3 +74,5 @@ glm::vec2 closest_point_segment(const glm::vec2 &c, const glm::vec2 &a, const gl
 bool quad_quad_intersection(const struct quadrilateral &A, const struct quadrilateral &B);
 
 bool convex_quadrilateral(const quadrilateral *quad);
+
+bool point_in_rectangle(const glm::vec2 &p, const struct rectangle &r);

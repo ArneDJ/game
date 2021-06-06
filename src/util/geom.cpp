@@ -297,3 +297,8 @@ bool convex_quadrilateral(const quadrilateral *quad)
 
 	return glm::dot(acd, acb) < 0.0f;
 }
+
+bool point_in_rectangle(const glm::vec2 &p, const struct rectangle &r)
+{
+	return (p.x >= r.min.x && p.x < r.max.x && p.y >= r.min.y && p.y < r.max.y);
+}

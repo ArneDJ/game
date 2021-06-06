@@ -25,8 +25,12 @@ public:
 	uint8_t channels = 0;
 	std::vector<uint8_t> data;
 public:
-	Image();
-	Image(uint16_t w, uint16_t h, uint8_t chan);
+	Image() 
+	{
+		width = 0;
+		height = 0;
+		channels = 0;
+	}
 public:
 	void resize(uint16_t w, uint16_t h, uint8_t chan);
 	void copy(const Image *original);
@@ -63,8 +67,13 @@ public:
 	uint8_t channels = 0;
 	std::vector<float> data;
 public:
-	FloatImage();
-	FloatImage(uint16_t w, uint16_t h, uint8_t chan);
+	FloatImage() 
+	{
+		width = 0;
+		height = 0;
+		channels = 0;
+	}
+public:
 	void resize(uint16_t w, uint16_t h, uint8_t chan);
 	void copy(const FloatImage *original);
 	float sample(uint16_t x, uint16_t y, uint8_t chan) const;

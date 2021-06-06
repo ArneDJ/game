@@ -3,16 +3,16 @@ namespace UTIL {
 
 class Input {
 public:
-	Input(void);
-	void update(void);
-	void update_keymap(void);
-	bool exit_request(void) const;
+	Input();
+	void update();
+	void update_keymap();
+	bool exit_request() const;
 	bool key_down(uint32_t keyID) const; // is key held down
 	bool key_pressed(uint32_t keyID) const; // is key pressed in current update
-	glm::vec2 abs_mousecoords(void) const;
-	glm::vec2 rel_mousecoords(void) const;
-	int mousewheel_y(void) const;
-	bool mouse_grabbed(void) const { return mousegrab; }
+	glm::vec2 abs_mousecoords() const;
+	glm::vec2 rel_mousecoords() const;
+	int mousewheel_y() const;
+	bool mouse_grabbed() const { return mousegrab; }
 private:
 	std::unordered_map<uint32_t, bool> keymap;
 	std::unordered_map<uint32_t, bool> previouskeys;
@@ -27,8 +27,8 @@ private:
 	void press_key(uint32_t keyID);
 	void release_key(uint32_t keyID);
 	bool was_key_down(uint32_t keyID) const;
-	void sample_relative_mousecoords(void);
-	void sample_absolute_mousecoords(void);
+	void sample_relative_mousecoords();
+	void sample_absolute_mousecoords();
 	void sample_event(const SDL_Event *event);
 };
 

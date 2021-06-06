@@ -63,17 +63,17 @@ Atlas::Atlas(void)
 
 	watermap.resize(WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	container = std::make_unique<UTIL::FloatImage>(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
-	detail = std::make_unique<UTIL::FloatImage>(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
+	container.resize(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
+	detail.resize(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
 
-	mask = std::make_unique<UTIL::Image>(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
+	mask.resize(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
 	
-	materialmasks = std::make_unique<UTIL::Image>(MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT);
+	materialmasks.resize(MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT);
 	
-	vegetation = std::make_unique<UTIL::Image>(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
-	tree_density = std::make_unique<UTIL::Image>(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
+	vegetation.resize(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
+	tree_density.resize(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	factions = std::make_unique<UTIL::Image>(FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB);
+	factions.resize(FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB);
 }
 
 Atlas::~Atlas(void)
@@ -87,7 +87,7 @@ auto start = std::chrono::steady_clock::now();
 	holdings.clear();
 	holding_tiles.clear();
 
-	mask->clear();
+	mask.clear();
 	watermap.clear();
 
 	// first generate the world heightmap, rain and temperature data
@@ -122,12 +122,12 @@ void Atlas::clear_entities(void)
 void Atlas::smoothe_heightmap(void)
 {
 	const glm::vec2 mapscale = {
-		float(mask->width) / SCALE.x,
-		float(mask->height) / SCALE.z
+		float(mask.width) / SCALE.x,
+		float(mask.height) / SCALE.z
 	};
 
-	container->copy(&terragen->heightmap);
-	container->blur(MAP_BLUR_STRENGTH);
+	container.copy(&terragen->heightmap);
+	container.blur(MAP_BLUR_STRENGTH);
 
 	// create the mask that influences the blur mix
 	// higher values means more blur
@@ -145,33 +145,33 @@ void Atlas::smoothe_heightmap(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
 
-	mask->blur(MAP_SMOOTH_TRANSITION);
+	mask.blur(MAP_SMOOTH_TRANSITION);
 
 	// now mix the original map with the blurred version based on the mask
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap.width; i++) {
 		for (int j = 0; j < terragen->heightmap.height; j++) {
-			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
+			uint8_t color = mask.sample(i, j, UTIL::CHANNEL_RED);
 			float h = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
-			float b = container->sample(i, j, UTIL::CHANNEL_RED);
+			float b = container.sample(i, j, UTIL::CHANNEL_RED);
 			h = glm::mix(h, b, color / 255.f);
 			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, h);
 		}
 	}
 
-	mask->clear();
+	mask.clear();
 }
 
 void Atlas::plateau_heightmap(void)
 {
 	const glm::vec2 mapscale = {
-		float(mask->width) / SCALE.x,
-		float(mask->height) / SCALE.z
+		float(mask.width) / SCALE.x,
+		float(mask.height) / SCALE.z
 	};
 
 	// add mountains
@@ -183,7 +183,7 @@ void Atlas::plateau_heightmap(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
@@ -206,30 +206,30 @@ void Atlas::plateau_heightmap(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
 	
-	mask->blur(10.f);
+	mask.blur(10.f);
 
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap.width; i++) {
 		for (int j = 0; j < terragen->heightmap.height; j++) {
-			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
+			uint8_t color = mask.sample(i, j, UTIL::CHANNEL_RED);
 			float h = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
 			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
 		}
 	}
 	
-	mask->clear();
+	mask.clear();
 }
 
 void Atlas::oregony_heightmap(long seed)
 {
 	const glm::vec2 mapscale = {
-		float(mask->width) / SCALE.x,
-		float(mask->height) / SCALE.z
+		float(mask.width) / SCALE.x,
+		float(mask.height) / SCALE.z
 	};
 
 	 // peaks
@@ -240,7 +240,7 @@ void Atlas::oregony_heightmap(long seed)
 	cellnoise.SetFrequency(0.06f);
 	cellnoise.SetCellularReturnType(FastNoise::Distance2Mul);
 	cellnoise.SetGradientPerturbAmp(10.f);
-	container->cellnoise(&cellnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+	container.cellnoise(&cellnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	FastNoise billow;
 	billow.SetSeed(seed);
@@ -250,7 +250,7 @@ void Atlas::oregony_heightmap(long seed)
 	billow.SetFractalOctaves(6);
 	billow.SetFractalLacunarity(2.5f);
 	billow.SetGradientPerturbAmp(40.f);
-	detail->noise(&billow, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+	detail.noise(&billow, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
@@ -260,36 +260,36 @@ void Atlas::oregony_heightmap(long seed)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 			}
 		}
 	}
 	
-	mask->blur(3.f);
+	mask.blur(3.f);
 
 	#pragma omp parallel for
 	for (int i = 0; i < terragen->heightmap.width; i++) {
 		for (int j = 0; j < terragen->heightmap.height; j++) {
-			uint8_t color = mask->sample(i, j, UTIL::CHANNEL_RED);
+			uint8_t color = mask.sample(i, j, UTIL::CHANNEL_RED);
 			float height = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
-			float m = container->sample(i, j, UTIL::CHANNEL_RED);
-			float d = detail->sample(i, j, UTIL::CHANNEL_RED);
+			float m = container.sample(i, j, UTIL::CHANNEL_RED);
+			float d = detail.sample(i, j, UTIL::CHANNEL_RED);
 			m = 0.3f * glm::mix(d, m, 0.5f);
 			height += (color / 255.f) * m;
 			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, height);
 		}
 	}
 
-	mask->clear();
+	mask.clear();
 }
 
 void Atlas::erode_heightmap(float ocean_level)
 {
-	mask->clear();
+	mask.clear();
 
 	const glm::vec2 mapscale = {
-		float(mask->width) / SCALE.x,
-		float(mask->height) / SCALE.z
+		float(mask.width) / SCALE.x,
+		float(mask.height) / SCALE.z
 	};
 
 	// add the rivers to the mask
@@ -298,16 +298,16 @@ void Atlas::erode_heightmap(float ocean_level)
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_line(a.x, a.y, b.x, b.y, UTIL::CHANNEL_RED, 255);
+			mask.draw_line(a.x, a.y, b.x, b.y, UTIL::CHANNEL_RED, 255);
 		}
 	}
 
-	mask->blur(0.6f);
+	mask.blur(0.6f);
 	// let the rivers erode the land heightmap
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap.width; x++) {
 		for (int y = 0; y < terragen->heightmap.height; y++) {
-			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
+			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				float erosion = glm::clamp(1.f - (masker/255.f), 0.9f, 1.f);
@@ -318,7 +318,7 @@ void Atlas::erode_heightmap(float ocean_level)
 		}
 	}
 	
-	mask->clear();
+	mask.clear();
 
 	// lower ocean bottom
 	#pragma omp parallel for
@@ -328,14 +328,14 @@ void Atlas::erode_heightmap(float ocean_level)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap.width; x++) {
 		for (int y = 0; y < terragen->heightmap.height; y++) {
-			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
+			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height, 0.f, ocean_level);
@@ -348,11 +348,11 @@ void Atlas::erode_heightmap(float ocean_level)
 void Atlas::clamp_heightmap(float land_level)
 {
 	const glm::vec2 mapscale = {
-		float(mask->width) / SCALE.x,
-		float(mask->height) / SCALE.z
+		float(mask.width) / SCALE.x,
+		float(mask.height) / SCALE.z
 	};
 
-	mask->clear();
+	mask.clear();
 
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
@@ -361,12 +361,12 @@ void Atlas::clamp_heightmap(float land_level)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
 
-	mask->blur(1.f);
+	mask.blur(1.f);
 
 	// ignore rivers
 	#pragma omp parallel for
@@ -374,14 +374,14 @@ void Atlas::clamp_heightmap(float land_level)
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
+			mask.draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
 		}
 	}
 
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap.width; x++) {
 		for (int y = 0; y < terragen->heightmap.height; y++) {
-			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
+			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height, land_level, 1.f);
@@ -395,11 +395,11 @@ void Atlas::create_watermap(float ocean_level)
 {
 auto start = std::chrono::steady_clock::now();
 	const glm::vec2 mapscale = {
-		float(mask->width) / SCALE.x,
-		float(mask->height) / SCALE.z
+		float(mask.width) / SCALE.x,
+		float(mask.height) / SCALE.z
 	};
 
-	mask->clear();
+	mask.clear();
 
 	// create the watermask
 	// add the rivers to the mask
@@ -408,7 +408,7 @@ auto start = std::chrono::steady_clock::now();
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 255);
+			mask.draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 255);
 		}
 	}
 
@@ -419,7 +419,7 @@ auto start = std::chrono::steady_clock::now();
 	};
 	for (int x = 0; x < watermap.width; x++) {
 		for (int y = 0; y < watermap.height; y++) {
-			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
+			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(scale.x*x, scale.y*y, UTIL::CHANNEL_RED);
 				height = glm::clamp(height - 0.005f, 0.f, 1.f);
@@ -429,7 +429,7 @@ auto start = std::chrono::steady_clock::now();
 	}
 	
 
-	mask->clear();
+	mask.clear();
 	
 	// now map the height of the sea tils
 	// add the sea tiles to the mask
@@ -440,7 +440,7 @@ auto start = std::chrono::steady_clock::now();
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
@@ -450,7 +450,7 @@ auto start = std::chrono::steady_clock::now();
 		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			mask->draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
+			mask.draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
 		}
 	}
 
@@ -461,14 +461,14 @@ auto start = std::chrono::steady_clock::now();
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				mask->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
+				mask.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
 			}
 		}
 	}
 
 	for (int x = 0; x < watermap.width; x++) {
 		for (int y = 0; y < watermap.height; y++) {
-			uint8_t masker = mask->sample(x, y, UTIL::CHANNEL_RED);
+			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				watermap.plot(x, y, UTIL::CHANNEL_RED, 255*(ocean_level));
 			}
@@ -481,11 +481,11 @@ std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
 	
 void Atlas::create_materialmasks(void)
 {
-	materialmasks->clear();
+	materialmasks.clear();
 
 	const glm::vec2 mapscale = {
-		float(materialmasks->width) / SCALE.x,
-		float(materialmasks->height) / SCALE.z
+		float(materialmasks.width) / SCALE.x,
+		float(materialmasks.height) / SCALE.z
 	};
 
 	// snow
@@ -496,7 +496,7 @@ void Atlas::create_materialmasks(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				materialmasks->draw_triangle(a, b, c, CHANNEL_SNOW, 255);
+				materialmasks.draw_triangle(a, b, c, CHANNEL_SNOW, 255);
 			}
 		}
 	}
@@ -508,7 +508,7 @@ void Atlas::create_materialmasks(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				materialmasks->draw_triangle(a, b, c, CHANNEL_GRASS, 255);
+				materialmasks.draw_triangle(a, b, c, CHANNEL_GRASS, 255);
 			}
 		}
 	}
@@ -517,21 +517,21 @@ void Atlas::create_materialmasks(void)
 		if (bord.coast || bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			materialmasks->draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
+			materialmasks.draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
 		}
 	}
 
-	materialmasks->blur(1.f);
+	materialmasks.blur(1.f);
 }
 	
 void Atlas::create_vegetation(void)
 {
-	vegetation->copy(&terragen->rainmap);
+	vegetation.copy(&terragen->rainmap);
 
 	// water and mountain tiles don't have vegetation
 	const glm::vec2 mapscale = {
-		float(vegetation->width) / SCALE.x,
-		float(vegetation->height) / SCALE.z
+		float(vegetation.width) / SCALE.x,
+		float(vegetation.height) / SCALE.z
 	};
 
 	// snow
@@ -542,7 +542,7 @@ void Atlas::create_vegetation(void)
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				vegetation->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 0);
+				vegetation.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 0);
 			}
 		}
 	}
@@ -553,18 +553,18 @@ void Atlas::create_vegetation(void)
 		if (bord.coast || bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			vegetation->draw_thick_line(a.x, a.y, b.x, b.y, 1, UTIL::CHANNEL_RED, 0);
+			vegetation.draw_thick_line(a.x, a.y, b.x, b.y, 1, UTIL::CHANNEL_RED, 0);
 		}
 	}
 }
 	
 void Atlas::create_factions_map(void)
 {
-	factions->clear();
+	factions.clear();
 
 	const glm::vec2 mapscale = {
-		float(factions->width) / SCALE.x,
-		float(factions->height) / SCALE.z
+		float(factions.width) / SCALE.x,
+		float(factions.height) / SCALE.z
 	};
 
 	// TODO faction colors need to be saved
@@ -602,13 +602,13 @@ void Atlas::place_vegetation(long seed)
 	fastnoise.SetFractalOctaves(2);
 	fastnoise.SetFrequency(0.05f);
 
-	tree_density->noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+	tree_density.noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	for (const auto &point : positions) {
-		float N = tree_density->sample(point.x * tree_density->width, point.y * tree_density->height, UTIL::CHANNEL_RED) / 255.f;
+		float N = tree_density.sample(point.x * tree_density.width, point.y * tree_density.height, UTIL::CHANNEL_RED) / 255.f;
 		if (N < 0.5f) { continue; }
 
-		float P = vegetation->sample(point.x * vegetation->width, point.y * vegetation->height, UTIL::CHANNEL_RED) / 255.f;
+		float P = vegetation.sample(point.x * vegetation.width, point.y * vegetation.height, UTIL::CHANNEL_RED) / 255.f;
 
 		//P *= rain * rain;
 		float R = density_dist(gen);
@@ -660,7 +660,7 @@ const UTIL::Image* Atlas::get_tempmap(void) const
 
 const UTIL::Image* Atlas::get_vegetation(void) const
 {
-	return vegetation.get();
+	return &vegetation;
 }
 	
 const UTIL::Image* Atlas::get_watermap(void) const
@@ -670,12 +670,12 @@ const UTIL::Image* Atlas::get_watermap(void) const
 
 const UTIL::Image* Atlas::get_materialmasks(void) const
 {
-	return materialmasks.get();
+	return &materialmasks;
 }
 
 const UTIL::Image* Atlas::get_factions(void) const
 {
-	return factions.get();
+	return &factions;
 }
 	
 const struct navigation_soup_t& Atlas::get_navsoup(void) const
@@ -717,8 +717,8 @@ const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const
 void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 {
 	const glm::vec2 mapscale = {
-		float(factions->width) / SCALE.x,
-		float(factions->height) / SCALE.z
+		float(factions.width) / SCALE.x,
+		float(factions.height) / SCALE.z
 	};
 
 	auto search = holdings.find(holding);
@@ -730,9 +730,9 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 			for (const auto &bord : t->borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
 				glm::vec2 c = mapscale * bord->c1->position;
-				factions->draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255*color.x);
-				factions->draw_triangle(a, b, c, UTIL::CHANNEL_GREEN, 255*color.y);
-				factions->draw_triangle(a, b, c, UTIL::CHANNEL_BLUE, 255*color.z);
+				factions.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255*color.x);
+				factions.draw_triangle(a, b, c, UTIL::CHANNEL_GREEN, 255*color.y);
+				factions.draw_triangle(a, b, c, UTIL::CHANNEL_BLUE, 255*color.z);
 			}
 		}
 	}

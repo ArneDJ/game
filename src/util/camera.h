@@ -14,10 +14,10 @@ public:
 	uint16_t width = 0;
 	uint16_t height = 0;
 public:
-	Camera(void);
+	Camera();
 	void configure(float near, float far, uint16_t w, uint16_t h, float fovangle);
 	// create perspective projection matrix
-	void project(void);
+	void project();
 	// properly change the camera direction vector
 	void direct(const glm::vec3 &dir);
 	// translate mouse coords to direction vector
@@ -31,7 +31,7 @@ public:
 	void move_right(float modifier);
 	void translate(const glm::vec3 &translation);
 	// update view matrix
-	void update(void);
+	void update();
 	// normalized device coordinate position to world ray
 	glm::vec3 ndc_to_ray(const glm::vec2 &ndc) const;
 private:

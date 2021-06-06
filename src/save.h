@@ -1,18 +1,4 @@
 
-struct floatimage_record {
-	uint16_t width;
-	uint16_t height;
-	uint8_t channels;
-	size_t size;
-	std::vector<float> data;
-
-	template <class Archive>
-	void serialize(Archive &archive)
-	{
-		archive(CEREAL_NVP(width), CEREAL_NVP(height), CEREAL_NVP(channels), CEREAL_NVP(size), CEREAL_NVP(data));
-	}
-};
-
 // store navigation data
 struct nav_tilemesh_record {
 	int x;
@@ -48,7 +34,6 @@ public:
 	void load(const std::string &filename, Atlas *atlas, UTIL::Navigation *landnav, UTIL::Navigation *seanav, long &seed);
 private:
 	std::string directory;
-	//struct floatimage_record topology;
 	struct navmesh_record navmesh_land;
 	struct navmesh_record navmesh_sea;
 };

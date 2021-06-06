@@ -43,16 +43,6 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Na
 {
 	const std::string filepath = directory + filename;
 
-	/*
-	const auto heightmap = atlas->get_heightmap();
-	topology.width = heightmap->width;
-	topology.height = heightmap->height;
-	topology.channels = heightmap->channels;
-	topology.size = heightmap->data.size();
-	topology.data.resize(heightmap->data.size());
-	std::copy(heightmap->data.data(), heightmap->data.data() + heightmap->data.size(), topology.data.begin());
-	*/
-
 	const auto worldgraph = atlas->get_worldgraph();
 
 	// save the campaign navigation data

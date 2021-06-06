@@ -41,28 +41,6 @@ static inline int max3(int a, int b, int c)
 	return (std::max)(a, (std::max)(b, c));
 }
 	
-Image::Image()
-{
-	width = 0;
-	height = 0;
-	channels = 0;
-}
-
-// normal image creation
-Image::Image(uint16_t w, uint16_t h, uint8_t chan)
-{
-	width = w;
-	height = h;
-	channels = chan;
-
-	auto size = width * height * channels;
-
-	//data = new uint8_t[size];
-	data.resize(size);
-
-	clear();
-}
-
 void Image::resize(uint16_t w, uint16_t h, uint8_t chan)
 {
 	width = w;
@@ -77,12 +55,15 @@ void Image::resize(uint16_t w, uint16_t h, uint8_t chan)
 	
 void Image::copy(const Image *original)
 {
-	width = original->width;
-	height = original->height;
-	channels = original->channels;
+	if (width != original->width || height != original->height || channels != original->channels || data.size() != original->data.size()) {
+		width = original->width;
+		height = original->height;
+		channels = original->channels;
 
-	data.clear();
-	data.resize(original->data.size());
+		data.clear();
+		data.resize(original->data.size());
+	}
+
 	std::copy(original->data.begin(), original->data.end(), data.begin());
 }
 
@@ -313,25 +294,6 @@ void Image::create_normalmap(const FloatImage *displacement, float strength)
 	}
 }
 
-FloatImage::FloatImage()
-{
-	width = 0;
-	height = 0;
-	channels = 0;
-}
-
-FloatImage::FloatImage(uint16_t w, uint16_t h, uint8_t chan)
-{
-	width = w;
-	height = h;
-	channels = chan;
-
-	auto size = width * height * channels;
-	data.resize(size);
-
-	clear();
-}
-
 void FloatImage::resize(uint16_t w, uint16_t h, uint8_t chan)
 {
 	width = w;
@@ -346,12 +308,15 @@ void FloatImage::resize(uint16_t w, uint16_t h, uint8_t chan)
 
 void FloatImage::copy(const FloatImage *original)
 {
-	width = original->width;
-	height = original->height;
-	channels = original->channels;
+	if (width != original->width || height != original->height || channels != original->channels || data.size() != original->data.size()) {
+		width = original->width;
+		height = original->height;
+		channels = original->channels;
 
-	data.clear();
-	data.resize(original->data.size());
+		data.clear();
+		data.resize(original->data.size());
+	}
+
 	std::copy(original->data.begin(), original->data.end(), data.begin());
 }
 

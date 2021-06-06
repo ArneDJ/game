@@ -16,7 +16,7 @@ static const float CAMERA_MOUSE_MODIFIER = 0.001F;
 
 namespace UTIL {
 
-Camera::Camera(void) 
+Camera::Camera() 
 {
 	position = { 0.f, 0.f, 0.f };
 	direction = { 0.f, 1.f, 0.f };
@@ -37,7 +37,7 @@ void Camera::configure(float near, float far, uint16_t w, uint16_t h, float fova
 	FOV = fovangle;
 }
 	
-void Camera::project(void)
+void Camera::project()
 {
 	projection = glm::perspective(glm::radians(FOV), aspectratio, nearclip, farclip);
 }
@@ -93,7 +93,7 @@ void Camera::move_right(float modifier)
 	position += modifier * glm::normalize(right);
 }
 
-void Camera::update(void)
+void Camera::update()
 {
 	viewing = glm::lookAt(position, position + direction, UP_VECTOR);
 	VP = projection * viewing;

@@ -50,13 +50,13 @@ private:
 	std::unique_ptr<Terragen> terragen;
 	std::unique_ptr<Worldgraph> worldgraph;
 	UTIL::Image watermap; // heightmap of ocean, seas and rivers
-	std::unique_ptr<UTIL::Image> vegetation;
-	std::unique_ptr<UTIL::Image> factions; // color map of factions
-	std::unique_ptr<UTIL::Image> materialmasks;
-	std::unique_ptr<UTIL::FloatImage> container;
-	std::unique_ptr<UTIL::FloatImage> detail;
-	std::unique_ptr<UTIL::Image> mask;
-	std::unique_ptr<UTIL::Image> tree_density;
+	UTIL::Image vegetation;
+	UTIL::Image factions; // color map of factions
+	UTIL::Image materialmasks;
+	UTIL::FloatImage container;
+	UTIL::FloatImage detail;
+	UTIL::Image mask;
+	UTIL::Image tree_density;
 private:
 	std::unordered_map<uint32_t, holding_t> holdings; // TODO put in worldgraph
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
