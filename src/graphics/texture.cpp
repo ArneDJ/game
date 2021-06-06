@@ -17,6 +17,7 @@
 
 #include "../extern/aixlog/aixlog.h"
 
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "texture.h"
 
@@ -91,7 +92,7 @@ Texture::Texture(const std::string &filepath)
 	load_DDS(filepath);
 }
 	
-Texture::Texture(const UTIL::Image *image)
+Texture::Texture(const UTIL::Image<uint8_t> *image)
 {
 	target = GL_TEXTURE_2D;
 	handle = 0;
@@ -122,7 +123,7 @@ Texture::Texture(const UTIL::Image *image)
 	handle = generate_2D_texture(image->data.data(), image->width, image->height, internalformat, format, type);
 }
 
-Texture::Texture(const UTIL::FloatImage *image)
+Texture::Texture(const UTIL::Image<float> *image)
 {
 	target = GL_TEXTURE_2D;
 	handle = 0;
@@ -191,19 +192,19 @@ void Texture::bind(GLenum unit) const
 	glBindTexture(target, handle);
 }
 	
-void Texture::reload(const UTIL::FloatImage *image)
+void Texture::reload(const UTIL::Image<float> *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_FLOAT, image->data.data());
 }
 
-void Texture::reload(const UTIL::Image *image)
+void Texture::reload(const UTIL::Image<uint8_t> *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_UNSIGNED_BYTE, image->data.data());
 }
 
-void Texture::unload(UTIL::FloatImage *image)
+void Texture::unload(UTIL::Image<float> *image)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, handle);

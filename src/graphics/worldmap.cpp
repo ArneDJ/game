@@ -13,6 +13,7 @@
 
 #include "../util/entity.h"
 #include "../util/camera.h"
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
@@ -23,7 +24,7 @@ namespace GRAPHICS {
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
-Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *watermap, const UTIL::Image *rainmap, const UTIL::Image *materialmasks, const UTIL::Image *factionsmap)
+Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *watermap, const UTIL::Image<uint8_t> *rainmap, const UTIL::Image<uint8_t> *materialmasks, const UTIL::Image<uint8_t> *factionsmap)
 {
 	scale = mapscale;
 	faction_factor = 0.f;
@@ -96,7 +97,7 @@ Worldmap::~Worldmap(void)
 	delete factions;
 }
 
-void Worldmap::reload(const UTIL::FloatImage *heightmap, const UTIL::Image *watermap, const UTIL::Image *rainmap, const UTIL::Image *materialmasks, const UTIL::Image *factionsmap)
+void Worldmap::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *watermap, const UTIL::Image<uint8_t> *rainmap, const UTIL::Image<uint8_t> *materialmasks, const UTIL::Image<uint8_t> *factionsmap)
 {
 	topology->reload(heightmap);
 	nautical->reload(watermap);
@@ -110,12 +111,12 @@ void Worldmap::reload(const UTIL::FloatImage *heightmap, const UTIL::Image *wate
 	factions->reload(factionsmap);
 }
 
-void Worldmap::reload_factionsmap(const UTIL::Image *factionsmap)
+void Worldmap::reload_factionsmap(const UTIL::Image<uint8_t> *factionsmap)
 {
 	factions->reload(factionsmap);
 }
 	
-void Worldmap::reload_masks(const UTIL::Image *mask_image)
+void Worldmap::reload_masks(const UTIL::Image<uint8_t> *mask_image)
 {
 	masks->reload(mask_image);
 }

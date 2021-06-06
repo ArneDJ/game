@@ -22,8 +22,8 @@ public:
 public:
 	const btDynamicsWorld* get_world() const;
 	void update(float timestep);
-	void add_heightfield(const UTIL::FloatImage *image, const glm::vec3 &scale, int group, int masks);
-	void add_heightfield(const UTIL::Image *image, const glm::vec3 &scale, int group, int masks);
+	void add_heightfield(const UTIL::Image<float> *image, const glm::vec3 &scale, int group, int masks);
+	void add_heightfield(const UTIL::Image<uint8_t> *image, const glm::vec3 &scale, int group, int masks);
 	void add_shape(btCollisionShape *shape);
 	btCollisionShape* add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	btCollisionShape* add_hull(const std::vector<glm::vec3> &points);

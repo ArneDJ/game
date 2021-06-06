@@ -127,10 +127,10 @@ private:
 	UTIL::Voronoi voronoi;
 private:
 	void gen_diagram(long seed, float radius);
-	void gen_relief(const UTIL::FloatImage *heightmap, const struct worldparams *params);
+	void gen_relief(const UTIL::Image<float> *heightmap, const struct worldparams *params);
 	void gen_rivers(const struct worldparams *params);
 	void gen_sites(long seed, const struct worldparams *params);
-	void gen_properties(const UTIL::Image *temperatures, const UTIL::Image *rainfall);
+	void gen_properties(const UTIL::Image<uint8_t> *temperatures, const UTIL::Image<uint8_t> *rainfall);
 	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);
 	void remove_echoriads(void);

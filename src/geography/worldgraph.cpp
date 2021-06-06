@@ -231,7 +231,7 @@ void Worldgraph::gen_diagram(long seed, float radius)
 	}
 }
 
-void Worldgraph::gen_relief(const UTIL::FloatImage *heightmap, const struct worldparams *params)
+void Worldgraph::gen_relief(const UTIL::Image<float> *heightmap, const struct worldparams *params)
 {
 	const float scale_x = float(heightmap->width) / area.max.x;
 	const float scale_y = float(heightmap->height) / area.max.y;
@@ -786,7 +786,7 @@ void Worldgraph::erode_mountains(void)
 	}
 }
 
-void Worldgraph::gen_properties(const UTIL::Image *temperatures, const UTIL::Image *rainfall)
+void Worldgraph::gen_properties(const UTIL::Image<uint8_t> *temperatures, const UTIL::Image<uint8_t> *rainfall)
 {
 	// assign local tile amplitude
 	// higher amplitude means more mountain terrain

@@ -5,16 +5,16 @@ class Texture {
 public:
 	Texture(void); // create an empty texture
 	Texture(const std::string &filepath); // load image texture from file
-	Texture(const UTIL::Image *image); // load texture from image memory
-	Texture(const UTIL::FloatImage *image); // load texture from floating point image
+	Texture(const UTIL::Image<uint8_t> *image); // load texture from image memory
+	Texture(const UTIL::Image<float> *image); // load texture from floating point image
 	~Texture(void);
 	// explicitly load texture
 	void load(const std::string &filepath); // from file
 	void bind(GLenum unit) const;
 	// update texture data
-	void reload(const UTIL::FloatImage *image);
-	void reload(const UTIL::Image *image);
-	void unload(UTIL::FloatImage *image);
+	void reload(const UTIL::Image<float> *image);
+	void reload(const UTIL::Image<uint8_t> *image);
+	void unload(UTIL::Image<float> *image);
 	// change wrapping method
 	void change_wrapping(GLint wrapping);
 	void change_filtering(GLint filter);

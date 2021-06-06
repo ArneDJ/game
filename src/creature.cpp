@@ -22,6 +22,7 @@
 #include "extern/ozz/base/maths/soa_transform.h"
 
 #include "util/entity.h"
+#include "util/geom.h"
 #include "util/image.h"
 #include "util/animation.h"
 #include "graphics/texture.h"

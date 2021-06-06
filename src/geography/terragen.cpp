@@ -12,6 +12,7 @@
 #include "../extern/cereal/types/memory.hpp"
 #include "../extern/cereal/archives/json.hpp"
 
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "../module.h"
 #include "terragen.h"

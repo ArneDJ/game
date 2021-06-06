@@ -13,6 +13,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "util/geom.h"
 #include "util/image.h"
 #include "graphics/texture.h"
 #include "graphics/mesh.h"

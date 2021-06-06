@@ -15,6 +15,7 @@
 
 #include "../util/entity.h"
 #include "../util/camera.h"
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "shader.h"
 #include "texture.h"

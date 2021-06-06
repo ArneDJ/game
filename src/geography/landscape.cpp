@@ -144,7 +144,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	}
 }
 
-const UTIL::FloatImage* Landscape::get_heightmap(void) const
+const UTIL::Image<float>* Landscape::get_heightmap(void) const
 {
 	return &heightmap;
 }
@@ -159,12 +159,12 @@ const std::vector<building_t>& Landscape::get_houses(void) const
 	return houses;
 }
 
-const UTIL::Image* Landscape::get_normalmap(void) const
+const UTIL::Image<uint8_t>* Landscape::get_normalmap(void) const
 {
 	return &normalmap;
 }
 
-const UTIL::Image* Landscape::get_sitemasks(void) const
+const UTIL::Image<uint8_t>* Landscape::get_sitemasks(void) const
 {
 	return &sitemasks;
 }

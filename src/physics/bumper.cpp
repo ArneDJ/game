@@ -11,6 +11,7 @@
 #include "../bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "../bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "heightfield.h"
 #include "physics.h"

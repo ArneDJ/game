@@ -1,9 +1,9 @@
 
 class Terragen {
 public:
-	UTIL::FloatImage heightmap;
-	UTIL::Image tempmap;
-	UTIL::Image rainmap;
+	UTIL::Image<float> heightmap;
+	UTIL::Image<uint8_t> tempmap;
+	UTIL::Image<uint8_t> rainmap;
 public:
 	Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres);
 	void generate(long seed, const struct worldparams *params);

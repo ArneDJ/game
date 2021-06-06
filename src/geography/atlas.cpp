@@ -643,37 +643,37 @@ void Atlas::create_mapdata(long seed)
 	create_factions_map();
 }
 	
-const UTIL::FloatImage* Atlas::get_heightmap(void) const
+const UTIL::Image<float>* Atlas::get_heightmap(void) const
 {
 	return &terragen->heightmap;
 }
 
-const UTIL::Image* Atlas::get_rainmap(void) const
+const UTIL::Image<uint8_t>* Atlas::get_rainmap(void) const
 {
 	return &terragen->rainmap;
 }
 
-const UTIL::Image* Atlas::get_tempmap(void) const
+const UTIL::Image<uint8_t>* Atlas::get_tempmap(void) const
 {
 	return &terragen->tempmap;
 }
 
-const UTIL::Image* Atlas::get_vegetation(void) const
+const UTIL::Image<uint8_t>* Atlas::get_vegetation(void) const
 {
 	return &vegetation;
 }
 	
-const UTIL::Image* Atlas::get_watermap(void) const
+const UTIL::Image<uint8_t>* Atlas::get_watermap(void) const
 {
 	return &watermap;
 }
 
-const UTIL::Image* Atlas::get_materialmasks(void) const
+const UTIL::Image<uint8_t>* Atlas::get_materialmasks(void) const
 {
 	return &materialmasks;
 }
 
-const UTIL::Image* Atlas::get_factions(void) const
+const UTIL::Image<uint8_t>* Atlas::get_factions(void) const
 {
 	return &factions;
 }

@@ -21,20 +21,20 @@ public:
 	void clear(void);
 	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled, bool nautical);
 public:
-	const UTIL::FloatImage* get_heightmap(void) const;
-	const UTIL::Image* get_normalmap(void) const;
-	const UTIL::Image* get_sitemasks(void) const;
+	const UTIL::Image<float>* get_heightmap(void) const;
+	const UTIL::Image<uint8_t>* get_normalmap(void) const;
+	const UTIL::Image<uint8_t>* get_sitemasks(void) const;
 	const std::vector<transformation>& get_trees(void) const;
 	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
-	UTIL::FloatImage heightmap;
-	UTIL::FloatImage container;
-	UTIL::Image valleymap;
+	UTIL::Image<float> heightmap;
+	UTIL::Image<float> container;
+	UTIL::Image<uint8_t> valleymap;
 private:
-	UTIL::Image normalmap;
-	UTIL::Image density;
-	UTIL::Image sitemasks;
+	UTIL::Image<uint8_t> normalmap;
+	UTIL::Image<uint8_t> density;
+	UTIL::Image<uint8_t> sitemasks;
 	Sitegen sitegen;
 private:
 	std::vector<transformation> trees;

@@ -14,6 +14,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "../util/entity.h"
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "../util/camera.h"
 #include "shader.h"

@@ -30,7 +30,7 @@ namespace GRAPHICS {
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
-Terrain::Terrain(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre)
+Terrain::Terrain(const glm::vec3 &mapscale, const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre)
 {
 	scale = mapscale;
 	glm::vec2 min = { -5.f, -5.f };
@@ -93,7 +93,7 @@ void Terrain::change_grass(const glm::vec3 &color)
 	grass->colorize(color, fogcolor, sunpos, fogfactor);
 }
 
-void Terrain::reload(const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre)
+void Terrain::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre)
 {
 	relief->reload(heightmap);
 
@@ -264,7 +264,7 @@ GrassSystem::~GrassSystem(void)
 	roots.clear();
 }
 
-void GrassSystem::refresh(const UTIL::FloatImage *heightmap, const glm::vec3 &scale)
+void GrassSystem::refresh(const UTIL::Image<float> *heightmap, const glm::vec3 &scale)
 {
 	// update bounding boxes based on new heightmap
 	for (auto &chunk : chunks) {

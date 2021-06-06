@@ -16,6 +16,7 @@
 
 #define CGLTF_IMPLEMENTATION
 
+#include "../util/geom.h"
 #include "../util/image.h"
 #include "texture.h"
 #include "mesh.h"

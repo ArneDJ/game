@@ -24,7 +24,7 @@ class GrassSystem {
 public:
 	GrassSystem(const Model *mod);
 	~GrassSystem(void);
-	void refresh(const UTIL::FloatImage *heightmap, const glm::vec3 &scale);
+	void refresh(const UTIL::Image<float> *heightmap, const glm::vec3 &scale);
 	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr);
 	void display(const UTIL::Camera *camera, const glm::vec3 &scale) const;
 private:
@@ -40,10 +40,10 @@ private:
 
 class Terrain {
 public:
-	Terrain(const glm::vec3 &mapscale, const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre);
+	Terrain(const glm::vec3 &mapscale, const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre);
 	~Terrain(void);
 	void add_material(const std::string &name, const Texture *texture);
-	void reload(const UTIL::FloatImage *heightmap, const UTIL::Image *normalmap, const UTIL::Image *cadastre);
+	void reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
 	void change_grass(const glm::vec3 &color);
 	void display_land(const UTIL::Camera *camera) const;

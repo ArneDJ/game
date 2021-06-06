@@ -30,13 +30,13 @@ public:
 	void create_land_navigation(void);
 	void create_sea_navigation(void);
 public:
-	const UTIL::FloatImage* get_heightmap(void) const;
-	const UTIL::Image* get_watermap(void) const;
-	const UTIL::Image* get_rainmap(void) const;
-	const UTIL::Image* get_tempmap(void) const;
-	const UTIL::Image* get_materialmasks(void) const;
-	const UTIL::Image* get_vegetation(void) const;
-	const UTIL::Image* get_factions(void) const;
+	const UTIL::Image<float>* get_heightmap(void) const;
+	const UTIL::Image<uint8_t>* get_watermap(void) const;
+	const UTIL::Image<uint8_t>* get_rainmap(void) const;
+	const UTIL::Image<uint8_t>* get_tempmap(void) const;
+	const UTIL::Image<uint8_t>* get_materialmasks(void) const;
+	const UTIL::Image<uint8_t>* get_vegetation(void) const;
+	const UTIL::Image<uint8_t>* get_factions(void) const;
 	const std::vector<transformation>& get_trees(void) const;
 	const struct navigation_soup_t& get_navsoup(void) const;
 	const std::unordered_map<uint32_t, holding_t>& get_holdings(void) const;
@@ -49,14 +49,14 @@ public:
 private:
 	std::unique_ptr<Terragen> terragen;
 	std::unique_ptr<Worldgraph> worldgraph;
-	UTIL::Image watermap; // heightmap of ocean, seas and rivers
-	UTIL::Image vegetation;
-	UTIL::Image factions; // color map of factions
-	UTIL::Image materialmasks;
-	UTIL::FloatImage container;
-	UTIL::FloatImage detail;
-	UTIL::Image mask;
-	UTIL::Image tree_density;
+	UTIL::Image<uint8_t> watermap; // heightmap of ocean, seas and rivers
+	UTIL::Image<uint8_t> vegetation;
+	UTIL::Image<uint8_t> factions; // color map of factions
+	UTIL::Image<uint8_t> materialmasks;
+	UTIL::Image<float> container;
+	UTIL::Image<float> detail;
+	UTIL::Image<uint8_t> mask;
+	UTIL::Image<uint8_t> tree_density;
 private:
 	std::unordered_map<uint32_t, holding_t> holdings; // TODO put in worldgraph
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
