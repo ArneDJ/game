@@ -7,8 +7,10 @@ public:
 	void update(const btDynamicsWorld *world);
 	void jump();
 	void set_velocity(float x, float z);
+public:
 	btRigidBody* body() const;
 	glm::vec3 position() const;
+	bool grounded() const;
 private:
 	std::unique_ptr<btRigidBody> m_body;
 	std::unique_ptr<btCollisionShape> m_shape;

@@ -215,7 +215,7 @@ GrassSystem::GrassSystem(const Model *mod)
 	int root_res = 8;
 	for (int i = 0; i < root_res; i++) {
 		for (int j = 0; j < root_res; j++) {
-			GrassRoots *root = new GrassRoots { mod, 200 };
+			GrassRoots *root = new GrassRoots { mod, 300 };
 			roots.push_back(root);
 		}
 	}

@@ -468,13 +468,20 @@ void Battle::load_assets(const Module *mod)
 	
 void Battle::add_creatures()
 {
-	player = new Creature { glm::vec3(3072.f, 150.f, 3072.f), glm::quat(1.f, 0.f, 0.f, 0.f), MediaManager::load_model("fox.glb") };
+	glm::vec3 end = glm::vec3(3072.f, 0.f, 3072.f);
+	glm::vec3 origin = { end.x, landscape->SCALE.y, end.z };
+	auto result = physicsman.cast_ray(origin, end, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_WORLD);
+	if (result.hit) {
+		origin = result.point;
+		origin.y += 1.f;
+	}
+	player = new Creature { origin, glm::quat(1.f, 0.f, 0.f, 0.f), MediaManager::load_model("human.glb") };
 
 	physicsman.add_body(player->get_body(), PHYSICS::COLLISION_GROUP_ACTOR, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_WORLD | PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 
 	std::vector<const Entity*> ents;
 	ents.push_back(player);
-	creatures->add_object(MediaManager::load_model("fox.glb"), ents);
+	creatures->add_object(MediaManager::load_model("human.glb"), ents);
 }
 	
 void Battle::add_buildings()
@@ -509,7 +516,7 @@ void Battle::add_buildings()
 	}
 	// add stationary objects to physics
 	for (const auto &stationary : stationaries) {
-		physicsman.add_body(stationary->body, PHYSICS::COLLISION_GROUP_WORLD, PHYSICS::COLLISION_GROUP_ACTOR);
+		physicsman.add_body(stationary->body, PHYSICS::COLLISION_GROUP_WORLD, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY);
 	}
 }
 	
@@ -783,6 +790,7 @@ void Game::update_battle()
 		ImGui::SetWindowSize(ImVec2(400, 200));
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", battle.camera.position.x, battle.camera.position.y, battle.camera.position.z);
+		ImGui::Text("anim mix: %f", battle.player->m_animation_mix);
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
 		ImGui::End();
 	}
@@ -847,7 +855,7 @@ void Game::prepare_battle()
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
-	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR);
+	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY);
 
 	shaders.billboard.use();
 	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
@@ -1020,8 +1028,8 @@ void Game::prepare_campaign()
 	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
 
-	campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
-	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP);
+	campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
+	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));

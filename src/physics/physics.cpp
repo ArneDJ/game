@@ -197,6 +197,7 @@ struct ray_result_t PhysicsManager::cast_ray(const glm::vec3 &origin, const glm:
 
 	btCollisionWorld::ClosestRayResultCallback callback(from, to);
 	callback.m_collisionFilterGroup = masks;
+	callback.m_collisionFilterGroup |= COLLISION_GROUP_RAY;
 	callback.m_collisionFilterMask = masks;
 	//callback.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
 	//

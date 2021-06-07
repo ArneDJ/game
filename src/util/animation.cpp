@@ -63,7 +63,7 @@ Animator::Animator(const std::string &skeletonpath, const std::vector<std::pair<
 		auto sampler = std::make_unique<AnimationSampler>();
 		sampler->load(path.second);
 		if (num_joints != sampler->animation.num_tracks()) {
-			LOG(ERROR, "Animation") << "skeleton joints of " + skeletonpath + " and animation tracks of " + path.second + " mismatch";
+			LOG(ERROR, "Animation") << "skeleton joints of " + skeletonpath + " and animation tracks of " + path.second + " mismatch\n";
 		}
 		// Allocates sampler runtime buffers.
 		sampler->locals.resize(num_soa_joints);

@@ -7,6 +7,7 @@ enum collision_group_t {
     COLLISION_GROUP_GHOSTS = 1 << 1,
     COLLISION_GROUP_ACTOR = 1 << 2,
     COLLISION_GROUP_HEIGHTMAP = 1 << 3,
+    COLLISION_GROUP_RAY = 1 << 4,
 };
 
 struct ray_result_t {

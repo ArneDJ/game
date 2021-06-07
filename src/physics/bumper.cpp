@@ -137,9 +137,14 @@ glm::vec3 Bumper::position() const
 
 	glm::vec3 translation = bt_to_vec3(transform.getOrigin());
 	// substract vertical offset
-	translation.y -= m_body_offset;
+	translation.y -= m_body_offset + (0.5f * m_height);
 
 	return translation;
+}
+	
+bool Bumper::grounded() const
+{
+	return m_grounded;
 }
 
 void Bumper::set_velocity(float x, float z)
