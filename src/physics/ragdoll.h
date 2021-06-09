@@ -10,38 +10,13 @@ enum synovial_joint_t : uint8_t {
 };
 
 struct ragdoll_bone_t {
-	std::string name;
 	btCollisionShape *shape;
 	btRigidBody *body;
-	/*
-	float radius = 1.f; // TODO don't save here
-	float height = 1.f; // TODO don't save here
-	glm::vec3 origin; // TODO don't save here
-	glm::vec3 rotation; // TODO don't save here
-	*/
-	// multiply the global transform with the inverse bind matrix for vertex skinning
 	btTransform origin;
+	// multiply the global transform with the inverse bind matrix for vertex skinning
 	glm::mat4 transform;
 	glm::mat4 inverse;
 };
-
-/*
-struct constraint_part_t {
-	uint32_t bone; // TODO don't save here
-	glm::vec3 origin; // TODO don't save here
-	glm::vec3 rotation; // TODO don't save here
-};
-*/
-
-/*
-struct ragdoll_joint_t {
-	std::unique_ptr<btTypedConstraint> constraint;
-	enum synovial_joint_t type; // TODO don't save here
-	glm::vec3 limit; // TODO don't save here
-	struct constraint_part_t parent; // TODO don't save here
-	struct constraint_part_t child; // TODO don't save here
-};
-*/
 
 class Ragdoll {
 public:
@@ -49,8 +24,6 @@ public:
 	{
 		clean();
 	}
-	glm::vec3 position;
-	glm::quat rotation;
 public:
 	void create(const struct MODULE::ragdoll_armature_import_t &armature);
 	void update();
@@ -65,7 +38,7 @@ public:
 
 		m_joints.clear();
 	}
-	void add_to_world(btDynamicsWorld *world, const glm::vec3 &position);
+	void add_to_world(btDynamicsWorld *world, const glm::vec3 &pos);
 	void remove_from_world(btDynamicsWorld *world);
 public:
 	const std::vector<struct ragdoll_bone_t>& bones() const { return m_bones; };
@@ -78,10 +51,15 @@ public:
 
 		return glm::mat4(1.f);
 	}
+	glm::vec3 position() const
+	{
+		return m_position;
+	}
 private:
-	//std::vector<glm::mat4> m_transforms;
 	std::vector<struct ragdoll_bone_t> m_bones;
 	std::vector<std::unique_ptr<btTypedConstraint>> m_joints;
+	glm::vec3 m_position;
+	glm::quat m_rotation;
 };
 
 };

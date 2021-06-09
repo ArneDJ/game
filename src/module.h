@@ -155,7 +155,8 @@ struct building {
 };
 
 struct ragdoll_bone_import_t {
-	std::string name;
+	//std::string name;
+	std::vector<std::string> targets;
 	float radius = 1.f;
 	float height = 1.f;
 	glm::vec3 origin;
@@ -165,7 +166,7 @@ struct ragdoll_bone_import_t {
 	void serialize(Archive &archive)
 	{
 		archive(
-			cereal::make_nvp("name", name), 
+			cereal::make_nvp("targets", targets), 
 			cereal::make_nvp("radius", radius),
 			cereal::make_nvp("height", height),
 			cereal::make_nvp("origin", origin),

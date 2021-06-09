@@ -77,8 +77,6 @@ void Ragdoll::create(const struct MODULE::ragdoll_armature_import_t &armature)
 	// add bones
 	for (const auto &bone_info : armature.bones) {
 		struct ragdoll_bone_t bone;
-		bone.name = bone_info.name;
-		std::cout << bone.name << std::endl;
 		bone.shape = new btCapsuleShape(btScalar(bone_info.radius), btScalar(bone_info.height));
 
 		//btTransform transform;
@@ -121,9 +119,9 @@ void Ragdoll::create(const struct MODULE::ragdoll_armature_import_t &armature)
 void Ragdoll::update()
 {
 	btRigidBody *root = m_bones[0].body;
-	position = body_position(root);
-	rotation = body_rotation(root);
-	//glm::mat4 ORIGIN = glm::translate(glm::mat4(1.f), position) * glm::mat4((rotation));
+	m_position = body_position(root);
+	m_rotation = body_rotation(root);
+
 	for (auto &bone : m_bones) {
 		btRigidBody *body = bone.body;
 		glm::mat4 T = glm::translate(glm::mat4(1.f), body_position(body));
@@ -138,11 +136,11 @@ void Ragdoll::update()
 	}
 }
 
-void Ragdoll::add_to_world(btDynamicsWorld *world, const glm::vec3 &position)
+void Ragdoll::add_to_world(btDynamicsWorld *world, const glm::vec3 &pos)
 {
 	btTransform offset;
 	offset.setIdentity();
-	offset.setOrigin(btVector3(position.x, position.y, position.z));
+	offset.setOrigin(btVector3(pos.x, pos.y, pos.z));
 
 	for (auto &bone : m_bones) {
 		btTransform transform = bone.origin;

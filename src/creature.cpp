@@ -92,17 +92,20 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::M
 		for (auto it = names.begin(); it != names.end(); ){
 			auto joint = *it;
 			std::string name = joint.second;
-			if (name.find(bone.name) != std::string::npos) {
+			bool found = false;
+			for (const auto &pattern : bone.targets) {
+				if (name.find(pattern) != std::string::npos) {
+					found = true;
+					break;
+				}
+			}
+			if (found) {
 				m_targets.push_back(std::make_pair(joint.first, i));
 				it = names.erase(it);
 			} else {
 				it++;
 			}
 		}
-	}
-	
-	for (const auto &target : m_targets) {
-		printf("anim joint: %d, ragdoll bone: %d\n", target.first, target.second);
 	}
 }
 
@@ -160,7 +163,7 @@ void Creature::sync(float delta)
 	if (m_ragdoll_mode) {
 		scale = 1.f;
 		m_ragdoll.update();
-		position = m_ragdoll.position;
+		position = m_ragdoll.position();
 	} else {
 		position = m_bumper->position();
 		scale = 0.01f;
