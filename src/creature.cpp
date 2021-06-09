@@ -46,6 +46,7 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::M
 {
 	position = pos;
 	rotation = rot;
+	scale = 0.01f;
 
 	m_model = model;
 

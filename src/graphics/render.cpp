@@ -73,7 +73,8 @@ void RenderGroup::display(const UTIL::Camera *camera) const
 			for (const auto &ent : obj->entities) {
 				glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
 				glm::mat4 R = glm::mat4(ent->rotation);
-				glm::mat4 M = T * R;
+				glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(ent->scale));
+				glm::mat4 M = T * R * S;
 				glm::mat4 MVP = camera->VP * M;
 				shader->uniform_mat4("MVP", MVP);
 				shader->uniform_mat4("MODEL", M);
