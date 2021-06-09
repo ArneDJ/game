@@ -11,15 +11,17 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "bullet/btBulletDynamicsCommon.h"
-#include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
-#include "bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
-
 #include "extern/ozz/animation/runtime/animation.h"
 #include "extern/ozz/animation/runtime/local_to_model_job.h"
 #include "extern/ozz/animation/runtime/sampling_job.h"
 #include "extern/ozz/animation/runtime/skeleton.h"
 #include "extern/ozz/base/maths/soa_transform.h"
+
+// define this to make bullet and ozz animation compile on Windows
+#define BT_NO_SIMD_OPERATOR_OVERLOADS
+#include "extern/bullet/btBulletDynamicsCommon.h"
+#include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
+#include "extern/bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
 #include "util/entity.h"
 #include "util/geom.h"
