@@ -1,3 +1,5 @@
+#pragma once
+#include "util/serialize.h"
 
 struct heightparams {
 	float frequency = 0.001f;
@@ -106,6 +108,16 @@ struct worldparams {
 	}
 };
 
+/*
+ * TODO
+struct vegetation_t {
+	glm::vec3 dry = { 1.f, 1.f, 0.2f };
+	glm::vec3 lush = { 0.7f, 1.f, 0.2f };
+	std::vector<struct tree_t> trees;
+	std::vector<struct grass_t> grasses;
+};
+*/
+
 struct colorization {
 	glm::vec3 ambient = { 1.f, 1.f, 1.f };
 	glm::vec3 skytop = { 0.525f, 0.735f, 0.84f };
@@ -142,13 +154,82 @@ struct building {
 	}
 };
 
-}
+struct ragdoll_bone_import_t {
+	std::string name;
+	float radius = 1.f;
+	float height = 1.f;
+	glm::vec3 origin;
+	glm::vec3 rotation; // euler angles
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			cereal::make_nvp("name", name), 
+			cereal::make_nvp("radius", radius),
+			cereal::make_nvp("height", height),
+			cereal::make_nvp("origin", origin),
+			cereal::make_nvp("rotation", rotation)
+		);
+	}
+};
+
+struct ragdoll_constraint_import_t {
+	uint8_t bone;
+	glm::vec3 origin;
+	glm::vec3 rotation;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			cereal::make_nvp("bone", bone), 
+			cereal::make_nvp("origin", origin),
+			cereal::make_nvp("rotation", rotation)
+		);
+	}
+};
+
+struct ragdoll_joint_import_t {
+	std::string type;
+	glm::vec3 limit;
+	struct ragdoll_constraint_import_t parent;
+	struct ragdoll_constraint_import_t child;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			cereal::make_nvp("type", type), 
+			cereal::make_nvp("limit", limit),
+			cereal::make_nvp("parent", parent),
+			cereal::make_nvp("child", child)
+		);
+	}
+};
+
+struct ragdoll_armature_import_t {
+	std::vector<struct ragdoll_bone_import_t> bones;
+	std::vector<struct ragdoll_joint_import_t> joints;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			cereal::make_nvp("bones", bones), 
+			cereal::make_nvp("joints", joints)
+		);
+	}
+};
+
+};
 
 class Module {
 public:
 	// the world generation settings
 	struct worldparams params;
 	struct colorization colors;
+	struct MODULE::ragdoll_armature_import_t test_armature;
 	std::string path;
 	std::string name;
 public:
@@ -162,4 +243,6 @@ private:
 	// only used when the file is missing
 	void save_world_parameters(const std::string &filepath);
 	void save_colors(const std::string &filepath);
+	// import ragdolls
+	void load_ragdoll(const std::string &filepath);
 };

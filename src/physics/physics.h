@@ -8,6 +8,7 @@ enum collision_group_t {
     COLLISION_GROUP_ACTOR = 1 << 2,
     COLLISION_GROUP_HEIGHTMAP = 1 << 3,
     COLLISION_GROUP_RAY = 1 << 4,
+    COLLISION_GROUP_RAGDOLL = 1 << 5
 };
 
 struct ray_result_t {
@@ -22,6 +23,7 @@ public:
 	~PhysicsManager();
 public:
 	const btDynamicsWorld* get_world() const;
+	btDynamicsWorld* get_world();
 	void update(float timestep);
 	void add_heightfield(const UTIL::Image<float> *image, const glm::vec3 &scale, int group, int masks);
 	void add_heightfield(const UTIL::Image<uint8_t> *image, const glm::vec3 &scale, int group, int masks);

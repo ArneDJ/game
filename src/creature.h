@@ -18,16 +18,22 @@ enum creature_movement_t {
 class Creature : public Entity {
 public:
 	float m_animation_mix = 0.f;
-	Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::Model *model);
+	bool m_ragdoll_mode = false;
+public:
+	Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::Model *model, const struct MODULE::ragdoll_armature_import_t &armature);
 	btRigidBody* get_body() const;
 	void move(const glm::vec3 &view, bool forward, bool backward, bool right, bool left);
 	void jump();
 	void update(const btDynamicsWorld *world);
 	void sync(float delta);
 	const GRAPHICS::TransformBuffer* joints() const { return &m_joint_transforms; };
+	void add_ragdoll(btDynamicsWorld *world);
+	void remove_ragdoll(btDynamicsWorld *world);
 private:
 	const GRAPHICS::Model *m_model;
 	std::unique_ptr<PHYSICS::Bumper> m_bumper;
+	std::vector<std::pair<uint32_t, uint32_t>> m_targets;
+	PHYSICS::Ragdoll m_ragdoll;
 	std::unique_ptr<UTIL::Animator> m_animator;
 	GRAPHICS::TransformBuffer m_joint_transforms;
 	glm::vec3 m_velocity;

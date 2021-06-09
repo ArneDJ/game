@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <map>
+#include <list>
 #include <vector>
 #include <GL/glew.h>
 #include <GL/gl.h> 
@@ -34,6 +35,9 @@
 #include "physics/physics.h"
 #include "physics/bumper.h"
 
+#include "module.h"
+#include "physics/ragdoll.h"
+
 #include "creature.h"
 
 static inline glm::quat direction_to_quat(glm::vec2 direction)
@@ -44,7 +48,7 @@ static inline glm::quat direction_to_quat(glm::vec2 direction)
 	return rotation;
 }
 
-Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::Model *model)
+Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::Model *model, const struct MODULE::ragdoll_armature_import_t &armature)
 {
 	position = pos;
 	rotation = rot;
@@ -74,6 +78,32 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::M
 	m_animator = std::make_unique<UTIL::Animator>("modules/native/media/skeletons/human.ozz", animations);
 	m_joint_transforms.matrices.resize(m_animator->models.size());
 	m_joint_transforms.alloc(GL_DYNAMIC_DRAW);
+
+	m_ragdoll.create(armature);
+	
+	// left: skeleton target, right: ragdoll transform matrix
+	std::list<std::pair<uint32_t, std::string>> names;
+	for (int i = 0; i < m_animator->skeleton.num_joints(); i++) {
+		names.push_back(std::make_pair(i, m_animator->skeleton.joint_names()[i]));
+		//std::cout << m_animator->skeleton.joint_names()[i] << std::endl;
+	}
+	for (int i = 0; i < armature.bones.size(); i++) {
+		const auto &bone = armature.bones[i];
+		for (auto it = names.begin(); it != names.end(); ){
+			auto joint = *it;
+			std::string name = joint.second;
+			if (name.find(bone.name) != std::string::npos) {
+				m_targets.push_back(std::make_pair(joint.first, i));
+				it = names.erase(it);
+			} else {
+				it++;
+			}
+		}
+	}
+	
+	for (const auto &target : m_targets) {
+		printf("anim joint: %d, ragdoll bone: %d\n", target.first, target.second);
+	}
 }
 
 btRigidBody* Creature::get_body() const
@@ -127,7 +157,14 @@ void Creature::update(const btDynamicsWorld *world)
 
 void Creature::sync(float delta)
 {
-	position = m_bumper->position();
+	if (m_ragdoll_mode) {
+		scale = 1.f;
+		m_ragdoll.update();
+		position = m_ragdoll.position;
+	} else {
+		position = m_bumper->position();
+		scale = 0.01f;
+	}
 
 	if (!m_bumper->grounded()) {
 		change_animation(CA_FALLING);
@@ -154,9 +191,21 @@ void Creature::sync(float delta)
 	}
 
 	m_animator->update(delta, m_previous_animation, m_current_animation, m_animation_mix);
+
+	glm::mat4 ROOT_TRANSFORM = glm::translate(glm::mat4(1.f), position) * glm::mat4(rotation) * glm::scale(glm::mat4(1.f), glm::vec3(scale));
 	for (const auto &skin : m_model->skins) {
-		for (int i = 0; i < m_animator->models.size(); i++) {
-			m_joint_transforms.matrices[i] = UTIL::ozz_to_mat4(m_animator->models[i]) * skin.inversebinds[i];
+		if (m_ragdoll_mode) {
+			for (int i = 0; i < skin.inversebinds.size(); i++) {
+				m_joint_transforms.matrices[i] = glm::inverse(ROOT_TRANSFORM) * m_ragdoll.transform(0);
+			}
+			for (const auto &target : m_targets) {
+				glm::mat4 T = m_ragdoll.transform(target.second); 
+				m_joint_transforms.matrices[target.first] = glm::inverse(ROOT_TRANSFORM) * T;
+			}
+		} else {
+			for (int i = 0; i < m_animator->models.size(); i++) {
+				m_joint_transforms.matrices[i] = UTIL::ozz_to_mat4(m_animator->models[i]) * skin.inversebinds[i];
+			}
 		}
 	}
 	m_joint_transforms.update();
@@ -171,3 +220,12 @@ void Creature::change_animation(enum creature_animation_t anim)
 	}
 }
 
+void Creature::add_ragdoll(btDynamicsWorld *world)
+{
+	m_ragdoll.add_to_world(world, m_bumper->position());
+}
+
+void Creature::remove_ragdoll(btDynamicsWorld *world)
+{
+	m_ragdoll.remove_from_world(world);
+}

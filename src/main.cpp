@@ -78,11 +78,12 @@
 #include "physics/heightfield.h"
 #include "physics/physics.h"
 #include "physics/bumper.h"
+#include "module.h"
+#include "physics/ragdoll.h"
 #include "media.h"
 #include "object.h"
 #include "creature.h"
 #include "debugger.h"
-#include "module.h"
 #include "geography/terragen.h"
 #include "geography/worldgraph.h"
 #include "geography/mapfield.h"
@@ -427,7 +428,7 @@ public:
 public:
 	void init(const Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders);
 	void load_assets(const Module *mod);
-	void add_creatures();
+	void add_creatures(const Module *mod);
 	void add_buildings();
 	void add_trees();
 	void cleanup();
@@ -466,7 +467,7 @@ void Battle::load_assets(const Module *mod)
 	terrain->add_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 }
 	
-void Battle::add_creatures()
+void Battle::add_creatures(const Module *mod)
 {
 	glm::vec3 end = glm::vec3(3072.f, 0.f, 3072.f);
 	glm::vec3 origin = { end.x, landscape->SCALE.y, end.z };
@@ -475,7 +476,7 @@ void Battle::add_creatures()
 		origin = result.point;
 		origin.y += 1.f;
 	}
-	player = new Creature { origin, glm::quat(1.f, 0.f, 0.f, 0.f), MediaManager::load_model("human.glb") };
+	player = new Creature { origin, glm::quat(1.f, 0.f, 0.f, 0.f), MediaManager::load_model("human.glb"), mod->test_armature };
 
 	physicsman.add_body(player->get_body(), PHYSICS::COLLISION_GROUP_ACTOR, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_WORLD | PHYSICS::COLLISION_GROUP_HEIGHTMAP);
 
@@ -516,7 +517,7 @@ void Battle::add_buildings()
 	}
 	// add stationary objects to physics
 	for (const auto &stationary : stationaries) {
-		physicsman.add_body(stationary->body, PHYSICS::COLLISION_GROUP_WORLD, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY);
+		physicsman.add_body(stationary->body, PHYSICS::COLLISION_GROUP_WORLD, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
 	}
 }
 	
@@ -548,6 +549,9 @@ void Battle::cleanup()
 	}
 
 	physicsman.remove_body(player->get_body());
+	if (player->m_ragdoll_mode) {
+		player->remove_ragdoll(physicsman.get_world());
+	}
 	delete player;
 
 	physicsman.clear();
@@ -791,6 +795,14 @@ void Game::update_battle()
 		ImGui::Text("ms per frame: %d", timer.ms_per_frame);
 		ImGui::Text("cam position: %f, %f, %f", battle.camera.position.x, battle.camera.position.y, battle.camera.position.z);
 		ImGui::Text("anim mix: %f", battle.player->m_animation_mix);
+		if (ImGui::Button("Ragdoll mode")) { 
+			battle.player->m_ragdoll_mode = !battle.player->m_ragdoll_mode; 
+			if (battle.player->m_ragdoll_mode) {
+				battle.player->add_ragdoll(battle.physicsman.get_world());
+			} else {
+				battle.player->remove_ragdoll(battle.physicsman.get_world());
+			}
+		}
 		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
 		ImGui::End();
 	}
@@ -855,7 +867,7 @@ void Game::prepare_battle()
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.colors.skybottom, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
-	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY);
+	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
 
 	shaders.billboard.use();
 	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
@@ -864,7 +876,7 @@ void Game::prepare_battle()
 	// add entities
 	battle.add_trees();
 	battle.add_buildings();
-	battle.add_creatures();
+	battle.add_creatures(&modular);
 
 	battle.skybox.prepare();
 
@@ -891,6 +903,7 @@ void Game::run_battle()
 
 		const auto instancebuf = battle.player->joints();
 		instancebuf->bind(GL_TEXTURE20);
+		shaders.creature.uniform_bool("RAGDOLL", battle.player->m_ragdoll_mode);
 		battle.creatures->display(&battle.camera);
 
 		if (debugmode) {

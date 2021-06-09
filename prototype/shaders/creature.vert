@@ -13,6 +13,7 @@ layout(binding = 20) uniform samplerBuffer joint_matrix_tbo;
 
 uniform mat4 VP;
 uniform mat4 MODEL;
+uniform bool RAGDOLL;
 
 mat4 fetch_joint_matrix(int joint)
 {
@@ -37,5 +38,6 @@ void main(void)
 
 	normal = vnormal;
 	texcoords = vtexcoords;
+		
 	gl_Position = VP * MODEL * skin * vec4(vposition, 1.0);
 }

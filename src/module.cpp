@@ -6,12 +6,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "extern/cereal/types/unordered_map.hpp"
-#include "extern/cereal/types/vector.hpp"
-#include "extern/cereal/types/memory.hpp"
-#include "extern/cereal/archives/json.hpp"
-#include "extern/cereal/archives/xml.hpp"
-
 #include "extern/aixlog/aixlog.h"
 
 #include "module.h"
@@ -39,6 +33,9 @@ void Module::load(const std::string &modname)
 	if (params.graph.upland > params.graph.highland) {
 		std::swap(params.graph.upland, params.graph.highland);
 	}
+
+	std::string ragdollpath = path + "media/ragdolls/ragdoll.xml";
+	load_ragdoll(ragdollpath);
 }
 
 void Module::save_world_parameters(const std::string &filepath)
@@ -107,5 +104,18 @@ void Module::load_buildings(const std::string &filepath)
 	} else {
 		// file not found 
 		LOG(ERROR, "Module") << "could not open " + filepath;
+	}
+}
+	
+void Module::load_ragdoll(const std::string &filepath)
+{
+	std::ifstream stream(filepath);
+
+	if (stream.is_open()) {
+		cereal::XMLInputArchive archive(stream);
+		archive(test_armature);
+	} else {
+		// file not found 
+		LOG(ERROR, "Module") << "could not open ragdoll " + filepath;
 	}
 }

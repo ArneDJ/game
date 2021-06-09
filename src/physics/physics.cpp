@@ -85,6 +85,11 @@ const btDynamicsWorld* PhysicsManager::get_world() const
 	return m_world.get();
 }
 
+btDynamicsWorld* PhysicsManager::get_world()
+{
+	return m_world.get();
+}
+
 void PhysicsManager::add_shape(btCollisionShape *shape)
 {
 	m_shapes.push_back(shape);
