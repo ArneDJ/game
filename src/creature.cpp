@@ -225,7 +225,7 @@ void Creature::change_animation(enum creature_animation_t anim)
 
 void Creature::add_ragdoll(btDynamicsWorld *world)
 {
-	m_ragdoll.add_to_world(world, m_bumper->position());
+	m_ragdoll.add_to_world(world, m_bumper->position(), m_velocity);
 }
 
 void Creature::remove_ragdoll(btDynamicsWorld *world)

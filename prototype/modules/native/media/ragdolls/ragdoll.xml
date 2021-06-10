@@ -244,12 +244,12 @@
 					<bone>1</bone>
 					<origin>
 						<value0>0</value0>
-						<value1>0.39</value1>
+						<value1>0.30</value1>
 						<value2>0</value2>
 					</origin>
 					<rotation>
-						<value0>0</value0>
-						<value1>1.5700000524520874</value1>
+						<value0>1.57</value0>
+						<value1>0</value1>
 						<value2>0</value2>
 					</rotation>
 				</parent>
