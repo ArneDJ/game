@@ -25,7 +25,7 @@ public:
 public:
 	Atlas(void);
 	~Atlas(void);
-	void generate(long seedling, const struct worldparams *params);
+	void generate(long seedling, const struct MODULE::worldgen_parameters_t *params);
 	void create_mapdata(long seed);
 	void create_land_navigation(void);
 	void create_sea_navigation(void);

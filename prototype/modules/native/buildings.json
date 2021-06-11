@@ -1,0 +1,37 @@
+{
+    "houses": [
+        {
+            "model": "buildings/house_small.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 0,
+                "max": 255
+            }
+        },
+        {
+            "model": "buildings/house_medium.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 0,
+                "max": 255
+            }
+        },
+        {
+            "model": "buildings/house_large.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 0,
+                "max": 255
+            }
+        }
+    ]
+}

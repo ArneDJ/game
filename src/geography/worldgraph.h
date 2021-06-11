@@ -120,16 +120,16 @@ public:
 public:
 	Worldgraph(const struct rectangle bounds);
 	~Worldgraph(void);
-	void generate(long seedling, const struct worldparams *params, const Terragen *terra);
+	void generate(long seedling, const struct MODULE::worldgen_parameters_t *params, const Terragen *terra);
 	void reload_references(void);
 private:
 	std::list<struct basin> basins;
 	UTIL::Voronoi voronoi;
 private:
 	void gen_diagram(long seed, float radius);
-	void gen_relief(const UTIL::Image<float> *heightmap, const struct worldparams *params);
-	void gen_rivers(const struct worldparams *params);
-	void gen_sites(long seed, const struct worldparams *params);
+	void gen_relief(const UTIL::Image<float> *heightmap, const struct MODULE::worldgen_parameters_t *params);
+	void gen_rivers(const struct MODULE::worldgen_parameters_t *params);
+	void gen_sites(long seed, const struct MODULE::worldgen_parameters_t *params);
 	void gen_properties(const UTIL::Image<uint8_t> *temperatures, const UTIL::Image<uint8_t> *rainfall);
 	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);

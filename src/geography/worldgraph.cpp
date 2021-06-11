@@ -21,7 +21,7 @@
 #include "../util/voronoi.h"
 #include "../util/geom.h"
 #include "../util/image.h"
-#include "../module.h"
+#include "../module/module.h"
 #include "terragen.h"
 #include "worldgraph.h"
 
@@ -92,7 +92,7 @@ void Worldgraph::reload_references(void)
 	}
 }
 
-void Worldgraph::generate(long seed, const struct worldparams *params, const Terragen *terra)
+void Worldgraph::generate(long seed, const struct MODULE::worldgen_parameters_t *params, const Terragen *terra)
 {
 	// reset data
 	tiles.clear();
@@ -231,7 +231,7 @@ void Worldgraph::gen_diagram(long seed, float radius)
 	}
 }
 
-void Worldgraph::gen_relief(const UTIL::Image<float> *heightmap, const struct worldparams *params)
+void Worldgraph::gen_relief(const UTIL::Image<float> *heightmap, const struct MODULE::worldgen_parameters_t *params)
 {
 	const float scale_x = float(heightmap->width) / area.max.x;
 	const float scale_y = float(heightmap->height) / area.max.y;
@@ -403,7 +403,7 @@ void Worldgraph::remove_echoriads(void)
 	}
 }
 
-void Worldgraph::gen_rivers(const struct worldparams *params)
+void Worldgraph::gen_rivers(const struct MODULE::worldgen_parameters_t *params)
 {
 	// construct the drainage basin candidate graph
 	// only land and coast corners not on the edge of the map can be candidates for the graph
@@ -820,7 +820,7 @@ void Worldgraph::gen_properties(const UTIL::Image<uint8_t> *temperatures, const 
 	}
 }
 
-void Worldgraph::gen_sites(long seed, const struct worldparams *params)
+void Worldgraph::gen_sites(long seed, const struct MODULE::worldgen_parameters_t *params)
 {
 	// add candidate tiles that can have a site on them
 	std::unordered_map<const struct tile*, bool> visited;

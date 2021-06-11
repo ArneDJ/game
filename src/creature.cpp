@@ -28,6 +28,7 @@
 #include "util/geom.h"
 #include "util/image.h"
 #include "util/animation.h"
+#include "module/module.h"
 #include "graphics/texture.h"
 #include "graphics/mesh.h"
 #include "graphics/model.h"
@@ -35,7 +36,6 @@
 #include "physics/physics.h"
 #include "physics/bumper.h"
 
-#include "module.h"
 #include "physics/ragdoll.h"
 
 #include "creature.h"

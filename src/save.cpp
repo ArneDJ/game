@@ -27,6 +27,7 @@
 #include "util/image.h"
 #include "util/voronoi.h"
 #include "util/navigation.h"
+#include "module/module.h"
 #include "geography/terragen.h"
 #include "geography/worldgraph.h"
 #include "geography/mapfield.h"

@@ -7,14 +7,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../extern/cereal/types/unordered_map.hpp"
-#include "../extern/cereal/types/vector.hpp"
-#include "../extern/cereal/types/memory.hpp"
-#include "../extern/cereal/archives/json.hpp"
-
 #include "../util/geom.h"
 #include "../util/image.h"
-#include "../module.h"
+#include "../module/module.h"
 #include "terragen.h"
 
 // The parameter a is the height of the curve's peak, b is the position of the center of the peak and c (the standard deviation, sometimes called the Gaussian RMS width) controls the width of the "bell".
@@ -27,7 +22,7 @@ Terragen::Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 	tempmap.resize(tempres, tempres, UTIL::COLORSPACE_GRAYSCALE);
 }
 
-void Terragen::generate(long seed, const struct worldparams *params)
+void Terragen::generate(long seed, const struct MODULE::worldgen_parameters_t *params)
 {
 	heightmap.clear();
 	gen_heightmap(seed, params);
@@ -39,7 +34,7 @@ void Terragen::generate(long seed, const struct worldparams *params)
 	gen_rainmap(seed, params);
 }
 
-void Terragen::gen_heightmap(long seed, const struct worldparams *params)
+void Terragen::gen_heightmap(long seed, const struct MODULE::worldgen_parameters_t *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -54,7 +49,7 @@ void Terragen::gen_heightmap(long seed, const struct worldparams *params)
 	heightmap.noise(&fastnoise, params->height.sampling_scale, UTIL::CHANNEL_RED);
 }
 
-void Terragen::gen_tempmap(long seed, const struct worldparams *params)
+void Terragen::gen_tempmap(long seed, const struct MODULE::worldgen_parameters_t *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -74,7 +69,7 @@ void Terragen::gen_tempmap(long seed, const struct worldparams *params)
 	}
 }
 
-void Terragen::gen_rainmap(long seed, const struct worldparams *params)
+void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t *params)
 {
 	// create the land mask image
 	// land is white (255), sea is black (0)

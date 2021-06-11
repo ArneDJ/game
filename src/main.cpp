@@ -64,6 +64,7 @@
 #include "util/animation.h"
 #include "util/navigation.h"
 #include "util/voronoi.h"
+#include "module/module.h"
 #include "graphics/text.h"
 #include "graphics/shader.h"
 #include "graphics/mesh.h"
@@ -78,7 +79,6 @@
 #include "physics/heightfield.h"
 #include "physics/physics.h"
 #include "physics/bumper.h"
-#include "module.h"
 #include "physics/ragdoll.h"
 #include "media.h"
 #include "object.h"
@@ -426,16 +426,16 @@ public:
 	std::vector<StationaryObject*> stationaries;
 	std::vector<Entity> entities;
 public:
-	void init(const Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders);
-	void load_assets(const Module *mod);
-	void add_creatures(const Module *mod);
+	void init(const MODULE::Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders);
+	void load_assets(const MODULE::Module *mod);
+	void add_creatures(const MODULE::Module *mod);
 	void add_buildings();
 	void add_trees();
 	void cleanup();
 	void teardown();
 };
 	
-void Battle::init(const Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders)
+void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders)
 {
 	landscape = std::make_unique<Landscape>(2048);
 
@@ -450,7 +450,7 @@ void Battle::init(const Module *mod, const UTIL::Window *window, const struct sh
 	skybox.init(window->width, window->height);
 }
 
-void Battle::load_assets(const Module *mod)
+void Battle::load_assets(const MODULE::Module *mod)
 {
 	// import all the buildings of the module
 	std::vector<const GRAPHICS::Model*> house_models;
@@ -467,7 +467,7 @@ void Battle::load_assets(const Module *mod)
 	terrain->add_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 }
 	
-void Battle::add_creatures(const Module *mod)
+void Battle::add_creatures(const MODULE::Module *mod)
 {
 	glm::vec3 end = glm::vec3(3072.f, 0.f, 3072.f);
 	glm::vec3 origin = { end.x, landscape->SCALE.y, end.z };
@@ -581,7 +581,7 @@ public:
 private:
 	bool running;
 	bool debugmode;
-	Module modular;
+	MODULE::Module modular;
 	enum game_state_t state;
 	struct game_settings_t settings;
 	Saver saver;
@@ -826,7 +826,7 @@ void Game::update_battle()
 	battle.camera.update();
 	
 	// update atmosphere
-	battle.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), settings.clouds_enabled);
+	battle.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), settings.clouds_enabled);
 	battle.skybox.update(&battle.camera, timer.elapsed);
 }
 	
@@ -860,18 +860,18 @@ void Game::prepare_battle()
 		}
 	}
 
-	glm::vec3 grasscolor = glm::mix(modular.colors.grass_dry, modular.colors.grass_lush, precipitation / 255.f);
+	glm::vec3 grasscolor = glm::mix(modular.vegetation.dry, modular.vegetation.lush, precipitation / 255.f);
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
-	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.colors.skybottom, 0.0005f);
+	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, 0.0005f);
 	battle.terrain->change_grass(grasscolor);
 
 	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
 
 	shaders.billboard.use();
 	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
-	shaders.billboard.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
+	shaders.billboard.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 
 	// add entities
 	battle.add_trees();
@@ -985,7 +985,7 @@ void Game::update_campaign()
 	campaign.offset_entities();
 
 	// update atmosphere
-	campaign.skybox.colorize(modular.colors.skytop, modular.colors.skybottom, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), false);
+	campaign.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), false);
 	campaign.skybox.update(&campaign.camera, timer.elapsed);
 	
 	campaign.update_faction_map();
@@ -1038,8 +1038,8 @@ void Game::prepare_campaign()
 	campaign.atlas->create_mapdata(campaign.seed);
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
-	campaign.worldmap->change_atmosphere(modular.colors.skybottom, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
-	campaign.worldmap->change_groundcolors(modular.colors.grass_dry, modular.colors.grass_lush);
+	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
+	campaign.worldmap->change_groundcolors(modular.vegetation.dry, modular.vegetation.lush);
 
 	campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
 	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
@@ -1049,7 +1049,7 @@ void Game::prepare_campaign()
 
 	shaders.billboard.use();
 	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
-	shaders.billboard.uniform_vec3("FOG_COLOR", modular.colors.skybottom);
+	shaders.billboard.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 
 	// add campaign entities
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };

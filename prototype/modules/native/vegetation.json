@@ -1,0 +1,45 @@
+{
+    "vegetation": {
+        "dry": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 0.20000000298023225
+        },
+        "lush": {
+            "x": 0.699999988079071,
+            "y": 1.0,
+            "z": 0.20000000298023225
+        },
+        "trees": [
+            {
+                "model": "models/vegetation/trees/tree.glb",
+                "billboard": "textures/vegetation/trees/billboards/tree.dds",
+                "height": {
+                    "min": 0,
+                    "max": 255
+                },
+                "precipitation": {
+                    "min": 0,
+                    "max": 255
+                },
+                "temperature": {
+                    "min": 0,
+                    "max": 255
+                }
+            }
+        ],
+        "grasses": [
+            {
+                "model": "models/foliage/grass.glb",
+                "precipitation": {
+                    "min": 0,
+                    "max": 255
+                },
+                "temperature": {
+                    "min": 0,
+                    "max": 255
+                }
+            }
+        ]
+    }
+}

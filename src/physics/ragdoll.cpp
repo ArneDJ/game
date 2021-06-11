@@ -15,9 +15,9 @@
 
 #include "../util/geom.h"
 #include "../util/image.h"
+#include "../module/module.h"
 #include "heightfield.h"
 #include "physics.h"
-#include "../module.h"
 #include "ragdoll.h"
 
 static glm::mat4 bullet_to_mat4(const btTransform &t)

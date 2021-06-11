@@ -23,7 +23,7 @@
 #include "../util/geom.h"
 #include "../util/image.h"
 #include "../util/voronoi.h"
-#include "../module.h"
+#include "../module/module.h"
 #include "terragen.h"
 #include "worldgraph.h"
 #include "mapfield.h"
@@ -81,7 +81,7 @@ Atlas::~Atlas(void)
 	clear_entities();
 }
 
-void Atlas::generate(long seedling, const struct worldparams *params)
+void Atlas::generate(long seedling, const struct MODULE::worldgen_parameters_t *params)
 {
 auto start = std::chrono::steady_clock::now();
 	holdings.clear();

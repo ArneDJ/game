@@ -29,6 +29,8 @@ file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.h"
         "${PROJECT_SOURCE_DIR}/src/util/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/util/*.h"
+        "${PROJECT_SOURCE_DIR}/src/module/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/module/*.h"
         "${PROJECT_SOURCE_DIR}/src/graphics/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/graphics/*.h"
         "${PROJECT_SOURCE_DIR}/src/physics/*.cpp"

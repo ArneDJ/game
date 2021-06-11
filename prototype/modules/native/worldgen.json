@@ -1,0 +1,42 @@
+{
+    "worldgen_parameters": {
+        "heightmap_parameters": {
+            "frequency": 0.0010000000474974514,
+            "perturbfreq": 0.0010000000474974514,
+            "perturbamp": 200.0,
+            "octaves": 6,
+            "lacunarity": 2.5,
+            "sampling_scale_x": 1.0,
+            "sampling_scale_y": 1.0
+        },
+        "temperature_parameters": {
+            "frequency": 0.004999999888241291,
+            "perturb": 100.0
+        },
+        "rain_parameters": {
+            "blur": 30.0,
+            "frequency": 0.009999999776482582,
+            "octaves": 6,
+            "lacunarity": 3.0,
+            "perturb_frequency": 0.009999999776482582,
+            "perturb_amp": 50.0,
+            "gauss_center": 0.25,
+            "gauss_sigma": 0.25,
+            "detail_mix": 0.5
+        },
+        "graph_parameters": {
+            "lowland": 0.44999998807907107,
+            "upland": 0.5799999833106995,
+            "highland": 0.6600000262260437,
+            "erode_mountains": true,
+            "poisson_disk_radius": 16.0,
+            "min_water_body": 256,
+            "min_mountain_body": 128,
+            "min_stream_order": 4,
+            "min_branch_size": 3,
+            "min_basin_size": 4,
+            "town_spawn_radius": 8,
+            "castle_spawn_radius": 10
+        }
+    }
+}

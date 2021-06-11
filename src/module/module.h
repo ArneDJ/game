@@ -1,7 +1,9 @@
 #pragma once
-#include "util/serialize.h"
+#include "../util/serialize.h"
 
-struct heightparams {
+namespace MODULE {
+
+struct height_parameters_t {
 	float frequency = 0.001f;
 	float perturbfreq = 0.001f;
 	float perturbamp = 200.f;
@@ -23,7 +25,7 @@ struct heightparams {
 	}
 };
 
-struct rainparams {
+struct rain_parameters_t {
 	float blur = 30.f;
 	float frequency = 0.01f;
 	uint8_t octaves = 6;
@@ -47,7 +49,7 @@ struct rainparams {
 	}
 };
 
-struct temperatureparams {
+struct temperature_parameters_t {
 	float frequency = 0.005f;
 	float perturb = 100.f;
 
@@ -58,7 +60,7 @@ struct temperatureparams {
 	}
 };
 
-struct graphparams {
+struct graph_parameters_t {
 	float lowland = 0.45f;
 	float upland = 0.58f;
 	float highland = 0.66f;
@@ -86,15 +88,15 @@ struct graphparams {
 	}
 };
 
-struct worldparams {
+struct worldgen_parameters_t {
 	// heightmap
-	struct heightparams height;
+	struct height_parameters_t height;
 	// temperatures
-	struct temperatureparams temperature;
+	struct temperature_parameters_t temperature;
 	// rain
-	struct rainparams rain;
+	struct rain_parameters_t rain;
 	// graph data
-	struct graphparams graph;
+	struct graph_parameters_t graph;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -108,54 +110,112 @@ struct worldparams {
 	}
 };
 
-/*
- * TODO
-struct vegetation_t {
-	glm::vec3 dry = { 1.f, 1.f, 0.2f };
-	glm::vec3 lush = { 0.7f, 1.f, 0.2f };
-	std::vector<struct tree_t> trees;
-	std::vector<struct grass_t> grasses;
-};
-*/
+template <class T> struct bounds_t {
+	T min;
+	T max;
 
-struct colorization {
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(CEREAL_NVP(min), CEREAL_NVP(max));
+	}
+};
+
+struct weather_t {
 	glm::vec3 ambient = { 1.f, 1.f, 1.f };
-	glm::vec3 skytop = { 0.525f, 0.735f, 0.84f };
-	glm::vec3 skybottom = { 0.725f, 0.735f, 0.74f };
-	glm::vec3 grass_dry = { 1.f, 1.f, 0.2f };
-	glm::vec3 grass_lush = { 0.7f, 1.f, 0.2f };
-	
+	glm::vec3 zenith = { 0.525f, 0.735f, 0.84f };
+	glm::vec3 horizon = { 0.725f, 0.735f, 0.74f };
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(CEREAL_NVP(ambient), CEREAL_NVP(zenith), CEREAL_NVP(horizon));
+	}
+};
+
+struct atmosphere_t {
+	struct weather_t dawn;
+	struct weather_t day;
+	struct weather_t dusk;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(CEREAL_NVP(dawn), CEREAL_NVP(day), CEREAL_NVP(dusk));
+	}
+};
+
+struct tree_t {
+	std::string model;
+	std::string billboard;
+	struct bounds_t<uint8_t> height;
+	struct bounds_t<uint8_t> precipitation;
+	struct bounds_t<uint8_t> temperature;
+
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
 		archive(
-			cereal::make_nvp("ambient_x", ambient.x), cereal::make_nvp("ambient_y", ambient.y), cereal::make_nvp("ambient_z", ambient.z),
-			cereal::make_nvp("skytop_x", skytop.x), cereal::make_nvp("skytop_y", skytop.y), cereal::make_nvp("skytop_z", skytop.z),
-			cereal::make_nvp("skybottom_x", skybottom.x), cereal::make_nvp("skybottom_y", skybottom.y), cereal::make_nvp("skybottom_z", skybottom.z),
-			cereal::make_nvp("grass_dry_x", grass_dry.x), cereal::make_nvp("grass_dry_y", grass_dry.y), cereal::make_nvp("grass_dry_z", grass_dry.z),
-			cereal::make_nvp("grass_lush_x", grass_lush.x), cereal::make_nvp("grass_lush_y", grass_lush.y), cereal::make_nvp("grass_lush_z", grass_lush.z)
+			CEREAL_NVP(model),
+			CEREAL_NVP(billboard),
+			CEREAL_NVP(height),
+			CEREAL_NVP(precipitation),
+			CEREAL_NVP(temperature)
 		);
 	}
 };
 
-namespace MODULE {
-
-struct building {
-	std::string name;
+struct grass_t {
 	std::string model;
+	struct bounds_t<uint8_t> precipitation;
+	struct bounds_t<uint8_t> temperature;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
 		archive(
-			cereal::make_nvp("name", name), 
-			cereal::make_nvp("model", model)
+			CEREAL_NVP(model),
+			CEREAL_NVP(precipitation),
+			CEREAL_NVP(temperature)
+		);
+	}
+};
+
+struct vegetation_t {
+	glm::vec3 dry = { 1.f, 1.f, 0.2f };
+	glm::vec3 lush = { 0.7f, 1.f, 0.2f };
+	std::vector<tree_t> trees;
+	std::vector<grass_t> grasses;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(dry), 
+			CEREAL_NVP(lush),
+			CEREAL_NVP(trees),
+			CEREAL_NVP(grasses)
+		);
+	}
+};
+
+struct building_t {
+	std::string model;
+	struct bounds_t<uint8_t> precipitation;
+	struct bounds_t<uint8_t> temperature;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(model),
+			CEREAL_NVP(precipitation),
+			CEREAL_NVP(temperature)
 		);
 	}
 };
 
 struct ragdoll_bone_import_t {
-	//std::string name;
 	std::vector<std::string> targets;
 	float radius = 1.f;
 	float height = 1.f;
@@ -223,27 +283,25 @@ struct ragdoll_armature_import_t {
 	}
 };
 
-};
-
 class Module {
 public:
 	// the world generation settings
-	struct worldparams params;
-	struct colorization colors;
-	struct MODULE::ragdoll_armature_import_t test_armature;
+	struct worldgen_parameters_t params;
+	struct ragdoll_armature_import_t test_armature;
 	std::string path;
 	std::string name;
 public:
-	std::vector<MODULE::building> houses;
+	struct vegetation_t vegetation;
+	struct atmosphere_t atmosphere;
+	std::vector<struct building_t> houses;
 public:
 	void load(const std::string &modname);
 private:
-	void load_world_parameters(const std::string &filepath);
-	void load_colors(const std::string &filepath);
-	void load_buildings(const std::string &filepath);
-	// only used when the file is missing
-	void save_world_parameters(const std::string &filepath);
-	void save_colors(const std::string &filepath);
-	// import ragdolls
-	void load_ragdoll(const std::string &filepath);
+	template <class T>
+	void save_file(const T &data, const std::string &name, const std::string &filepath);
+	template <class T>
+	void load_file(T &data, const std::string &filepath);
 };
+
+};
+
