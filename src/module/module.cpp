@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "extern/aixlog/aixlog.h"
+#include "../extern/aixlog/aixlog.h"
 
 #include "module.h"
 	

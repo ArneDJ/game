@@ -1,9 +1,9 @@
 #pragma once
-#include "extern/cereal/types/unordered_map.hpp"
-#include "extern/cereal/types/vector.hpp"
-#include "extern/cereal/types/memory.hpp"
-#include "extern/cereal/archives/json.hpp"
-#include "extern/cereal/archives/xml.hpp"
+#include "../extern/cereal/types/unordered_map.hpp"
+#include "../extern/cereal/types/vector.hpp"
+#include "../extern/cereal/types/memory.hpp"
+#include "../extern/cereal/archives/json.hpp"
+#include "../extern/cereal/archives/xml.hpp"
 
 namespace glm
 {
