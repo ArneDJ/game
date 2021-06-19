@@ -12,8 +12,9 @@
         },
         "trees": [
             {
-                "model": "models/vegetation/trees/tree.glb",
-                "billboard": "textures/vegetation/trees/billboards/tree.dds",
+                "trunk": "trees/fir/trunk.glb",
+                "leaves": "trees/fir/leaves.glb",
+                "billboard": "trees/fir/billboard.glb",
                 "height": {
                     "min": 0,
                     "max": 255
@@ -24,13 +25,30 @@
                 },
                 "temperature": {
                     "min": 0,
+                    "max": 50
+                }
+            },
+      	    {
+                "trunk": "trees/beech/trunk.glb",
+                "leaves": "trees/beech/leaves.glb",
+                "billboard": "trees/beech/billboard.glb",
+                "height": {
+                    "min": 0,
+                    "max": 150
+                },
+                "precipitation": {
+                    "min": 100,
+                    "max": 255
+                },
+                "temperature": {
+                    "min": 50,
                     "max": 255
                 }
             }
         ],
         "grasses": [
             {
-                "model": "models/foliage/grass.glb",
+                "model": "foliage/grass.glb",
                 "precipitation": {
                     "min": 0,
                     "max": 255

@@ -5,6 +5,17 @@ struct building_t {
 	std::vector<struct transformation> transforms;
 };
 
+namespace GEOGRAPHY {
+
+struct tree_t {
+	std::string trunk;
+	std::string leaves;
+	std::string billboard;
+	std::vector<struct transformation> transforms;
+};
+
+};
+
 class Landscape {
 public:
 	glm::vec3 SCALE = { 6144.F, 512.F, 6144.F };
@@ -13,8 +24,7 @@ public:
 		{ 4096.F, 4096.F }
 	};
 public:
-	Landscape(uint16_t heightres);
-	~Landscape(void);
+	Landscape(const MODULE::Module *mod, uint16_t heightres);
 public:
 	void load_buildings(const std::vector<const GRAPHICS::Model*> &house_models);
 public:
@@ -24,7 +34,7 @@ public:
 	const UTIL::Image<float>* get_heightmap(void) const;
 	const UTIL::Image<uint8_t>* get_normalmap(void) const;
 	const UTIL::Image<uint8_t>* get_sitemasks(void) const;
-	const std::vector<transformation>& get_trees(void) const;
+	const std::vector<GEOGRAPHY::tree_t>& get_trees(void) const;
 	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
@@ -36,8 +46,9 @@ private:
 	UTIL::Image<uint8_t> density;
 	UTIL::Image<uint8_t> sitemasks;
 	Sitegen sitegen;
+	const MODULE::Module *m_module;
 private:
-	std::vector<transformation> trees;
+	std::vector<GEOGRAPHY::tree_t> m_trees;
 	std::vector<building_t> houses;
 private:
 	void gen_heightmap(int32_t local_seed, float amplitude);

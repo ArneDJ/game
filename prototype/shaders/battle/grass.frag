@@ -9,6 +9,7 @@ out vec4 fcolor;
 layout(binding = 0) uniform sampler2D BASEMAP;
 
 uniform vec3 COLOR;
+uniform vec3 AMBIANCE_COLOR;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
 uniform vec3 CAM_POS;
@@ -25,7 +26,7 @@ void main(void)
 	if (color.a < 0.1) { discard; }
 	float dist = distance(CAM_POS, position);
 	color.rgb *= COLOR;
-
+	
 	float blending = 1.0 / (0.01*dist);
 	color.a *= blending*blending;
 	if (color.a < 0.1) { discard; }
@@ -36,5 +37,8 @@ void main(void)
 	color.rgb = mix(min(color.rgb * scatteredlight, vec3(1.0)), color.rgb, 0.5);
 	
 	fcolor = vec4(fog(color.rgb, dist), color.a);
+
+	fcolor.rgb *= AMBIANCE_COLOR;
+
 	//fcolor = vec4(1.0, 0.0, 1.0, 1.0);
 }

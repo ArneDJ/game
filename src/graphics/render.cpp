@@ -48,7 +48,8 @@ void RenderGroup::add_object(const Model *mod, const std::vector<const Entity*> 
 		for (const auto &ent : ents) {
 			glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
 			glm::mat4 R = glm::mat4(ent->rotation);
-			glm::mat4 M = T * R;
+			glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(ent->scale));
+			glm::mat4 M = T * R * S;
 			object->tbuffer.matrices.push_back(M);
 		}
 		object->tbuffer.alloc(GL_STATIC_DRAW);

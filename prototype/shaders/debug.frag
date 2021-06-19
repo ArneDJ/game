@@ -11,4 +11,5 @@ void main(void)
 {
 	vec3 color = normal + vec3(1.0, 1.0, 1.0);
 	fcolor = vec4(0.5*color, 1.0);
+	//fcolor = vec4(COLOR, 1.0);
 }

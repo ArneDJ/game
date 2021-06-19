@@ -146,7 +146,8 @@ struct atmosphere_t {
 };
 
 struct tree_t {
-	std::string model;
+	std::string trunk;
+	std::string leaves;
 	std::string billboard;
 	struct bounds_t<uint8_t> height;
 	struct bounds_t<uint8_t> precipitation;
@@ -156,7 +157,8 @@ struct tree_t {
 	void serialize(Archive &archive)
 	{
 		archive(
-			CEREAL_NVP(model),
+			CEREAL_NVP(trunk),
+			CEREAL_NVP(leaves),
 			CEREAL_NVP(billboard),
 			CEREAL_NVP(height),
 			CEREAL_NVP(precipitation),

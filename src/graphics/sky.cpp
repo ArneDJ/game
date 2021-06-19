@@ -72,12 +72,13 @@ void Skybox::prepare(void)
 	clouded = (coverage > MIN_COVERAGE);
 }
 	
-void Skybox::colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, bool cloudsenabled)
+void Skybox::colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, const glm::vec3 &ambiance, bool cloudsenabled)
 {
 	zenith = top;
 	horizon = bottom;
 	sunposition = sunpos;
 	clouds_enabled = cloudsenabled;
+	m_ambiance = ambiance;
 }
 
 void Skybox::update(const UTIL::Camera *camera, float time)
@@ -92,6 +93,7 @@ void Skybox::display(const UTIL::Camera *camera) const
 	shader.use();
 	shader.uniform_vec3("ZENITH_COLOR", zenith);
 	shader.uniform_vec3("HORIZON_COLOR", horizon);
+	shader.uniform_vec3("AMBIANCE_COLOR", m_ambiance);
 	shader.uniform_vec3("SUN_POS", sunposition);
 	shader.uniform_bool("CLOUDS_ENABLED", clouds_enabled && clouded);
 	shader.uniform_float("SCREEN_WIDTH", float(camera->width));

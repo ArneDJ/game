@@ -17,10 +17,12 @@
 
 #include "../util/geom.h"
 #include "../util/image.h"
+#include "../module/module.h"
 #include "../graphics/texture.h"
 #include "../graphics/mesh.h"
 #include "../graphics/model.h"
 #include "sitegen.h"
+
 #include "landscape.h"
 
 struct landgen_parameters {
@@ -55,7 +57,7 @@ static const float DETAIL_LACUNARITY = 2.5F;
 static const float MIN_SEDIMENT_BLUR = 20.F;
 static const float MAX_SEDIMENT_BLUR = 25.F;
 
-static const int MAX_TREES = 40000;
+static const int MAX_TREES = 80000;
 static const uint16_t DENSITY_MAP_RES = 256;
 
 static const uint16_t SITEMASK_RES = 2048;
@@ -69,8 +71,10 @@ static bool larger_building(const struct building_t &a, const struct building_t 
 
 static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
-Landscape::Landscape(uint16_t heightres)
+Landscape::Landscape(const MODULE::Module *mod, uint16_t heightres)
 {
+	m_module = mod;
+
 	heightmap.resize(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
 	normalmap.resize(heightres, heightres, UTIL::COLORSPACE_RGB);
 	valleymap.resize(heightres, heightres, UTIL::COLORSPACE_RGB);
@@ -82,11 +86,6 @@ Landscape::Landscape(uint16_t heightres)
 	sitemasks.resize(SITEMASK_RES, SITEMASK_RES, UTIL::COLORSPACE_GRAYSCALE);
 }
 
-Landscape::~Landscape(void)
-{
-	clear();
-}
-	
 void Landscape::load_buildings(const std::vector<const GRAPHICS::Model*> &house_models)
 {
 	for (const auto &model : house_models) {
@@ -109,7 +108,7 @@ void Landscape::clear(void)
 	container.clear();
 	sitemasks.clear();
 
-	trees.clear();
+	m_trees.clear();
 
 	for (auto &building : houses) {
 		building.transforms.clear();
@@ -149,9 +148,9 @@ const UTIL::Image<float>* Landscape::get_heightmap(void) const
 	return &heightmap;
 }
 	
-const std::vector<transformation>& Landscape::get_trees(void) const
+const std::vector<GEOGRAPHY::tree_t>& Landscape::get_trees(void) const
 {
-	return trees;
+	return m_trees;
 }
 
 const std::vector<building_t>& Landscape::get_houses(void) const
@@ -171,6 +170,15 @@ const UTIL::Image<uint8_t>* Landscape::get_sitemasks(void) const
 
 void Landscape::gen_forest(int32_t seed, uint8_t precipitation) 
 {
+	// add valid trees
+	for (const auto &tree_info : m_module->vegetation.trees) {
+		GEOGRAPHY::tree_t tree;
+		tree.trunk = tree_info.trunk;
+		tree.leaves = tree_info.leaves;
+		tree.billboard = tree_info.billboard;
+		m_trees.push_back(tree);
+	}
+	
 	// create density map
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -188,6 +196,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 
 	std::random_device rd;
 	std::mt19937 gen(seed);
+	std::uniform_int_distribution<uint32_t> index_dist(0, m_trees.size()-1);
 	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
 	std::uniform_real_distribution<float> scale_dist(1.f, 2.f);
 	std::uniform_real_distribution<float> density_dist(0.f, 1.f);
@@ -198,31 +207,40 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 	const auto positions = PoissonGenerator::generatePoissonPoints(MAX_TREES, PRNG, false);
 
 	for (const auto &point : positions) {
-		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
-		// if tree grows on road remove it
-		if (point_in_rectangle(glm::vec2(position.x, position.z), SITE_BOUNDS)) {
-			glm::vec2 site_pos = { position.x - SITE_BOUNDS.min.x, position.z - SITE_BOUNDS.min.y };
-			site_pos /= (SITE_BOUNDS.max - SITE_BOUNDS.min);
-			if (sitemasks.sample(site_pos.x * sitemasks.width, site_pos.y * sitemasks.height, UTIL::CHANNEL_RED) > 0) {
+		glm::vec3 position = { point.x * (SCALE.x * 0.5) + (0.5f * (SCALE.x - (SCALE.x * 0.5))), 0.f, point.y * (SCALE.z * 0.5) + (0.5f * (SCALE.z - (SCALE.z * 0.5))) };
+		position.y = sample_heightmap(glm::vec2(position.x,  position.z));
+		if (position.y < (0.5f * SCALE.y)) {
+			// if tree grows on road remove it
+			if (point_in_rectangle(glm::vec2(position.x, position.z), SITE_BOUNDS)) {
+				glm::vec2 site_pos = { position.x - SITE_BOUNDS.min.x, position.z - SITE_BOUNDS.min.y };
+				site_pos /= (SITE_BOUNDS.max - SITE_BOUNDS.min);
+				if (sitemasks.sample(site_pos.x * sitemasks.width, site_pos.y * sitemasks.height, UTIL::CHANNEL_RED) > 0) {
+					continue;
+				}
+			}
+			float P = density.sample(point.x * density.width, point.y * density.height, UTIL::CHANNEL_RED) / 255.f;
+			if (P > 0.8f) { P = 1.f; }
+			P *= rain * rain;
+			float R = density_dist(gen);
+			if (P < 0.5f) {
+				P *= P * P;
+			}
+			if ( R > P ) { continue; }
+			float slope = 1.f - (normalmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_GREEN) / 255.f);
+			if (slope > 0.15f) {
 				continue;
 			}
+			position.y -= 2.f;
+			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
+			// to give the appearance that mountains are larger than they really are make the trees smaller if they are on higher elevation
+			float scale = 1.f;
+			if (position.y > (0.25f * SCALE.y)) {
+				scale = glm::smoothstep(0.4f, 1.f, 1.f - (position.y / SCALE.y));
+				scale = glm::clamp(scale, 0.1f, 1.f);
+			}
+			struct transformation transform = { position, rotation, scale };
+			m_trees[index_dist(gen)].transforms.push_back(transform);
 		}
-		float P = density.sample(point.x * density.width, point.y * density.height, UTIL::CHANNEL_RED) / 255.f;
-		if (P > 0.8f) { P = 1.f; }
-		P *= rain * rain;
-		float R = density_dist(gen);
-		if ( R > P ) { continue; }
-		float slope = 1.f - (normalmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_GREEN) / 255.f);
-		if (slope > 0.15f) {
-			continue;
-		}
-		position.y = sample_heightmap(glm::vec2(position.x,  position.z));
-		position.y -= 2.f;
-		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-		//Entity *ent = new Entity { position, rotation };
-		//ent->scale = 20.f;
-		struct transformation transform = { position, rotation, 20.f };
-		trees.push_back(transform);
 	}
 }
 	

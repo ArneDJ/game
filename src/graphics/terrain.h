@@ -25,7 +25,7 @@ public:
 	GrassSystem(const Model *mod);
 	~GrassSystem(void);
 	void refresh(const UTIL::Image<float> *heightmap, const glm::vec3 &scale);
-	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr);
+	void colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr, const glm::vec3 &ambiance);
 	void display(const UTIL::Camera *camera, const glm::vec3 &scale) const;
 private:
 	std::vector<GrassRoots*> roots;
@@ -36,6 +36,7 @@ private:
 	glm::vec3 fogcolor;
 	glm::vec3 sunpos;
 	float fogfactor;
+	glm::vec3 m_ambiance;
 };
 
 class Terrain {
@@ -44,7 +45,7 @@ public:
 	~Terrain(void);
 	void add_material(const std::string &name, const Texture *texture);
 	void reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre);
-	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr);
+	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &ambiance);
 	void change_grass(const glm::vec3 &color);
 	void display_land(const UTIL::Camera *camera) const;
 	void display_water(const UTIL::Camera *camera, float time) const;
@@ -65,6 +66,7 @@ private:
 	float fogfactor;
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
+	glm::vec3 m_ambiance;
 };
 
 };

@@ -76,6 +76,7 @@
 #include "graphics/terrain.h"
 #include "graphics/worldmap.h"
 #include "graphics/label.h"
+#include "graphics/forest.h"
 #include "physics/heightfield.h"
 #include "physics/physics.h"
 #include "physics/bumper.h"
@@ -118,6 +119,7 @@ struct shader_group_t {
 	GRAPHICS::Shader object;
 	GRAPHICS::Shader creature;
 	GRAPHICS::Shader debug;
+	GRAPHICS::Shader tree;
 	GRAPHICS::Shader billboard;
 	GRAPHICS::Shader font;
 	GRAPHICS::Shader depth;
@@ -216,7 +218,7 @@ void Campaign::add_trees()
 		ents.push_back(entity);
 	}
 
-	billboards->add_billboard(MediaManager::load_texture("trees/fir.dds"), ents);
+	billboards->add_billboard(MediaManager::load_texture("trees/pine.dds"), ents);
 }
 
 void Campaign::add_settlements()
@@ -420,11 +422,14 @@ public:
 	std::unique_ptr<GRAPHICS::RenderGroup> creatures;
 	std::unique_ptr<GRAPHICS::BillboardGroup> billboards;
 	std::unique_ptr<GRAPHICS::Terrain> terrain;
+	std::unique_ptr<GRAPHICS::Forest> forest;
 	GRAPHICS::Skybox skybox;
 	// entities
 	Creature *player;
 	std::vector<StationaryObject*> stationaries;
+	std::vector<StationaryObject*> tree_stationaries;
 	std::vector<Entity> entities;
+
 public:
 	void init(const MODULE::Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders);
 	void load_assets(const MODULE::Module *mod);
@@ -437,7 +442,7 @@ public:
 	
 void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders)
 {
-	landscape = std::make_unique<Landscape>(2048);
+	landscape = std::make_unique<Landscape>(mod, 2048);
 
 	terrain = std::make_unique<GRAPHICS::Terrain>(landscape->SCALE, landscape->get_heightmap(), landscape->get_normalmap(), landscape->get_sitemasks());
 
@@ -448,6 +453,8 @@ void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const s
 	creatures = std::make_unique<GRAPHICS::RenderGroup>(&shaders->creature);
 
 	skybox.init(window->width, window->height);
+	
+	forest = std::make_unique<GRAPHICS::Forest>(&shaders->tree, &shaders->billboard);
 }
 
 void Battle::load_assets(const MODULE::Module *mod)
@@ -528,23 +535,51 @@ void Battle::add_trees()
 	entities.clear();
 
 	for (const auto &tree : trees) {
-		Entity entity = Entity(tree.position, tree.rotation);
-		entity.scale = tree.scale;
-		entities.push_back(entity);
+		const GRAPHICS::Model *trunk = MediaManager::load_model(tree.trunk);
+		const GRAPHICS::Model *leaves = MediaManager::load_model(tree.leaves);
+		const GRAPHICS::Model *billboard = MediaManager::load_model(tree.billboard);
+		// get collision shape
+		std::vector<glm::vec3> positions;
+		std::vector<uint16_t> indices;
+		uint16_t offset = 0;
+		for (const auto &mesh : trunk->collision_trimeshes) {
+			for (const auto &pos : mesh.positions) {
+				positions.push_back(pos);
+			}
+			for (const auto &index : mesh.indices) {
+				indices.push_back(index + offset);
+			}
+			offset = positions.size();
+		}
+		btCollisionShape *shape = physicsman.add_mesh(positions, indices);
+		auto start = entities.size();
+		for (const auto &transform : tree.transforms) {
+			if (point_in_rectangle(glm::vec2(transform.position.x, transform.position.z), landscape->SITE_BOUNDS)) {
+				StationaryObject *stationary = new StationaryObject { transform.position, transform.rotation, shape };
+				tree_stationaries.push_back(stationary);
+			}
+		}
+		std::vector<const transformation*> transformations;
+		for (int i = 0; i < tree.transforms.size(); i++) {
+			transformations.push_back(&tree.transforms[i]);
+		}
+		forest->add_model(trunk, leaves, billboard, transformations);
 	}
 
-	std::vector<const Entity*> ents;
-	for (int i = 0; i < entities.size(); i++) {
-		ents.push_back(&entities[i]);
-	}
+	forest->build_hierarchy();
 
-	billboards->add_billboard(MediaManager::load_texture("trees/fir.dds"), ents);
+	for (const auto &stationary : tree_stationaries) {
+		physicsman.add_body(stationary->body, PHYSICS::COLLISION_GROUP_WORLD, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
+	}
 }
 
 void Battle::cleanup()
 {
 	// remove stationary objects from physics
 	for (const auto &stationary : stationaries) {
+		physicsman.remove_body(stationary->body);
+	}
+	for (const auto &stationary : tree_stationaries) {
 		physicsman.remove_body(stationary->body);
 	}
 
@@ -564,6 +599,12 @@ void Battle::cleanup()
 		delete stationaries[i];
 	}
 	stationaries.clear();
+	for (int i = 0; i < tree_stationaries.size(); i++) {
+		delete tree_stationaries[i];
+	}
+	tree_stationaries.clear();
+
+	forest->clear();
 }
 
 void Battle::teardown()
@@ -595,6 +636,8 @@ private:
 	// graphics
 	GRAPHICS::RenderManager renderman;
 	struct shader_group_t shaders;
+	float fog_factor = 0.0005f; // TODO atmosphere
+	glm::vec3 ambiance_color = { 1.f, 1.f, 1.f };
 private:
 	void load_settings();
 	void set_opengl_states();
@@ -727,6 +770,10 @@ void Game::load_shaders()
 	shaders.billboard.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
 	shaders.billboard.link();
 
+	shaders.tree.compile("shaders/tree.vert", GL_VERTEX_SHADER);
+	shaders.tree.compile("shaders/tree.frag", GL_FRAGMENT_SHADER);
+	shaders.tree.link();
+
 	shaders.font.compile("shaders/font.vert", GL_VERTEX_SHADER);
 	shaders.font.compile("shaders/font.frag", GL_FRAGMENT_SHADER);
 	shaders.font.link();
@@ -822,11 +869,10 @@ void Game::update_battle()
 	battle.player->sync(timer.delta);
 
 	battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
-	//battle.camera.translate(battle.player->position + glm::vec3(0.f, 1.f, 0.f));
 	battle.camera.update();
 	
 	// update atmosphere
-	battle.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), settings.clouds_enabled);
+	battle.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), ambiance_color, settings.clouds_enabled);
 	battle.skybox.update(&battle.camera, timer.elapsed);
 }
 	
@@ -864,13 +910,13 @@ void Game::prepare_battle()
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
-	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, 0.0005f);
+	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 	battle.terrain->change_grass(grasscolor);
 
 	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
 
 	shaders.billboard.use();
-	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
+	shaders.billboard.uniform_float("FOG_FACTOR", fog_factor);
 	shaders.billboard.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 
 	// add entities
@@ -878,7 +924,22 @@ void Game::prepare_battle()
 	battle.add_buildings();
 	battle.add_creatures(&modular);
 
+	// visualize BVH leaves
+	//int next = 0;
+	std::mt19937 gen(1337);
+	std::uniform_real_distribution<float> color_dist(0.f, 1.f);
+
+	/*
+	for (const auto &leaf : battle.forest->m_bvh.leafs) {
+		glm::vec3 color = { color_dist(gen), color_dist(gen), color_dist(gen) };
+		debugger.add_cube_mesh(leaf->bounds.min, leaf->bounds.max, color);
+		//battle.camera.position = leaf->bounds.max;
+	}
+	*/
+
 	battle.skybox.prepare();
+
+	battle.forest->set_atmosphere(modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 
 	if (battle.naval) {
 		battle.camera.position = { 3072.f, 270.f, 3072.f };
@@ -907,8 +968,10 @@ void Game::run_battle()
 		battle.creatures->display(&battle.camera);
 
 		if (debugmode) {
-			//debugger.render_bboxes(&battle.camera);
+			debugger.render_bboxes(&battle.camera);
 		}
+
+		battle.forest->display(&battle.camera);
 
 		battle.billboards->display(&battle.camera);
 
@@ -985,7 +1048,7 @@ void Game::update_campaign()
 	campaign.offset_entities();
 
 	// update atmosphere
-	campaign.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), false);
+	campaign.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), ambiance_color, false);
 	campaign.skybox.update(&campaign.camera, timer.elapsed);
 	
 	campaign.update_faction_map();

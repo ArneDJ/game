@@ -80,17 +80,18 @@ void Terrain::add_material(const std::string &name, const Texture *texture)
 	materials.push_back(texture_binding);
 }
 
-void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr)
+void Terrain::change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &ambiance)
 {
 	fogcolor = fogclr;
 	fogfactor = fogfctr;
 	sunpos = sun;
+	m_ambiance = ambiance;
 }
 
 void Terrain::change_grass(const glm::vec3 &color)
 {
 	grasscolor = color;
-	grass->colorize(color, fogcolor, sunpos, fogfactor);
+	grass->colorize(color, fogcolor, sunpos, fogfactor, m_ambiance);
 }
 
 void Terrain::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre)
@@ -116,6 +117,7 @@ void Terrain::display_land(const UTIL::Camera *camera) const
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
 	land.uniform_vec3("GRASS_COLOR", grasscolor);
+	land.uniform_vec3("AMBIANCE_COLOR", m_ambiance);
 
 	for (int i = 0; i < materials.size(); i++) {
 		const auto &binding = materials[i];
@@ -297,12 +299,13 @@ void GrassSystem::refresh(const UTIL::Image<float> *heightmap, const glm::vec3 &
 	}
 }
 
-void GrassSystem::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr)
+void GrassSystem::colorize(const glm::vec3 &colr, const glm::vec3 &fogclr, const glm::vec3 &sun, float fogfctr, const glm::vec3 &ambiance)
 {
 	color = colr;
 	fogcolor = fogclr;
 	sunpos = sun;
 	fogfactor = fogfctr;
+	m_ambiance = ambiance;
 }
 
 void GrassSystem::display(const UTIL::Camera *camera, const glm::vec3 &scale) const
@@ -325,6 +328,7 @@ void GrassSystem::display(const UTIL::Camera *camera, const glm::vec3 &scale) co
 	shader.uniform_vec3("SUN_POS", sunpos);
 	shader.uniform_vec3("FOG_COLOR", fogcolor);
 	shader.uniform_float("FOG_FACTOR", fogfactor);
+	shader.uniform_vec3("AMBIANCE_COLOR", m_ambiance);
 
 	glm::mat4 projection = glm::perspective(glm::radians(camera->FOV), camera->aspectratio, camera->nearclip, 200.f);
 	// frustum culling first attempt

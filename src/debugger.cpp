@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <span>
+#include <memory>
 
 #include <SDL2/SDL.h>
 #include <GL/glew.h>
@@ -114,6 +115,15 @@ void Debugger::add_bbox(const glm::vec3 &min, const glm::vec3 &max, const std::v
 	bboxes.push_back(box);
 }
 
+void Debugger::add_cube_mesh(const glm::vec3 &min, const glm::vec3 &max, const glm::vec3 &color)
+{
+	auto cube = std::make_unique<debug_AABB_t>();
+	cube->color = color;
+	cube->mesh = std::make_unique<GRAPHICS::CubeMesh>(min, max);
+
+	cube_meshes.push_back(std::move(cube));
+}
+
 void Debugger::render_bboxes(const UTIL::Camera *camera)
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -133,6 +143,13 @@ void Debugger::render_bboxes(const UTIL::Camera *camera)
 			box.mesh->draw();
 		}
 	}
+	
+	shader->uniform_mat4("MVP", camera->VP);
+	shader->uniform_mat4("MODEL", glm::mat4(1.f));
+	for (const auto &cube : cube_meshes) {
+		shader->uniform_vec3("COLOR", cube->color);
+		cube->mesh->draw();
+	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
@@ -144,4 +161,6 @@ void Debugger::delete_bboxes(void)
 		box.entities.clear();
 	}
 	bboxes.clear();
+
+	cube_meshes.clear();
 }

@@ -23,6 +23,7 @@ uniform vec2 SITE_SCALE;
 // atmosphere
 uniform vec3 CAM_POS;
 uniform vec3 SUN_POS;
+uniform vec3 AMBIANCE_COLOR;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
 
@@ -119,7 +120,7 @@ void main(void)
 	vec3 color = GRASS_COLOR * grass;
 	color = mix(color, gravel, dirtlevel);
 	color = mix(color, stone, slope);
-
+	
 	// terrain lighting
 	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
 	float diffuse = max(0.0, dot(normal, SUN_POS));
@@ -128,4 +129,6 @@ void main(void)
 	color = mix(min(color * scatteredlight, vec3(1.0)), color, 0.5);
 
 	fcolor = vec4(fog(color, distance(CAM_POS, fragment.position)), 1.0);
+
+	fcolor.rgb *= AMBIANCE_COLOR;
 }

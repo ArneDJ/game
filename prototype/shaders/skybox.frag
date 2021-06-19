@@ -7,6 +7,7 @@ out vec4 fcolor;
 uniform vec3 ZENITH_COLOR;
 uniform vec3 HORIZON_COLOR;
 uniform vec3 SUN_POS;
+uniform vec3 AMBIANCE_COLOR;
 uniform float SCREEN_WIDTH;
 uniform float SCREEN_HEIGHT;
 uniform bool CLOUDS_ENABLED;
@@ -45,4 +46,6 @@ void main(void)
 	}
 
 	fcolor = vec4(color, 1.0);
+
+	fcolor.rgb *= AMBIANCE_COLOR;
 }
