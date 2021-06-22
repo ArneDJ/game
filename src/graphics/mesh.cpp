@@ -16,14 +16,14 @@ namespace GRAPHICS {
 
 static size_t typesize(GLenum type);
 	
-Mesh::Mesh(void)
+Mesh::Mesh()
 {
 	VAO = 0;
 	VBO = 0;
 	EBO = 0;
 }
 
-Mesh::Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis)
+Mesh::Mesh(const vertex_data_t *data, const std::vector<uint8_t> &indices, const std::vector<primitive_t> &primis)
 {
 	indextype = GL_UNSIGNED_SHORT;
 
@@ -69,13 +69,13 @@ Mesh::Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, 
 	glEnableVertexAttribArray(4);
 }
 
-Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage)
+Mesh::Mesh(const std::vector<vertex_t> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage)
 {
-	const size_t vertices_size = sizeof(struct vertex) * vertices.size();
+	const size_t vertices_size = sizeof(vertex_t) * vertices.size();
 	const size_t indices_size = sizeof(uint16_t) * indices.size();
 
 	// tell OpenGL how to render the buffer
-	struct primitive primi;
+	primitive_t primi;
 	primi.firstindex = 0;
 	primi.indexcount = GLsizei(indices.size());
 	primi.firstvertex = 0;
@@ -103,10 +103,10 @@ Mesh::Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_
 	glBufferData(GL_ARRAY_BUFFER, vertices_size, vertices.data(), usage);
 
 	// positions
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(offsetof(struct vertex, position)));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t), BUFFER_OFFSET(offsetof(vertex_t, position)));
 	glEnableVertexAttribArray(0);
 	// colors
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(struct vertex), BUFFER_OFFSET(offsetof(struct vertex, color)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_t), BUFFER_OFFSET(offsetof(vertex_t, color)));
 	glEnableVertexAttribArray(1);
 }
 
@@ -116,7 +116,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	const size_t indices_size = sizeof(uint16_t) * indices.size();
 
 	// tell OpenGL how to render the buffer
-	struct primitive primi;
+	primitive_t primi;
 	primi.firstindex = 0;
 	primi.indexcount = GLsizei(indices.size());
 	primi.firstvertex = 0;
@@ -149,7 +149,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> 
 	
 Mesh::Mesh(uint32_t res, const glm::vec2 &min, const glm::vec2 &max)
 {
-	struct primitive primi;
+	primitive_t primi;
 	primi.mode = GL_PATCHES;
 	primi.vertexcount = GLsizei(4 * res * res);
 	primi.indexcount = 0;
@@ -198,7 +198,7 @@ Mesh::Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2>
 	const size_t indices_size = sizeof(uint16_t) * indices.size();
 
 	// tell OpenGL how to render the buffer
-	struct primitive primi;
+	primitive_t primi;
 	primi.firstindex = 0;
 	primi.indexcount = GLsizei(indices.size());
 	primi.firstvertex = 0;
@@ -292,7 +292,7 @@ CubeMesh::CubeMesh(const glm::vec3 &min, const glm::vec3 &max)
 	const size_t indices_size = sizeof(uint16_t) * indices.size();
 
 	// tell OpenGL how to render the buffer
-	struct primitive primi;
+	primitive_t primi;
 	primi.firstindex = 0;
 	primi.indexcount = GLsizei(indices.size());
 	primi.firstvertex = 0;

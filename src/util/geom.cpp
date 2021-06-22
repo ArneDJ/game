@@ -133,9 +133,9 @@ bool AABB_in_frustum(glm::vec3 &min, glm::vec3 &max, glm::vec4 frustum_planes[6]
 	return inside;
 }
 
-struct segment_intersection segment_segment_intersection(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d)
+segment_intersection segment_segment_intersection(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d)
 {
-	struct segment_intersection intersection = {
+	segment_intersection intersection = {
 		false,
 		{ 0.f, 0.f }
 	};
@@ -172,7 +172,7 @@ float triangle_area(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c)
 
 glm::vec2 triangle_centroid(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c)
 {
-	struct segment_intersection intersection = segment_segment_intersection(a, segment_midpoint(b, c), b, segment_midpoint(a, c));
+	segment_intersection intersection = segment_segment_intersection(a, segment_midpoint(b, c), b, segment_midpoint(a, c));
 
 	return intersection.point;
 }
@@ -185,7 +185,7 @@ glm::vec2 quadrilateral_centroid(const quadrilateral *quad)
 	glm::vec2 c = triangle_centroid(quad->a, quad->d, quad->c);
 	glm::vec2 d = triangle_centroid(quad->a, quad->b, quad->c);
 
-	struct segment_intersection intersection = segment_segment_intersection(a, b, c, d);
+	segment_intersection intersection = segment_segment_intersection(a, b, c, d);
 
 	return intersection.point;
 }
@@ -203,7 +203,7 @@ glm::vec2 closest_point_segment(const glm::vec2 &c, const glm::vec2 &a, const gl
 	return a + t * ab;
 }
 
-bool quad_quad_intersection(const struct quadrilateral &A, const struct quadrilateral &B)
+bool quad_quad_intersection(const quadrilateral &A, const quadrilateral &B)
 {
 	if (!projected_axis_test(A.a, A.b, B.a, B.b, B.c, B.d)) {
 		return false;
@@ -298,7 +298,7 @@ bool convex_quadrilateral(const quadrilateral *quad)
 	return glm::dot(acd, acb) < 0.0f;
 }
 
-bool point_in_rectangle(const glm::vec2 &p, const struct rectangle &r)
+bool point_in_rectangle(const glm::vec2 &p, const rectangle &r)
 {
 	return (p.x >= r.min.x && p.x < r.max.x && p.y >= r.min.y && p.y < r.max.y);
 }

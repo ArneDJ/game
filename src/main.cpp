@@ -466,12 +466,11 @@ void Battle::load_assets(const MODULE::Module *mod)
 	}
 	landscape->load_buildings(house_models);
 	
-	terrain->add_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
-	terrain->add_material("SANDMAP", MediaManager::load_texture("ground/sand.dds"));
-	terrain->add_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
-	terrain->add_material("GRAVELMAP", MediaManager::load_texture("ground/gravel.dds"));
-	terrain->add_material("DETAILMAP", MediaManager::load_texture("ground/stone_normal.dds"));
-	terrain->add_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
+	terrain->insert_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
+	terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
+	terrain->insert_material("GRAVELMAP", MediaManager::load_texture("ground/gravel.dds"));
+	terrain->insert_material("DETAILMAP", MediaManager::load_texture("ground/stone_normal.dds"));
+	terrain->insert_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 }
 	
 void Battle::add_creatures(const MODULE::Module *mod)
@@ -637,7 +636,7 @@ private:
 	GRAPHICS::RenderManager renderman;
 	struct shader_group_t shaders;
 	float fog_factor = 0.0005f; // TODO atmosphere
-	glm::vec3 ambiance_color = { 1.f, 1.f, 1.f };
+	glm::vec3 ambiance_color = { 0.9f, 0.9f, 0.85f };
 private:
 	void load_settings();
 	void set_opengl_states();
@@ -887,13 +886,17 @@ void Game::prepare_battle()
 	uint32_t tileref = 0;
 	float amp = 0.f;
 	uint8_t precipitation = 0;
+	uint8_t temperature = 0;
 	int32_t local_seed = 0;
 	uint8_t site_radius = 0;
+	enum tile_regolith_t regolith = REGOLITH_SAND;
 	if (tily) {
 		battle.naval = !tily->land;
 		amp = tily->amp;
 		tileref = tily->index;
 		precipitation = tily->precipitation;
+		temperature = tily->temperature;
+		regolith = tily->regolith;
 		std::mt19937 gen(campaign.seed);
 		gen.discard(tileref);
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
@@ -908,16 +911,26 @@ void Game::prepare_battle()
 
 	glm::vec3 grasscolor = glm::mix(modular.vegetation.dry, modular.vegetation.lush, precipitation / 255.f);
 
-	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, site_radius, false, battle.naval);
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, site_radius, false, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
-	battle.terrain->change_grass(grasscolor);
+	
+	bool grass_present = false;
+	// main terrain soil
+	if (regolith == REGOLITH_GRASS) {
+		grass_present = true;
+		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
+	} else if (regolith == REGOLITH_SAND) {
+		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/sand.dds"));
+		grasscolor = { 0.96, 0.83, 0.63 };
+	} else {
+		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/snow.dds"));
+		grasscolor = { 1.f, 1.f, 1.f };
+	}
+	
+	battle.terrain->change_grass(grasscolor, grass_present);
 
 	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
-
-	shaders.billboard.use();
-	shaders.billboard.uniform_float("FOG_FACTOR", fog_factor);
-	shaders.billboard.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 
 	// add entities
 	battle.add_trees();
@@ -939,7 +952,7 @@ void Game::prepare_battle()
 
 	battle.skybox.prepare();
 
-	battle.forest->set_atmosphere(modular.atmosphere.day.horizon, fog_factor, ambiance_color);
+	battle.forest->set_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 
 	if (battle.naval) {
 		battle.camera.position = { 3072.f, 270.f, 3072.f };
@@ -1111,8 +1124,9 @@ void Game::prepare_campaign()
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	shaders.billboard.use();
-	shaders.billboard.uniform_float("FOG_FACTOR", 0.0005f);
+	shaders.billboard.uniform_float("FOG_FACTOR", fog_factor);
 	shaders.billboard.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
+	shaders.billboard.uniform_vec3("AMBIANCE_COLOR", glm::vec3(1.f));
 
 	// add campaign entities
 	campaign.marker.position = { 2010.f, 200.f, 2010.f };
@@ -1145,14 +1159,15 @@ void Game::run_campaign()
 	
 		campaign.ordinary->display(&campaign.camera);
 		campaign.creatures->display(&campaign.camera);
-		campaign.billboards->display(&campaign.camera);
 
 		campaign.worldmap->display_land(&campaign.camera);
 
 		campaign.skybox.display(&campaign.camera);
 
-		renderman.bind_depthmap(GL_TEXTURE2);
+		renderman.bind_depthmap(GL_TEXTURE20); // TODO bind by name
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
+		
+		campaign.billboards->display(&campaign.camera);
 
 		campaign.labelman->display(&campaign.camera);
 

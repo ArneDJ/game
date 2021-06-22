@@ -11,6 +11,9 @@ uniform vec3 AMBIANCE_COLOR;
 uniform float SCREEN_WIDTH;
 uniform float SCREEN_HEIGHT;
 uniform bool CLOUDS_ENABLED;
+// fog
+uniform float FOG_FACTOR;
+uniform vec3 FOG_COLOR;
 
 layout (binding = 0) uniform sampler2D CLOUDMAP;
 
@@ -44,6 +47,8 @@ void main(void)
 		cloudcolor = mix(cloudcolor * HORIZON_COLOR, cloudcolor, dist);
 		color = mix(color, cloudcolor, alpha);
 	}
+		
+	color = mix(color, FOG_COLOR, FOG_FACTOR);
 
 	fcolor = vec4(color, 1.0);
 

@@ -4,7 +4,7 @@ namespace UTIL {
 class Camera {
 public:
 	glm::vec3 position;
-	glm::vec3 direction;
+	glm::vec3 direction = { 0.f, 1.f, 0.f };
 	glm::mat4 projection, viewing;
 	glm::mat4 VP; // view * project
 	float nearclip = 0.f;
@@ -14,7 +14,6 @@ public:
 	uint16_t width = 0;
 	uint16_t height = 0;
 public:
-	Camera();
 	void configure(float near, float far, uint16_t w, uint16_t h, float fovangle);
 	// create perspective projection matrix
 	void project();
@@ -35,8 +34,8 @@ public:
 	// normalized device coordinate position to world ray
 	glm::vec3 ndc_to_ray(const glm::vec2 &ndc) const;
 private:
-	float pitch = 0.f;
-	float yaw = 0.f;
+	float m_pitch = 0.f;
+	float m_yaw = 0.f;
 	// glm::vec4 frustum[6];
 };
 

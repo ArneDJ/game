@@ -12,7 +12,6 @@ uniform sampler2D DISPLACEMENT;
 uniform sampler2D NORMALMAP;
 uniform sampler2D SITEMASKS;
 uniform sampler2D STONEMAP;
-uniform sampler2D SANDMAP;
 uniform sampler2D GRASSMAP;
 uniform sampler2D GRAVELMAP;
 uniform sampler2D DETAILMAP;
@@ -111,12 +110,9 @@ void main(void)
 	float dirtlevel = texture(SITEMASKS, sitecoord / SITE_SCALE).r;
 	
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
-	vec3 sand = texture(SANDMAP, 200.0 * fragment.texcoord).rgb;
 	vec3 grass = texture(GRASSMAP, 400.0 * fragment.texcoord).rgb;
 	vec3 gravel = texture(GRAVELMAP, 800.0 * fragment.texcoord).rgb;
 	
-	//vec3 color = mix(sand, GRASS_COLOR * grass, smoothstep(0.1, 0.11, height));
-	//vec3 color = vec3(0.796, 0.88, 0.512) * grass;
 	vec3 color = GRASS_COLOR * grass;
 	color = mix(color, gravel, dirtlevel);
 	color = mix(color, stone, slope);

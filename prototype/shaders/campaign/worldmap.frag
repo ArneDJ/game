@@ -118,16 +118,26 @@ void main(void)
 	vec4 mask = texture(MASKMAP, fragment.texcoord);
 	float snowlevel = mask.r;
 	float grasslevel = mask.g;
-	//float farmlevel = mask.b;
+	float sandlevel = mask.b;
 
 	float rainlevel = texture(RAINMAP, fragment.texcoord).r;
 	
 	vec3 grassness = mix(GRASS_DRY, GRASS_LUSH, rainlevel);
 	grass *= grassness;
+	
+	sand *= vec3(0.96, 0.83, 0.63) * vec3(1.2);
 
-	vec3 color = mix(sand, grass, grasslevel);
+	vec3 color = stone;
+	// noisy transition
+	float transition_noise = warpfbm(0.1*fragment.position.xz);
+	transition_noise = smoothstep(0.25, 0.75, transition_noise);
+	grasslevel = mix(transition_noise, grasslevel, 2.f * distance(grasslevel, 0.5f));
+	color = mix(color, grass, grasslevel);
 
-//	color = mix(color, farms * grassness, farmlevel);
+	sandlevel = mix(transition_noise, sandlevel, 2.f * distance(sandlevel, 0.5f));
+	color = mix(color, sand, sandlevel);
+
+	snowlevel = mix(transition_noise, snowlevel, 2.f * distance(snowlevel, 0.5f));
 	color = mix(color, snow, snowlevel);
 	color = mix(color, stone, slope);
 

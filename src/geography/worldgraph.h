@@ -17,6 +17,19 @@ enum RELIEF : uint8_t {
 	HIGHLAND
 };
 
+enum tile_regolith_t : uint8_t {
+	REGOLITH_SAND,
+	REGOLITH_GRAVEL,
+	REGOLITH_SNOW,
+	REGOLITH_GRASS
+};
+
+enum tile_feature_t : uint8_t {
+	FEATURE_NONE,
+	FEATURE_WOODS,
+	FEATURE_FLOODPLAIN
+};
+
 struct border {
 	uint32_t index;
 	// world data
@@ -90,11 +103,12 @@ struct tile {
 	uint8_t temperature;
 	enum RELIEF relief;
 	enum SITE site;
+	enum tile_regolith_t regolith = REGOLITH_SAND;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
-		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, site);
+		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, site, regolith);
 	}
 };
 

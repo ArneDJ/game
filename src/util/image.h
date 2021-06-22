@@ -3,28 +3,18 @@
 
 namespace UTIL {
 
-enum color_channel : uint8_t {
+enum color_channel_t : uint8_t {
 	CHANNEL_RED = 0,
 	CHANNEL_GREEN = 1,
 	CHANNEL_BLUE = 2,
 	CHANNEL_ALPHA = 3
 };
 
-enum colorspace_type : uint8_t {
+enum colorspace_t : uint8_t {
 	COLORSPACE_GRAYSCALE = 1,
 	COLORSPACE_RGB = 3,
 	COLORSPACE_RGBA = 4
 };
-
-inline int min3(int a, int b, int c)
-{
-	return (std::min)(a, (std::min)(b, c));
-}
-
-inline int max3(int a, int b, int c)
-{
-	return (std::max)(a, (std::max)(b, c));
-}
 
 template <class T> class Image {
 public:
@@ -226,6 +216,15 @@ public:
 	void serialize(Archive &archive)
 	{
 		archive(width, height, channels, data);
+	}
+private:
+	int min3(int a, int b, int c)
+	{
+		return (std::min)(a, (std::min)(b, c));
+	}
+	int max3(int a, int b, int c)
+	{
+		return (std::max)(a, (std::max)(b, c));
 	}
 };
 

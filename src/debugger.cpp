@@ -51,7 +51,7 @@ void Debugger::render_navmeshes(void)
 
 void Debugger::add_navmesh(const dtNavMesh *mesh)
 {
-	std::vector<struct GRAPHICS::vertex> vertices;
+	std::vector<struct GRAPHICS::vertex_t> vertices;
 	std::vector<uint16_t> indices;
 	const glm::vec3 color = { 0.2f, 0.5f, 1.f };
 
@@ -73,7 +73,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 						float x = tile->verts[p->verts[t[k]]*3];
 						float y = tile->verts[p->verts[t[k]]*3 + 1] + 0.05f;
 						float z = tile->verts[p->verts[t[k]]*3 + 2];
-						struct GRAPHICS::vertex v = {
+						struct GRAPHICS::vertex_t v = {
 							{ x, y, z},
 							color
 						};
@@ -82,7 +82,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 						float x = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3];
 						float y = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 1];
 						float z = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 2];
-						struct GRAPHICS::vertex v = {
+						struct GRAPHICS::vertex_t v = {
 							{ x, y, z},
 							color
 						};

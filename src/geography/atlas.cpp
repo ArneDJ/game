@@ -32,6 +32,7 @@
 enum material_channels_t {
 	CHANNEL_SNOW = 0,
 	CHANNEL_GRASS,
+	CHANNEL_SAND,
 	CHANNEL_COUNT
 };
 
@@ -332,13 +333,28 @@ void Atlas::erode_heightmap(float ocean_level)
 			}
 		}
 	}
+
+	mask.blur(1.f);
+
+	// add the rivers to the mask
+	#pragma omp parallel for
+	for (const auto &bord : worldgraph->borders) {
+		if (bord.river) {
+			glm::vec2 a = mapscale * bord.c0->position;
+			glm::vec2 b = mapscale * bord.c1->position;
+			mask.draw_line(a.x, a.y, b.x, b.y, UTIL::CHANNEL_RED, 0);
+		}
+	}
+
+	mask.write("mask.png");
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap.width; x++) {
 		for (int y = 0; y < terragen->heightmap.height; y++) {
 			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
-				height = glm::clamp(height, 0.f, ocean_level);
+				float clamped_height = glm::clamp(height, 0.f, ocean_level);
+				height = glm::mix(height, clamped_height, masker / 255.f);
 				terragen->heightmap.plot(x, y, UTIL::CHANNEL_RED, height);
 			}
 		}
@@ -393,7 +409,6 @@ void Atlas::clamp_heightmap(float land_level)
 
 void Atlas::create_watermap(float ocean_level)
 {
-auto start = std::chrono::steady_clock::now();
 	const glm::vec2 mapscale = {
 		float(mask.width) / SCALE.x,
 		float(mask.height) / SCALE.z
@@ -474,9 +489,6 @@ auto start = std::chrono::steady_clock::now();
 			}
 		}
 	}
-auto end = std::chrono::steady_clock::now();
-std::chrono::duration<double> elapsed_seconds = end-start;
-std::cout << "elapsed rasterization time: " << elapsed_seconds.count() << "s\n";
 }
 	
 void Atlas::create_materialmasks(void)
@@ -491,7 +503,7 @@ void Atlas::create_materialmasks(void)
 	// snow
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.relief == HIGHLAND) {
+		if (t.regolith == REGOLITH_SNOW) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -503,7 +515,7 @@ void Atlas::create_materialmasks(void)
 	// grass
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.relief == LOWLAND || t.relief == UPLAND) {
+		if (t.regolith == REGOLITH_GRASS) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -512,23 +524,36 @@ void Atlas::create_materialmasks(void)
 			}
 		}
 	}
+
+	// sand
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
 		if (bord.coast || bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
-			materialmasks.draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
+			materialmasks.draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_SAND, 255);
+		}
+	}
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.regolith == REGOLITH_SAND) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				materialmasks.draw_triangle(a, b, c, CHANNEL_SAND, 255);
+			}
 		}
 	}
 
-	materialmasks.blur(1.f);
+	materialmasks.blur(5.f);
 }
 	
 void Atlas::create_vegetation(void)
 {
 	vegetation.copy(&terragen->rainmap);
 
-	// water and mountain tiles don't have vegetation
+	// some tiles like desert or snow don't have vegetation
 	const glm::vec2 mapscale = {
 		float(vegetation.width) / SCALE.x,
 		float(vegetation.height) / SCALE.z
@@ -537,7 +562,7 @@ void Atlas::create_vegetation(void)
 	// snow
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.relief == SEABED || t.relief == HIGHLAND) {
+		if (t.regolith != REGOLITH_GRASS) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;

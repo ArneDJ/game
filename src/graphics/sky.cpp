@@ -76,6 +76,8 @@ void Skybox::colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::
 {
 	zenith = top;
 	horizon = bottom;
+	m_fog_color = bottom;
+	m_fog_factor = 0.2f;
 	sunposition = sunpos;
 	clouds_enabled = cloudsenabled;
 	m_ambiance = ambiance;
@@ -98,6 +100,8 @@ void Skybox::display(const UTIL::Camera *camera) const
 	shader.uniform_bool("CLOUDS_ENABLED", clouds_enabled && clouded);
 	shader.uniform_float("SCREEN_WIDTH", float(camera->width));
 	shader.uniform_float("SCREEN_HEIGHT", float(camera->height));
+	shader.uniform_float("FOG_FACTOR", m_fog_factor);
+	shader.uniform_vec3("FOG_COLOR", m_fog_color);
 	shader.uniform_mat4("V", camera->viewing);
 	shader.uniform_mat4("P", camera->projection);
 			

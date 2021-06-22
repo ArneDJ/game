@@ -67,12 +67,12 @@ bool AABB_in_frustum(glm::vec3 &min, glm::vec3 &max, glm::vec4 frustum_planes[6]
 
 glm::vec2 quadrilateral_centroid(const quadrilateral *quad);
 
-struct segment_intersection segment_segment_intersection(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d);
+segment_intersection segment_segment_intersection(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d);
 
 glm::vec2 closest_point_segment(const glm::vec2 &c, const glm::vec2 &a, const glm::vec2 &b);
 
-bool quad_quad_intersection(const struct quadrilateral &A, const struct quadrilateral &B);
+bool quad_quad_intersection(const quadrilateral &A, const quadrilateral &B);
 
 bool convex_quadrilateral(const quadrilateral *quad);
 
-bool point_in_rectangle(const glm::vec2 &p, const struct rectangle &r);
+bool point_in_rectangle(const glm::vec2 &p, const rectangle &r);

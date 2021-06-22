@@ -12,20 +12,37 @@
         },
         "trees": [
             {
-                "trunk": "trees/fir/trunk.glb",
-                "leaves": "trees/fir/leaves.glb",
-                "billboard": "trees/fir/billboard.glb",
+                "trunk": "trees/pine_tall/trunk.glb",
+                "leaves": "trees/pine_tall/leaves.glb",
+                "billboard": "trees/pine_tall/billboard.glb",
                 "height": {
                     "min": 0,
                     "max": 255
                 },
                 "precipitation": {
-                    "min": 0,
+                    "min": 50,
                     "max": 255
                 },
                 "temperature": {
+                    "min": 10,
+                    "max": 150
+                }
+            },
+            {
+                "trunk": "trees/pine_broad/trunk.glb",
+                "leaves": "trees/pine_broad/leaves.glb",
+                "billboard": "trees/pine_broad/billboard.glb",
+                "height": {
                     "min": 0,
-                    "max": 50
+                    "max": 255
+                },
+                "precipitation": {
+                    "min": 50,
+                    "max": 255
+                },
+                "temperature": {
+                    "min": 10,
+                    "max": 150
                 }
             },
       	    {
@@ -37,11 +54,11 @@
                     "max": 150
                 },
                 "precipitation": {
-                    "min": 100,
+                    "min": 150,
                     "max": 255
                 },
                 "temperature": {
-                    "min": 50,
+                    "min": 100,
                     "max": 255
                 }
             }

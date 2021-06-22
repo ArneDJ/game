@@ -227,9 +227,9 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 	 // index buffer
 	std::vector<uint8_t> indices;
 	// vertex buffer
-	struct vertex_data vertices;
+	struct vertex_data_t vertices;
 
-	std::vector<struct primitive> primitives;
+	std::vector<struct primitive_t> primitives;
 
 	uint32_t vertexstart = 0;
 	uint32_t indexstart = 0;
@@ -268,7 +268,7 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 			}
 		}
 
-		struct primitive prim;
+		struct primitive_t prim;
 		prim.firstindex = indexstart;
 		prim.indexcount = indexcount;
 		prim.firstvertex = vertexstart;

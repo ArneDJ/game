@@ -8,7 +8,7 @@ in TESSEVAL {
 
 out vec4 fcolor;
 
-layout(binding = 2) uniform sampler2D DEPTHMAP;
+layout(binding = 20) uniform sampler2D DEPTHMAP;
 uniform sampler2D WATER_BUMPMAP;
 
 uniform vec3 FOG_COLOR;
@@ -75,14 +75,14 @@ void main(void)
 	color = mix(color * diff, color, 0.8);
 	color += spec;
 
-	/*
 	float alpha = clamp(waterdepth / 1.5, 0.0, 1.0);
+	/*
 	if (distance(CAM_POS, fragment.position) > 400.0) {
 		alpha = 1.0;
 	}
 	*/
 
-	fcolor = vec4(fog(color, distance(CAM_POS, fragment.position)), 0.9);
+	fcolor = vec4(fog(color, distance(CAM_POS, fragment.position)), alpha);
 
 	float gamma = 1.2;
 	fcolor.rgb = pow(fcolor.rgb, vec3(1.0/gamma));

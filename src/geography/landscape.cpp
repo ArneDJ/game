@@ -71,6 +71,8 @@ static bool larger_building(const struct building_t &a, const struct building_t 
 
 static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
+static bool within_bounds(uint8_t value, const MODULE::bounds_t<uint8_t> &bounds);
+
 Landscape::Landscape(const MODULE::Module *mod, uint16_t heightres)
 {
 	m_module = mod;
@@ -115,7 +117,7 @@ void Landscape::clear(void)
 	}
 }
 
-void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t site_radius, bool walled, bool nautical)
+void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t site_radius, bool walled, bool nautical)
 {
 	clear();
 
@@ -139,7 +141,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	}
 
 	if (nautical == false) {
-		gen_forest(local_seed, precipitation);
+		gen_forest(local_seed, precipitation, temperature);
 	}
 }
 
@@ -168,15 +170,22 @@ const UTIL::Image<uint8_t>* Landscape::get_sitemasks(void) const
 	return &sitemasks;
 }
 
-void Landscape::gen_forest(int32_t seed, uint8_t precipitation) 
+void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature) 
 {
 	// add valid trees
 	for (const auto &tree_info : m_module->vegetation.trees) {
-		GEOGRAPHY::tree_t tree;
-		tree.trunk = tree_info.trunk;
-		tree.leaves = tree_info.leaves;
-		tree.billboard = tree_info.billboard;
-		m_trees.push_back(tree);
+		if (within_bounds(precipitation, tree_info.precipitation) && within_bounds(temperature, tree_info.temperature)) {
+			GEOGRAPHY::tree_t tree;
+			tree.trunk = tree_info.trunk;
+			tree.leaves = tree_info.leaves;
+			tree.billboard = tree_info.billboard;
+			m_trees.push_back(tree);
+		}
+	}
+
+	// early exit
+	if (m_trees.size() < 1) {
+		return;
 	}
 	
 	// create density map
@@ -233,7 +242,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation)
 			position.y -= 2.f;
 			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 			// to give the appearance that mountains are larger than they really are make the trees smaller if they are on higher elevation
-			float scale = 1.f;
+			float scale = scale_dist(gen);
 			if (position.y > (0.25f * SCALE.y)) {
 				scale = glm::smoothstep(0.4f, 1.f, 1.f - (position.y / SCALE.y));
 				scale = glm::clamp(scale, 0.1f, 1.f);
@@ -556,4 +565,9 @@ static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths,
 	};
 
 	return quad;
+}
+
+static bool within_bounds(uint8_t value, const MODULE::bounds_t<uint8_t> &bounds)
+{
+	return (value >= bounds.min && value <= bounds.max);
 }

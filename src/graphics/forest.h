@@ -50,7 +50,7 @@ public:
 	Forest(const Shader *detail, const Shader *billboard);
 	void add_model(const Model *trunk, const Model *leaves, const Model *billboard, const std::vector<const transformation*> &transforms);
 	void build_hierarchy();
-	void set_atmosphere(const glm::vec3 &fog_color, float fog_factor, const glm::vec3 &ambiance);
+	void set_atmosphere(const glm::vec3 &sun_position, const glm::vec3 &fog_color, float fog_factor, const glm::vec3 &ambiance);
 	void display(const UTIL::Camera *camera) const;
 	void clear();
 private:

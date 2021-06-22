@@ -34,6 +34,8 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius);
 static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, long seed);
 
+static enum tile_regolith_t pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature);
+
 static const uint8_t N_RELAXATIONS = 1;
 static const float BOUNDS_OFFSET = 10.F;
 static const float MIN_RIVER_DIST = 40.F;
@@ -818,6 +820,11 @@ void Worldgraph::gen_properties(const UTIL::Image<uint8_t> *temperatures, const 
 		t.precipitation = rainfall->sample(scale_rain.x*t.center.x, scale_rain.y*t.center.y, UTIL::CHANNEL_RED);
 		t.temperature = temperatures->sample(scale_temp.x*t.center.x, scale_temp.y*t.center.y, UTIL::CHANNEL_RED);
 	}
+	
+	// assign regolith types
+	for (struct tile &t : tiles) {
+		t.regolith = pick_regolith(t.relief, t.precipitation, t.temperature);
+	}
 }
 
 void Worldgraph::gen_sites(long seed, const struct MODULE::worldgen_parameters_t *params)
@@ -1100,3 +1107,38 @@ static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered
 	}
 }
 
+static enum tile_regolith_t pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature)
+{
+	static const uint8_t MIN_SAND = 16;
+	static const uint8_t MIN_GRAVEL = 32;
+
+	static const uint8_t MIN_SNOW_TEMPERATURE = 16;
+	static const uint8_t MIN_GRAVEL_TEMPERATURE = 180;
+	static const uint8_t MIN_DESERT_TEMPERATURE = 200;
+
+	if (relief == SEABED) { 
+		return REGOLITH_SAND; 
+	}
+
+	if (relief == HIGHLAND) {
+		if (precipitation > MIN_SAND) { 
+			return REGOLITH_SNOW; 
+		} else {
+			return REGOLITH_GRAVEL; 
+		}
+	}
+
+	if (temperature > MIN_DESERT_TEMPERATURE && precipitation < MIN_SAND) {
+		return REGOLITH_SAND;
+	}
+
+	if (temperature > MIN_GRAVEL_TEMPERATURE && precipitation < MIN_GRAVEL) {
+		return REGOLITH_GRAVEL;
+	}
+
+	if (temperature < MIN_SNOW_TEMPERATURE) {
+		return REGOLITH_SNOW;
+	}
+
+	return REGOLITH_GRASS;
+}

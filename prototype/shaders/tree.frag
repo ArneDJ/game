@@ -28,6 +28,11 @@ void main(void)
 	if (color.a < 0.1) { discard; }
 	color.a = 1.0;
 
+	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);
+	float diffuse = max(0.0, dot(normal, SUN_POS));
+
+	vec3 scatteredlight = lightcolor * diffuse;
+	color.rgb = mix(min(color.rgb * scatteredlight, vec3(1.0)), color.rgb, 0.5);
 
 	fcolor = vec4(fog(color.rgb, distance(CAM_POS, position)), 1.0);
 	//fcolor = vec4(color.rgb, 1.0);

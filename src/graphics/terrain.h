@@ -42,11 +42,10 @@ private:
 class Terrain {
 public:
 	Terrain(const glm::vec3 &mapscale, const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre);
-	~Terrain(void);
-	void add_material(const std::string &name, const Texture *texture);
+	void insert_material(const std::string &name, const Texture *texture);
 	void reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &ambiance);
-	void change_grass(const glm::vec3 &color);
+	void change_grass(const glm::vec3 &color, bool enabled);
 	void display_land(const UTIL::Camera *camera) const;
 	void display_water(const UTIL::Camera *camera, float time) const;
 	void display_grass(const UTIL::Camera *camera) const;
@@ -56,7 +55,7 @@ private:
 	std::unique_ptr<Texture> relief;
 	std::unique_ptr<Texture> normals;
 	std::unique_ptr<Texture> sitemasks;
-	std::vector<texture_binding_t> materials;
+	std::unordered_map<std::string, const Texture*> materials;
 	Shader land;
 	Shader water;
 	glm::vec3 scale;
@@ -67,6 +66,7 @@ private:
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
 	glm::vec3 m_ambiance;
+	bool m_grass_enabled = false;
 };
 
 };

@@ -143,12 +143,9 @@ void Forest::add_model(const Model *trunk, const Model *leaves, const Model *bil
 	model->trunk = trunk;
 	model->leaves = leaves;
 	model->billboard = billboard;
-	// calculate bounds of all models
+	// calculate bounds of all models except billboard
 	model->bounds.min = (glm::min)(trunk->bound_min, leaves->bound_min);
-	model->bounds.min = (glm::min)(model->bounds.min, billboard->bound_min);
 	model->bounds.max = (glm::max)(trunk->bound_max, leaves->bound_max);
-	model->bounds.max = (glm::max)(model->bounds.max, billboard->bound_max);
-	//model->transforms.insert(model->transforms.begin(), transforms.begin(), transforms.end());
 
 	// create transform matrix buffer
 	for (const auto &transform : transforms) {
@@ -232,9 +229,9 @@ void Forest::display(const UTIL::Camera *camera) const
 	m_billboard->use();
 	m_billboard->uniform_mat4("VP", camera->VP);
 	m_billboard->uniform_vec3("CAM_POS", camera->position);
+	m_billboard->uniform_bool("INSTANCED", true);
 
 	for (const auto &model : m_models) {
-		m_billboard->uniform_bool("INSTANCED", true);
 
 		model->billboard_transforms.bind(GL_TEXTURE10); // TODO bind to name
 		model->billboard->display_instanced(model->billboard_count);
@@ -263,14 +260,16 @@ void Forest::build_hierarchy()
 	m_bvh.build(instances);
 }
 	
-void Forest::set_atmosphere(const glm::vec3 &fog_color, float fog_factor, const glm::vec3 &ambiance)
+void Forest::set_atmosphere(const glm::vec3 &sun_position, const glm::vec3 &fog_color, float fog_factor, const glm::vec3 &ambiance)
 {
 	m_detailed->use();
+	m_detailed->uniform_vec3("SUN_POS", sun_position);
 	m_detailed->uniform_vec3("FOG_COLOR", fog_color);
 	m_detailed->uniform_float("FOG_FACTOR", fog_factor);
 	m_detailed->uniform_vec3("AMBIANCE_COLOR", ambiance);
 
 	m_billboard->use();
+	m_billboard->uniform_vec3("SUN_POS", sun_position);
 	m_billboard->uniform_vec3("FOG_COLOR", fog_color);
 	m_billboard->uniform_float("FOG_FACTOR", fog_factor);
 	m_billboard->uniform_vec3("AMBIANCE_COLOR", ambiance);

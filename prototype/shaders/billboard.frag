@@ -27,6 +27,8 @@ void main(void)
 	if (color.a < 0.1) { discard; }
 	color.a = 1.0;
 
+	fcolor.rgb *= vec3(0.8);
+
 	fcolor = vec4(fog(color.rgb, distance(CAM_POS, position)), 1.0);
 
 	fcolor.rgb *= AMBIANCE_COLOR;

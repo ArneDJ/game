@@ -1,13 +1,13 @@
 namespace GRAPHICS {
 
 // only used for debugging
-struct vertex {
+struct vertex_t {
 	glm::vec3 position;
 	glm::vec3 color;
 };
 
 // pure buffer in bytes
-struct vertex_data {
+struct vertex_data_t {
 	std::vector<uint8_t> positions;
 	std::vector<uint8_t> normals;
 	std::vector<uint8_t> texcoords;
@@ -15,13 +15,7 @@ struct vertex_data {
 	std::vector<uint8_t> weights;
 };
 
-struct mesh_data {
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec2> texcoords;
-	std::vector<uint16_t> indices;
-};
-
-struct primitive {
+struct primitive_t {
 	GLuint firstindex = 0;
 	GLsizei indexcount = 0;
 	GLuint firstvertex = 0;
@@ -32,9 +26,9 @@ struct primitive {
 
 class Mesh {
 public:
-	Mesh(void);
-	Mesh(const struct vertex_data *data, const std::vector<uint8_t> &indices, const std::vector<struct primitive> &primis);
-	Mesh(const std::vector<struct vertex> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage);
+	Mesh();
+	Mesh(const vertex_data_t *data, const std::vector<uint8_t> &indices, const std::vector<primitive_t> &primis);
+	Mesh(const std::vector<vertex_t> &vertices, const std::vector<uint16_t> &indices, GLenum mode, GLenum usage);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	Mesh(const std::vector<glm::vec3> &positions, const std::vector<glm::vec2> &texcoords, const std::vector<uint16_t> &indices);
 	// tesselation mesh
@@ -47,7 +41,7 @@ public:
 	GLuint VBO = 0; // Vertex Buffer Object
 	GLuint EBO = 0; // Element Buffer Object
 	GLenum indextype = GL_UNSIGNED_BYTE; // (GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, or GL_UNSIGNED_INT)
-	std::vector<struct primitive> primitives;
+	std::vector<primitive_t> primitives;
 };
 
 class CubeMesh : public Mesh {

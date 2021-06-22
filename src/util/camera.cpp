@@ -16,17 +16,6 @@ static const float CAMERA_MOUSE_MODIFIER = 0.001F;
 
 namespace UTIL {
 
-Camera::Camera() 
-{
-	position = { 0.f, 0.f, 0.f };
-	direction = { 0.f, 1.f, 0.f };
-	projection = {};
-	viewing = {};
-	VP = {};
-	yaw = 0.f;
-	pitch = 0.f;
-}
-	
 void Camera::configure(float near, float far, uint16_t w, uint16_t h, float fovangle)
 {
 	nearclip = near;
@@ -46,8 +35,8 @@ void Camera::direct(const glm::vec3 &dir)
 {
 	direction = glm::normalize(dir);
 	// adjust pitch and yaw to direction vector
-	pitch = asin(direction.y);
-	yaw = atan2(direction.z, direction.x);
+	m_pitch = asin(direction.y);
+	m_yaw = atan2(direction.z, direction.x);
 }
 	
 void Camera::lookat(const glm::vec3 &location)
@@ -58,15 +47,15 @@ void Camera::lookat(const glm::vec3 &location)
 
 void Camera::target(const glm::vec2 &offset)
 {
-	yaw += offset.x * CAMERA_MOUSE_MODIFIER;
-	pitch -= offset.y * CAMERA_MOUSE_MODIFIER;
+	m_yaw += offset.x * CAMERA_MOUSE_MODIFIER;
+	m_pitch -= offset.y * CAMERA_MOUSE_MODIFIER;
 
-	if (pitch > MAX_CAMERA_ANGLE) { pitch = MAX_CAMERA_ANGLE; }
-	if (pitch < MIN_CAMERA_ANGLE) { pitch = MIN_CAMERA_ANGLE; }
+	if (m_pitch > MAX_CAMERA_ANGLE) { m_pitch = MAX_CAMERA_ANGLE; }
+	if (m_pitch < MIN_CAMERA_ANGLE) { m_pitch = MIN_CAMERA_ANGLE; }
 
-	direction.x = cos(yaw) * cos(pitch);
-	direction.y = sin(pitch);
-	direction.z = sin(yaw) * cos(pitch);
+	direction.x = cos(m_yaw) * cos(m_pitch);
+	direction.y = sin(m_pitch);
+	direction.z = sin(m_yaw) * cos(m_pitch);
 
 	direction = glm::normalize(direction);
 }
