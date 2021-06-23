@@ -117,7 +117,7 @@ void Landscape::clear(void)
 	}
 }
 
-void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t site_radius, bool walled, bool nautical)
+void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t tree_density, uint8_t site_radius, bool walled, bool nautical)
 {
 	clear();
 
@@ -140,8 +140,10 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 		place_houses(walled, site_radius, local_seed);
 	}
 
-	if (nautical == false) {
-		gen_forest(local_seed, precipitation, temperature);
+	printf("precipitation %d\n", precipitation);
+	printf("tree density %d\n", tree_density);
+	if (nautical == false && precipitation > 0 && tree_density > 0) {
+		gen_forest(local_seed, precipitation, temperature, tree_density);
 	}
 }
 
@@ -170,8 +172,9 @@ const UTIL::Image<uint8_t>* Landscape::get_sitemasks(void) const
 	return &sitemasks;
 }
 
-void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature) 
+void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature, uint8_t tree_density) 
 {
+	printf("temperature %d\n", temperature);
 	// add valid trees
 	for (const auto &tree_info : m_module->vegetation.trees) {
 		if (within_bounds(precipitation, tree_info.precipitation) && within_bounds(temperature, tree_info.temperature)) {
@@ -182,6 +185,8 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 			m_trees.push_back(tree);
 		}
 	}
+
+	printf("number of tree types %d\n", m_trees.size());
 
 	// early exit
 	if (m_trees.size() < 1) {
@@ -212,6 +217,11 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 
 	float rain = precipitation / 255.f;
 
+	printf("tree density %f\n", rain);
+	for (const auto &tree : m_trees) {
+		std::cout << tree.trunk << std::endl;
+	}
+
 	PoissonGenerator::DefaultPRNG PRNG(seed);
 	const auto positions = PoissonGenerator::generatePoissonPoints(MAX_TREES, PRNG, false);
 
@@ -229,7 +239,8 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 			}
 			float P = density.sample(point.x * density.width, point.y * density.height, UTIL::CHANNEL_RED) / 255.f;
 			if (P > 0.8f) { P = 1.f; }
-			P *= rain * rain;
+			// limit density
+			P = glm::clamp(P, 0.f, tree_density / 255.f);
 			float R = density_dist(gen);
 			if (P < 0.5f) {
 				P *= P * P;

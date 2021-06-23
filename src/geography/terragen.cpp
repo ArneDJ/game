@@ -112,8 +112,9 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 			rain = glm::mix(rain, detail, params->rain.detail_mix*dev);
 			// let temperature have influence on rain
 			float temp = tempmap.sample(scale_temp.x * i, scale_temp.y * j, UTIL::CHANNEL_RED) / 255.f;
+			float inverse_temp = 1.f - temp;
 			if (temp > 0.5f) {
-				rain = glm::mix(rain, 1.f - temp, detail*temp);
+				rain = glm::mix(rain, inverse_temp*inverse_temp, detail*temp);
 			}
 			rain = glm::smoothstep(0.1f, 0.3f, rain);
 			rainmap.plot(i, j, UTIL::CHANNEL_RED, 255 * glm::clamp(rain, 0.f, 1.f));

@@ -10,6 +10,7 @@ out vec4 fcolor;
 uniform sampler2D DISPLACEMENT;
 uniform sampler2D NORMALMAP;
 uniform sampler2D RAINMAP;
+uniform sampler2D TEMPERATUREMAP;
 uniform sampler2D MASKMAP;
 uniform sampler2D FACTIONSMAP;
 // material textures
@@ -121,21 +122,28 @@ void main(void)
 	float sandlevel = mask.b;
 
 	float rainlevel = texture(RAINMAP, fragment.texcoord).r;
+	float temperature = texture(TEMPERATUREMAP, fragment.texcoord).r;
+	float exposure = smoothstep(0.6, 0.85, temperature);
 	
-	vec3 grassness = mix(GRASS_DRY, GRASS_LUSH, rainlevel);
+	vec3 grassness = mix(GRASS_DRY*vec3(1.2), GRASS_LUSH, rainlevel);
 	grass *= grassness;
 	
 	sand *= vec3(0.96, 0.83, 0.63) * vec3(1.2);
+
+	stone = mix(stone*vec3(0.8), stone, temperature);
+	vec3 redstone = mix(vec3(1.2)*vec3(0.96, 0.83, 0.63), vec3(1.2)*vec3(1.0, 0.83, 0.63), height);
+	stone = mix(stone, stone*redstone, exposure*(1.f-rainlevel));
 
 	vec3 color = stone;
 	// noisy transition
 	float transition_noise = warpfbm(0.1*fragment.position.xz);
 	transition_noise = smoothstep(0.25, 0.75, transition_noise);
-	grasslevel = mix(transition_noise, grasslevel, 2.f * distance(grasslevel, 0.5f));
-	color = mix(color, grass, grasslevel);
 
 	sandlevel = mix(transition_noise, sandlevel, 2.f * distance(sandlevel, 0.5f));
 	color = mix(color, sand, sandlevel);
+
+	grasslevel = mix(transition_noise, grasslevel, 2.f * distance(grasslevel, 0.5f));
+	color = mix(color, grass, grasslevel);
 
 	snowlevel = mix(transition_noise, snowlevel, 2.f * distance(snowlevel, 0.5f));
 	color = mix(color, snow, snowlevel);
@@ -155,6 +163,7 @@ void main(void)
 	color = fog(color, distance(CAM_POS, fragment.position));
 
 	fcolor = vec4(color, 1.0);
+	//fcolor = vec4(vec3(exposure), 1.0);
 
 	float gamma = 1.2;
 	fcolor.rgb = pow(fcolor.rgb, vec3(1.0/gamma));

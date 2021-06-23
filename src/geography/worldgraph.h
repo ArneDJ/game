@@ -2,6 +2,7 @@ struct tile;
 struct corner;
 struct border;
 
+// TODO slated for removal
 enum SITE : uint8_t {
 	VACANT,
 	RESOURCE,
@@ -17,17 +18,19 @@ enum RELIEF : uint8_t {
 	HIGHLAND
 };
 
-enum tile_regolith_t : uint8_t {
-	REGOLITH_SAND,
-	REGOLITH_GRAVEL,
-	REGOLITH_SNOW,
-	REGOLITH_GRASS
+enum class tile_regolith : uint8_t {
+	STONE,
+	SAND,
+	SNOW,
+	GRASS
 };
 
-enum tile_feature_t : uint8_t {
-	FEATURE_NONE,
-	FEATURE_WOODS,
-	FEATURE_FLOODPLAIN
+enum class tile_feature : uint8_t {
+	NONE,
+	WOODS,
+	FLOODPLAIN,
+	RESOURCE,
+	SETTLEMENT
 };
 
 struct border {
@@ -103,12 +106,13 @@ struct tile {
 	uint8_t temperature;
 	enum RELIEF relief;
 	enum SITE site;
-	enum tile_regolith_t regolith = REGOLITH_SAND;
+	enum tile_regolith regolith = tile_regolith::SAND;
+	enum tile_feature feature = tile_feature::NONE;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
-		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, site, regolith);
+		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, site, regolith, feature);
 	}
 };
 

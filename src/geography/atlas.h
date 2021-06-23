@@ -73,7 +73,7 @@ private:
 	void erode_heightmap(float ocean_level);
 	void clamp_heightmap(float land_level);
 	void create_materialmasks(void);
-	void create_vegetation(void);
+	void create_vegetation(long seed);
 	void create_factions_map(void);
 	void place_vegetation(long seed);
 	void clear_entities(void);

@@ -95,13 +95,13 @@
 #include "army.h"
 //#include "util/sound.h" // TODO replace SDL_Mixer with OpenAL
 
-enum game_state_t {
-	GS_TITLE,
-	GS_NEW_CAMPAIGN,
-	GS_LOAD_CAMPAIGN,
-	GS_CAMPAIGN,
-	GS_BATTLE,
-	GS_EXIT
+enum class game_state {
+	TITLE,
+	NEW_CAMPAIGN,
+	LOAD_CAMPAIGN,
+	CAMPAIGN,
+	BATTLE,
+	EXIT
 };
 
 struct game_settings_t {
@@ -177,7 +177,7 @@ void Campaign::init(const UTIL::Window *window, const struct shader_group_t *sha
 	billboards = std::make_unique<GRAPHICS::BillboardGroup>(&shaders->billboard);
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
-	player = std::make_unique<Army>(startpos, 20.f);
+	player = std::make_unique<Army>(startpos, 40.f);
 	
 	skybox.init(window->width, window->height);
 	
@@ -622,7 +622,7 @@ private:
 	bool running;
 	bool debugmode;
 	MODULE::Module modular;
-	enum game_state_t state;
+	enum game_state state;
 	struct game_settings_t settings;
 	Saver saver;
 	UTIL::Window window;
@@ -820,7 +820,7 @@ void Game::update_battle()
 	// input
 	input.update();
 	if (input.exit_request()) {
-		state = GS_EXIT;
+		state = game_state::EXIT;
 	}
 
 	glm::vec2 rel_mousecoords = settings.look_sensitivity * input.rel_mousecoords();
@@ -849,7 +849,7 @@ void Game::update_battle()
 				battle.player->remove_ragdoll(battle.physicsman.get_world());
 			}
 		}
-		if (ImGui::Button("Exit Battle")) { state = GS_CAMPAIGN; }
+		if (ImGui::Button("Exit Battle")) { state = game_state::CAMPAIGN; }
 		ImGui::End();
 	}
 
@@ -886,10 +886,12 @@ void Game::prepare_battle()
 	uint32_t tileref = 0;
 	float amp = 0.f;
 	uint8_t precipitation = 0;
+	uint8_t tree_density = 0;
 	uint8_t temperature = 0;
 	int32_t local_seed = 0;
 	uint8_t site_radius = 0;
-	enum tile_regolith_t regolith = REGOLITH_SAND;
+	enum tile_regolith regolith = tile_regolith::SAND;
+	enum tile_feature feature = tile_feature::NONE;
 	if (tily) {
 		battle.naval = !tily->land;
 		amp = tily->amp;
@@ -897,6 +899,7 @@ void Game::prepare_battle()
 		precipitation = tily->precipitation;
 		temperature = tily->temperature;
 		regolith = tily->regolith;
+		feature = tily->feature;
 		std::mt19937 gen(campaign.seed);
 		gen.discard(tileref);
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
@@ -911,16 +914,24 @@ void Game::prepare_battle()
 
 	glm::vec3 grasscolor = glm::mix(modular.vegetation.dry, modular.vegetation.lush, precipitation / 255.f);
 
-	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, site_radius, false, battle.naval);
+	if (feature == tile_feature::WOODS) {
+		tree_density = 255;
+	} else if (regolith == tile_regolith::SNOW || regolith == tile_regolith::SAND) {
+		tree_density = 0;
+	} else {
+		tree_density = (precipitation > 64) ? 64 : precipitation;
+	}
+
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, tree_density, site_radius, false, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 	
 	bool grass_present = false;
 	// main terrain soil
-	if (regolith == REGOLITH_GRASS) {
+	if (regolith == tile_regolith::GRASS) {
 		grass_present = true;
 		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
-	} else if (regolith == REGOLITH_SAND) {
+	} else if (regolith == tile_regolith::SAND) {
 		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/sand.dds"));
 		grasscolor = { 0.96, 0.83, 0.63 };
 	} else {
@@ -966,7 +977,7 @@ void Game::run_battle()
 {
 	prepare_battle();
 
-	while (state == GS_BATTLE) {
+	while (state == game_state::BATTLE) {
 		timer.begin();
 
 		update_battle();
@@ -1021,7 +1032,7 @@ void Game::update_campaign()
 {
 	input.update();
 	if (input.exit_request()) {
-		state = GS_EXIT;
+		state = game_state::EXIT;
 	}
 	
 	campaign.update_camera(&input, settings.look_sensitivity, timer.delta);
@@ -1043,16 +1054,16 @@ void Game::update_campaign()
 		ImGui::Text("cam position: %f, %f, %f", campaign.camera.position.x, campaign.camera.position.y, campaign.camera.position.z);
 		ImGui::Text("player position: %f, %f, %f", campaign.player->position.x, campaign.player->position.y, campaign.player->position.z);
 		if (ImGui::Button("Show factions")) { campaign.show_factions = !campaign.show_factions; }
-		if (ImGui::Button("Battle scene")) { state = GS_BATTLE; }
-		if (ImGui::Button("Title screen")) { state = GS_TITLE; }
-		if (ImGui::Button("Exit Game")) { state = GS_EXIT; }
+		if (ImGui::Button("Battle scene")) { state = game_state::BATTLE; }
+		if (ImGui::Button("Title screen")) { state = game_state::TITLE; }
+		if (ImGui::Button("Exit Game")) { state = game_state::EXIT; }
 		ImGui::End();
 	}
 
 	// trigger battle
 	if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
 		if (glm::distance(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position)) < 1.f) {
-			state = GS_BATTLE;
+			state = game_state::BATTLE;
 		}
 	}
 
@@ -1114,6 +1125,7 @@ void Game::prepare_campaign()
 	campaign.atlas->create_mapdata(campaign.seed);
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
+	campaign.worldmap->reload_temperature(campaign.atlas->get_tempmap());
 	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.vegetation.dry, modular.vegetation.lush);
 
@@ -1143,14 +1155,14 @@ void Game::prepare_campaign()
 
 void Game::run_campaign()
 {
-	state = GS_CAMPAIGN;
+	state = game_state::CAMPAIGN;
 	
 	Entity dragon = Entity(glm::vec3(2048.f, 160.f, 2048.f), glm::quat(1.f, 0.f, 0.f, 0.f));
 	std::vector<const Entity*> ents;
 	ents.push_back(&dragon);
 	campaign.ordinary->add_object(MediaManager::load_model("dragon.glb"), ents);
 
-	while (state == GS_CAMPAIGN) {
+	while (state == game_state::CAMPAIGN) {
 		timer.begin();
 
 		update_campaign();
@@ -1181,7 +1193,7 @@ void Game::run_campaign()
 		window.swap();
 		timer.end();
 
-		if (state == GS_BATTLE) {
+		if (state == game_state::BATTLE) {
 			run_battle();
 			campaign.player->set_target_type(TARGET_NONE);
 		}
@@ -1203,15 +1215,15 @@ void Game::run()
 	campaign.init(&window, &shaders);
 	battle.init(&modular, &window, &shaders);
 	
-	state = GS_TITLE;
+	state = game_state::TITLE;
 	
 	textman->add_text("Hello World!", glm::vec3(1.f, 1.f, 1.f), glm::vec2(50.f, 400.f));
 	textman->add_text("Archeon Prototype", glm::vec3(1.f, 1.f, 1.f), glm::vec2(50.f, 100.f));
 
-	while (state == GS_TITLE) {
+	while (state == game_state::TITLE) {
 		input.update();
 		if (input.exit_request()) {
-			state = GS_EXIT;
+			state = game_state::EXIT;
 		}
 
 		if (debugmode) {
@@ -1222,12 +1234,12 @@ void Game::run()
 			ImGui::Begin("Main Menu Debug Mode");
 			ImGui::SetWindowSize(ImVec2(400, 200));
 			if (ImGui::Button("New World")) {
-				state = GS_NEW_CAMPAIGN;
+				state = game_state::NEW_CAMPAIGN;
 			}
 			if (ImGui::Button("Load World")) {
-				state = GS_LOAD_CAMPAIGN;
+				state = game_state::LOAD_CAMPAIGN;
 			}
-			if (ImGui::Button("Exit")) { state = GS_EXIT; }
+			if (ImGui::Button("Exit")) { state = game_state::EXIT; }
 			ImGui::End();
 		}
 		
@@ -1245,10 +1257,10 @@ void Game::run()
 
 		window.swap();
 
-		if (state == GS_NEW_CAMPAIGN) {
+		if (state == game_state::NEW_CAMPAIGN) {
 			new_campaign();
 		}
-		if (state == GS_LOAD_CAMPAIGN) {
+		if (state == game_state::LOAD_CAMPAIGN) {
 			load_campaign();
 		}
 	}

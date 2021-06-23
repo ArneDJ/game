@@ -7,6 +7,7 @@ public:
 	//void load_materials(const std::vector<const Texture*> textures);
 	void add_material(const std::string &name, const Texture *texture);
 	void reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *watermap, const UTIL::Image<uint8_t> *rainmap, const UTIL::Image<uint8_t> *materialmasks, const UTIL::Image<uint8_t> *factionsmap);
+	void reload_temperature(const UTIL::Image<uint8_t> *temperature);
 	void reload_factionsmap(const UTIL::Image<uint8_t> *factionsmap);
 	void reload_masks(const UTIL::Image<uint8_t> *mask_image);
 	void change_atmosphere(const glm::vec3 &fogclr, float fogfctr,  const glm::vec3 &sunposition);
@@ -20,6 +21,7 @@ private:
 	Texture *topology = nullptr;
 	Texture *nautical = nullptr;
 	Texture *rain = nullptr;
+	std::unique_ptr<Texture> m_temperature;
 	Texture *normals = nullptr;
 	Texture *masks = nullptr;
 	Texture *factions = nullptr;

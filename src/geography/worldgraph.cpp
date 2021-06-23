@@ -34,7 +34,7 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, uint8_t radius);
 static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered_map<const struct tile*, bool> &visited, std::unordered_map<const struct tile*, int> &depth, long seed);
 
-static enum tile_regolith_t pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature);
+static enum tile_regolith pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature);
 
 static const uint8_t N_RELAXATIONS = 1;
 static const float BOUNDS_OFFSET = 10.F;
@@ -824,6 +824,11 @@ void Worldgraph::gen_properties(const UTIL::Image<uint8_t> *temperatures, const 
 	// assign regolith types
 	for (struct tile &t : tiles) {
 		t.regolith = pick_regolith(t.relief, t.precipitation, t.temperature);
+		if (t.river) {
+			if (t.regolith == tile_regolith::SAND) {
+				t.feature = tile_feature::FLOODPLAIN;
+			}
+		}
 	}
 }
 
@@ -837,7 +842,9 @@ void Worldgraph::gen_sites(long seed, const struct MODULE::worldgen_parameters_t
 		visited[&t] = false;
 		depth[&t] = 0;
 		if (t.land == true && t.frontier == false && t.relief != HIGHLAND) {
-			candidates.push_back(&t);
+			if (t.regolith == tile_regolith::GRASS || t.feature == tile_feature::FLOODPLAIN) {
+				candidates.push_back(&t);
+			}
 		}
 	}
 
@@ -1107,38 +1114,37 @@ static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered
 	}
 }
 
-static enum tile_regolith_t pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature)
+static enum tile_regolith pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature)
 {
-	static const uint8_t MIN_SAND = 16;
-	static const uint8_t MIN_GRAVEL = 32;
+	static const uint8_t ABSOLUTE_SNOW_TEMPERATURE = 16;
+	static const uint8_t ABSOLUTE_DESERT_TEMPERATURE = 240;
 
-	static const uint8_t MIN_SNOW_TEMPERATURE = 16;
-	static const uint8_t MIN_GRAVEL_TEMPERATURE = 180;
-	static const uint8_t MIN_DESERT_TEMPERATURE = 200;
+	static const uint8_t MIN_DESERT_PRECIPITATION = 64;
+	static const uint8_t MIN_DESERT_TEMPERATURE = 160;
 
+	// regolith caused by extreme reliefs 
 	if (relief == SEABED) { 
-		return REGOLITH_SAND; 
+		return tile_regolith::SAND; 
+	}
+
+	// extreme temperatures
+	if (temperature > ABSOLUTE_DESERT_TEMPERATURE) {
+		return tile_regolith::SAND;
+	} else if (temperature < ABSOLUTE_SNOW_TEMPERATURE) {
+		return tile_regolith::SNOW;
 	}
 
 	if (relief == HIGHLAND) {
-		if (precipitation > MIN_SAND) { 
-			return REGOLITH_SNOW; 
-		} else {
-			return REGOLITH_GRAVEL; 
+		if (temperature < MIN_DESERT_TEMPERATURE || precipitation > MIN_DESERT_PRECIPITATION) { 
+			return tile_regolith::SNOW; 
 		}
+			
+		return tile_regolith::STONE; 
 	}
 
-	if (temperature > MIN_DESERT_TEMPERATURE && precipitation < MIN_SAND) {
-		return REGOLITH_SAND;
+	if (temperature > MIN_DESERT_TEMPERATURE && precipitation < MIN_DESERT_PRECIPITATION) {
+		return tile_regolith::SAND;
 	}
 
-	if (temperature > MIN_GRAVEL_TEMPERATURE && precipitation < MIN_GRAVEL) {
-		return REGOLITH_GRAVEL;
-	}
-
-	if (temperature < MIN_SNOW_TEMPERATURE) {
-		return REGOLITH_SNOW;
-	}
-
-	return REGOLITH_GRASS;
+	return tile_regolith::GRASS;
 }

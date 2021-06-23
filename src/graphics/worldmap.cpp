@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <memory>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -43,6 +44,9 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightma
 	rain = new Texture { rainmap };
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
+	m_temperature = std::make_unique<Texture>(rainmap);
+	m_temperature->change_wrapping(GL_CLAMP_TO_EDGE);
+
 	normalmap.resize(heightmap->width, heightmap->height, UTIL::COLORSPACE_RGB);
 	normals = new Texture { &normalmap };
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
@@ -57,6 +61,7 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightma
 	add_material("NAUTICAL_DISPLACEMENT", nautical);
 	add_material("NORMALMAP", normals);
 	add_material("RAINMAP", rain);
+	add_material("TEMPERATUREMAP", m_temperature.get());
 	add_material("MASKMAP", masks);
 	add_material("FACTIONSMAP", factions);
 
@@ -109,6 +114,11 @@ void Worldmap::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uin
 	masks->reload(materialmasks);
 
 	factions->reload(factionsmap);
+}
+	
+void Worldmap::reload_temperature(const UTIL::Image<uint8_t> *temperature)
+{
+	m_temperature->reload(temperature);
 }
 
 void Worldmap::reload_factionsmap(const UTIL::Image<uint8_t> *factionsmap)

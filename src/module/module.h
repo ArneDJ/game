@@ -149,7 +149,6 @@ struct tree_t {
 	std::string trunk;
 	std::string leaves;
 	std::string billboard;
-	struct bounds_t<uint8_t> height;
 	struct bounds_t<uint8_t> precipitation;
 	struct bounds_t<uint8_t> temperature;
 
@@ -160,7 +159,6 @@ struct tree_t {
 			CEREAL_NVP(trunk),
 			CEREAL_NVP(leaves),
 			CEREAL_NVP(billboard),
-			CEREAL_NVP(height),
 			CEREAL_NVP(precipitation),
 			CEREAL_NVP(temperature)
 		);

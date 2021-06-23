@@ -346,7 +346,7 @@ void Atlas::erode_heightmap(float ocean_level)
 		}
 	}
 
-	mask.write("mask.png");
+	//mask.write("mask.png");
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap.width; x++) {
 		for (int y = 0; y < terragen->heightmap.height; y++) {
@@ -503,7 +503,7 @@ void Atlas::create_materialmasks(void)
 	// snow
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == REGOLITH_SNOW) {
+		if (t.regolith == tile_regolith::SNOW) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -515,7 +515,7 @@ void Atlas::create_materialmasks(void)
 	// grass
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == REGOLITH_GRASS) {
+		if (t.regolith == tile_regolith::GRASS || t.feature == tile_feature::FLOODPLAIN) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -528,15 +528,16 @@ void Atlas::create_materialmasks(void)
 	// sand
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
-		if (bord.coast || bord.river) {
+		if (bord.river) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
 			materialmasks.draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_SAND, 255);
+			materialmasks.draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
 		}
 	}
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == REGOLITH_SAND) {
+		if (t.regolith == tile_regolith::SAND || t.coast == true || t.river == true) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -546,10 +547,22 @@ void Atlas::create_materialmasks(void)
 		}
 	}
 
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.feature == tile_feature::FLOODPLAIN) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				materialmasks.draw_triangle(a, b, c, CHANNEL_GRASS, 255);
+			}
+		}
+	}
+
 	materialmasks.blur(5.f);
 }
 	
-void Atlas::create_vegetation(void)
+void Atlas::create_vegetation(long seed)
 {
 	vegetation.copy(&terragen->rainmap);
 
@@ -559,16 +572,35 @@ void Atlas::create_vegetation(void)
 		float(vegetation.height) / SCALE.z
 	};
 
-	// snow
+	// density map
+	FastNoise fastnoise;
+	fastnoise.SetSeed(seed);
+	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
+	fastnoise.SetFractalType(FastNoise::FBM);
+	fastnoise.SetFractalOctaves(2);
+	fastnoise.SetFrequency(0.02f);
+
+	tree_density.noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+
 	#pragma omp parallel for
-	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith != REGOLITH_GRASS) {
-			glm::vec2 a = mapscale * t.center;
-			for (const auto &bord : t.borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				vegetation.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 0);
+	for (auto &t : worldgraph->tiles) {
+		uint8_t color = 0;
+		glm::vec2 a = mapscale * t.center;
+		glm::vec2 center = t.center / glm::vec2(SCALE.x, SCALE.z);
+		if (t.regolith == tile_regolith::GRASS && t.precipitation > 128) {
+			uint8_t noise = tree_density.sample(center.x * tree_density.width, center.y * tree_density.height, UTIL::CHANNEL_RED);
+			if (noise > 150) {
+				t.feature = tile_feature::WOODS;
+				color = 255;
+			} else {
+				float rain = t.precipitation / 255.f;
+				color = 255 * (0.1f * rain);
 			}
+		}
+		for (const auto &bord : t.borders) {
+			glm::vec2 b = mapscale * bord->c0->position;
+			glm::vec2 c = mapscale * bord->c1->position;
+			vegetation.draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
 		}
 	}
 	
@@ -581,6 +613,8 @@ void Atlas::create_vegetation(void)
 			vegetation.draw_thick_line(a.x, a.y, b.x, b.y, 1, UTIL::CHANNEL_RED, 0);
 		}
 	}
+
+	vegetation.write("vegetation");
 }
 	
 void Atlas::create_factions_map(void)
@@ -619,25 +653,22 @@ void Atlas::place_vegetation(long seed)
 	PoissonGenerator::DefaultPRNG PRNG(seed);
 	const auto positions = PoissonGenerator::generatePoissonPoints(100000, PRNG, false);
 
-	// density map
-	FastNoise fastnoise;
-	fastnoise.SetSeed(seed);
-	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
-	fastnoise.SetFractalType(FastNoise::FBM);
-	fastnoise.SetFractalOctaves(2);
-	fastnoise.SetFrequency(0.05f);
-
-	tree_density.noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
-
 	for (const auto &point : positions) {
-		float N = tree_density.sample(point.x * tree_density.width, point.y * tree_density.height, UTIL::CHANNEL_RED) / 255.f;
-		if (N < 0.5f) { continue; }
+		//float N = tree_density.sample(point.x * tree_density.width, point.y * tree_density.height, UTIL::CHANNEL_RED) / 255.f;
+		//if (N < 0.5f) { continue; }
 
-		float P = vegetation.sample(point.x * vegetation.width, point.y * vegetation.height, UTIL::CHANNEL_RED) / 255.f;
+		//float P = vegetation.sample(point.x * vegetation.width, point.y * vegetation.height, UTIL::CHANNEL_RED) / 255.f;
 
 		//P *= rain * rain;
-		float R = density_dist(gen);
-		if ( R > P ) { continue; }
+		//float R = density_dist(gen);
+		//if ( R > P ) { continue; }
+		uint8_t density = vegetation.sample(point.x * vegetation.width, point.y * vegetation.height, UTIL::CHANNEL_RED);
+		if (density == 0) { continue; }
+		if (density < 255) {
+			float rain = density / 255.f;
+			float chance = density_dist(gen);
+			if (chance > rain) { continue; }
+		}
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
 		position.y = SCALE.y * terragen->heightmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
@@ -655,7 +686,8 @@ void Atlas::create_mapdata(long seed)
 
 	create_materialmasks();
 
-	create_vegetation();
+	// TODO worldgraph terragen should do this
+	create_vegetation(seed);
 	place_vegetation(seed);
 
 	holding_tiles.clear();

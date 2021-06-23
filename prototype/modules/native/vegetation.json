@@ -15,12 +15,8 @@
                 "trunk": "trees/pine_tall/trunk.glb",
                 "leaves": "trees/pine_tall/leaves.glb",
                 "billboard": "trees/pine_tall/billboard.glb",
-                "height": {
-                    "min": 0,
-                    "max": 255
-                },
                 "precipitation": {
-                    "min": 50,
+                    "min": 120,
                     "max": 255
                 },
                 "temperature": {
@@ -32,12 +28,8 @@
                 "trunk": "trees/pine_broad/trunk.glb",
                 "leaves": "trees/pine_broad/leaves.glb",
                 "billboard": "trees/pine_broad/billboard.glb",
-                "height": {
-                    "min": 0,
-                    "max": 255
-                },
                 "precipitation": {
-                    "min": 50,
+                    "min": 100,
                     "max": 255
                 },
                 "temperature": {
@@ -49,16 +41,25 @@
                 "trunk": "trees/beech/trunk.glb",
                 "leaves": "trees/beech/leaves.glb",
                 "billboard": "trees/beech/billboard.glb",
-                "height": {
-                    "min": 0,
-                    "max": 150
-                },
                 "precipitation": {
-                    "min": 150,
+                    "min": 120,
                     "max": 255
                 },
                 "temperature": {
                     "min": 100,
+                    "max": 255
+                }
+            },
+      	    {
+                "trunk": "trees/palm_tall/trunk.glb",
+                "leaves": "trees/palm_tall/leaves.glb",
+                "billboard": "trees/palm_tall/billboard.glb",
+                "precipitation": {
+                    "min": 0,
+                    "max": 255
+                },
+                "temperature": {
+                    "min": 200,
                     "max": 255
                 }
             }

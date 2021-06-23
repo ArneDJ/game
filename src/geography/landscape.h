@@ -29,7 +29,7 @@ public:
 	void load_buildings(const std::vector<const GRAPHICS::Model*> &house_models);
 public:
 	void clear(void);
-	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t site_radius, bool walled, bool nautical);
+	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t tree_density, uint8_t site_radius, bool walled, bool nautical);
 public:
 	const UTIL::Image<float>* get_heightmap(void) const;
 	const UTIL::Image<uint8_t>* get_normalmap(void) const;
@@ -52,7 +52,7 @@ private:
 	std::vector<building_t> houses;
 private:
 	void gen_heightmap(int32_t local_seed, float amplitude);
-	void gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature);
+	void gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature, uint8_t tree_density);
 	void place_houses(bool walled, uint8_t radius, int32_t seed);
 	void create_sitemasks(uint8_t radius);
 	void create_valleymap(void);
