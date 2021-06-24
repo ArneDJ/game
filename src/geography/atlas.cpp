@@ -104,10 +104,12 @@ auto start = std::chrono::steady_clock::now();
 	plateau_heightmap();
 	oregony_heightmap(seedling);
 
+	// prevent land height from being be lower than sea level
+	clamp_heightmap(LAND_DOWNSCALE*params->graph.lowland);
+
 	// now create the watermap
 	create_watermap(LAND_DOWNSCALE*params->graph.lowland);
 	
-	clamp_heightmap(LAND_DOWNSCALE*params->graph.lowland);
 	erode_heightmap(0.97f*LAND_DOWNSCALE*params->graph.lowland);
 
 auto end = std::chrono::steady_clock::now();
@@ -384,16 +386,6 @@ void Atlas::clamp_heightmap(float land_level)
 
 	mask.blur(1.f);
 
-	// ignore rivers
-	#pragma omp parallel for
-	for (const auto &bord : worldgraph->borders) {
-		if (bord.river) {
-			glm::vec2 a = mapscale * bord.c0->position;
-			glm::vec2 b = mapscale * bord.c1->position;
-			mask.draw_thick_line(a.x, a.y, b.x, b.y, 5, UTIL::CHANNEL_RED, 0);
-		}
-	}
-
 	#pragma omp parallel for
 	for (int x = 0; x < terragen->heightmap.width; x++) {
 		for (int y = 0; y < terragen->heightmap.height; y++) {
@@ -588,7 +580,7 @@ void Atlas::create_vegetation(long seed)
 		glm::vec2 a = mapscale * t.center;
 		glm::vec2 center = t.center / glm::vec2(SCALE.x, SCALE.z);
 		if (t.regolith == tile_regolith::GRASS && t.precipitation > 128) {
-			uint8_t noise = tree_density.sample(center.x * tree_density.width, center.y * tree_density.height, UTIL::CHANNEL_RED);
+			uint8_t noise = tree_density.sample_scaled(center.x, center.y, UTIL::CHANNEL_RED);
 			if (noise > 150) {
 				t.feature = tile_feature::WOODS;
 				color = 255;
@@ -639,11 +631,6 @@ void Atlas::create_factions_map(void)
 void Atlas::place_vegetation(long seed)
 {
 	// spawn the forest
-	glm::vec2 hmapscale = {
-		float(terragen->heightmap.width) / SCALE.x,
-		float(terragen->heightmap.height) / SCALE.z
-	};
-
 	std::random_device rd;
 	std::mt19937 gen(seed);
 	std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
@@ -654,15 +641,7 @@ void Atlas::place_vegetation(long seed)
 	const auto positions = PoissonGenerator::generatePoissonPoints(100000, PRNG, false);
 
 	for (const auto &point : positions) {
-		//float N = tree_density.sample(point.x * tree_density.width, point.y * tree_density.height, UTIL::CHANNEL_RED) / 255.f;
-		//if (N < 0.5f) { continue; }
-
-		//float P = vegetation.sample(point.x * vegetation.width, point.y * vegetation.height, UTIL::CHANNEL_RED) / 255.f;
-
-		//P *= rain * rain;
-		//float R = density_dist(gen);
-		//if ( R > P ) { continue; }
-		uint8_t density = vegetation.sample(point.x * vegetation.width, point.y * vegetation.height, UTIL::CHANNEL_RED);
+		uint8_t density = vegetation.sample_scaled(point.x, point.y, UTIL::CHANNEL_RED);
 		if (density == 0) { continue; }
 		if (density < 255) {
 			float rain = density / 255.f;
@@ -670,7 +649,7 @@ void Atlas::place_vegetation(long seed)
 			if (chance > rain) { continue; }
 		}
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
-		position.y = SCALE.y * terragen->heightmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_RED);
+		position.y = SCALE.y * terragen->heightmap.sample_scaled(point.x, point.y, UTIL::CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 		struct transformation transform = { position, rotation, 10.f };
 		trees.push_back(transform);

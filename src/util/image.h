@@ -59,6 +59,10 @@ public:
 
 		return data[index];
 	}
+	T sample_scaled(float x, float y, uint8_t chan) const
+	{
+		return sample(x * width, y * height, chan);
+	}
 	void plot(uint16_t x, uint16_t y, uint8_t chan, T color)
 	{
 		if (chan >= channels) { return; }
