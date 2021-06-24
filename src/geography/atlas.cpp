@@ -579,7 +579,7 @@ void Atlas::create_vegetation(long seed)
 		uint8_t color = 0;
 		glm::vec2 a = mapscale * t.center;
 		glm::vec2 center = t.center / glm::vec2(SCALE.x, SCALE.z);
-		if (t.regolith == tile_regolith::GRASS && t.precipitation > 128) {
+		if (t.regolith == tile_regolith::GRASS && t.precipitation > 200) {
 			uint8_t noise = tree_density.sample_scaled(center.x, center.y, UTIL::CHANNEL_RED);
 			if (noise > 150) {
 				t.feature = tile_feature::WOODS;

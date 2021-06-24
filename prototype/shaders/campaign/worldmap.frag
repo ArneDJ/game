@@ -125,7 +125,7 @@ void main(void)
 	float temperature = texture(TEMPERATUREMAP, fragment.texcoord).r;
 	float exposure = smoothstep(0.6, 0.85, temperature);
 	
-	vec3 grassness = mix(GRASS_DRY*vec3(1.2), GRASS_LUSH, rainlevel);
+	vec3 grassness = mix(GRASS_DRY*vec3(1.8), GRASS_LUSH, rainlevel);
 	grass *= grassness;
 	
 	sand *= vec3(0.96, 0.83, 0.63) * vec3(1.2);

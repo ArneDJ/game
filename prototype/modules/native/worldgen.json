@@ -15,7 +15,7 @@
         },
         "rain_parameters": {
             "blur": 30.0,
-            "frequency": 0.009999999776482582,
+            "frequency": 0.02,
             "octaves": 6,
             "lacunarity": 3.0,
             "perturb_frequency": 0.009999999776482582,
