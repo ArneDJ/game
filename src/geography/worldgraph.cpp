@@ -1125,6 +1125,14 @@ static enum tile_regolith pick_regolith(enum RELIEF relief, uint8_t precipitatio
 	// regolith caused by extreme reliefs 
 	if (relief == SEABED) { 
 		return tile_regolith::SAND; 
+	} else if (relief == HIGHLAND) {
+		if (temperature > ABSOLUTE_DESERT_TEMPERATURE) {
+			return tile_regolith::STONE; 
+		} else if (temperature < MIN_DESERT_TEMPERATURE || precipitation > MIN_DESERT_PRECIPITATION) { 
+			return tile_regolith::SNOW; 
+		}
+			
+		return tile_regolith::STONE; 
 	}
 
 	// extreme temperatures
@@ -1132,14 +1140,6 @@ static enum tile_regolith pick_regolith(enum RELIEF relief, uint8_t precipitatio
 		return tile_regolith::SAND;
 	} else if (temperature < ABSOLUTE_SNOW_TEMPERATURE) {
 		return tile_regolith::SNOW;
-	}
-
-	if (relief == HIGHLAND) {
-		if (temperature < MIN_DESERT_TEMPERATURE || precipitation > MIN_DESERT_PRECIPITATION) { 
-			return tile_regolith::SNOW; 
-		}
-			
-		return tile_regolith::STONE; 
 	}
 
 	if (temperature > MIN_DESERT_TEMPERATURE && precipitation < MIN_DESERT_PRECIPITATION) {

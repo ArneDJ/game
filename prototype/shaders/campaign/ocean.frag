@@ -10,6 +10,7 @@ out vec4 fcolor;
 
 layout(binding = 20) uniform sampler2D DEPTHMAP;
 uniform sampler2D WATER_BUMPMAP;
+uniform sampler2D DISPLACEMENT;
 
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
@@ -51,7 +52,7 @@ vec3 do_diffuse(vec3 lightdir, vec3 normal)
 void main(void)
 {
 	vec3 color = vec3(0.7, 0.8, 0.9) * vec3(0.3);
-	vec3 shallowcolor = vec3(0.8, 0.95, 1.0) * vec3(0.3);
+	vec3 shallowcolor = vec3(0.8, 0.95, 1.0) * vec3(0.4);
 
 	vec3 normal = texture(WATER_BUMPMAP, 0.05*fragment.position.xz + (0.1*TIME * vec2(0.5, 0.5))).rbg;
 	normal = (normal * 2.0) - 1.0;
@@ -66,7 +67,10 @@ void main(void)
 	// TODO fix z-fighting
 	float waterdepth = floor_dist - water_dist;
 
-	color = mix(shallowcolor, color, clamp(waterdepth/30.0, 0.0, 1.0));
+	float shallowness = clamp(waterdepth/30.0, 0.0, 1.0);
+	float height = texture(DISPLACEMENT, fragment.texcoord).r;
+
+	color = mix(color, shallowcolor, smoothstep(0.3, 0.4, height));
 
 	vec3 eyedir = normalize(CAM_POS - fragment.position);
 	vec3 spec = do_specular(eyedir, SUN_POS, normal);

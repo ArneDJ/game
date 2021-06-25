@@ -33,6 +33,7 @@ enum material_channels_t {
 	CHANNEL_SNOW = 0,
 	CHANNEL_GRASS,
 	CHANNEL_SAND,
+	CHANNEL_ARID,
 	CHANNEL_COUNT
 };
 
@@ -49,12 +50,13 @@ static const uint16_t LANDMAP_RES = 2048;
 static const uint16_t WATERMAP_RES = 2048;
 static const uint16_t RAINMAP_RES = 512;
 static const uint16_t TEMPMAP_RES = 512;
+static const uint16_t VOLCMAP_RES = 512;
 static const uint16_t MATERIALMASKS_RES = 2048;
 static const uint16_t FACTIONSMAP_RES = 2048;
 
 Atlas::Atlas(void)
 {
-	terragen = std::make_unique<Terragen>(LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES);
+	terragen = std::make_unique<Terragen>(LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES, VOLCMAP_RES);
 
 	struct rectangle area = {
 		glm::vec2(0.F, 0.F),
@@ -551,6 +553,18 @@ void Atlas::create_materialmasks(void)
 		}
 	}
 
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		if (t.regolith == tile_regolith::SAND || t.regolith == tile_regolith::STONE) {
+			glm::vec2 a = mapscale * t.center;
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				materialmasks.draw_triangle(a, b, c, CHANNEL_ARID, 255);
+			}
+		}
+	}
+
 	materialmasks.blur(5.f);
 }
 	
@@ -692,6 +706,11 @@ const UTIL::Image<uint8_t>* Atlas::get_rainmap(void) const
 const UTIL::Image<uint8_t>* Atlas::get_tempmap(void) const
 {
 	return &terragen->tempmap;
+}
+
+const UTIL::Image<uint8_t>* Atlas::get_volcanism(void) const
+{
+	return &terragen->volcanism;
 }
 
 const UTIL::Image<uint8_t>* Atlas::get_vegetation(void) const

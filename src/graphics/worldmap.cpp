@@ -31,39 +31,39 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightma
 	faction_factor = 0.f;
 	glm::vec2 min = { -5.f, -5.f };
 	glm::vec2 max = { mapscale.x + 5.f, mapscale.z + 5.f };
-	patches = new Mesh { WORLDMAP_PATCH_RES, min, max };
+	patches = std::make_unique<Mesh>(WORLDMAP_PATCH_RES, min, max);
 
-	topology = new Texture { heightmap };
+	topology = std::make_unique<Texture>(heightmap);
 	// special wrapping mode so edges of the map are at height 0
 	topology->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	nautical = new Texture { watermap };
+	nautical = std::make_unique<Texture>(watermap);
 	// special wrapping mode so edges of the map are at height 0
 	nautical->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	rain = new Texture { rainmap };
+	rain = std::make_unique<Texture>(rainmap);
 	rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	m_temperature = std::make_unique<Texture>(rainmap);
 	m_temperature->change_wrapping(GL_CLAMP_TO_EDGE);
 
 	normalmap.resize(heightmap->width, heightmap->height, UTIL::COLORSPACE_RGB);
-	normals = new Texture { &normalmap };
+	normals = std::make_unique<Texture>(&normalmap);
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	masks = new Texture { materialmasks };
+	masks = std::make_unique<Texture>(materialmasks);
 	masks->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	factions = new Texture { factionsmap };
+	factions = std::make_unique<Texture>(factionsmap);
 	factions->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	add_material("DISPLACEMENT", topology);
-	add_material("NAUTICAL_DISPLACEMENT", nautical);
-	add_material("NORMALMAP", normals);
-	add_material("RAINMAP", rain);
+	add_material("DISPLACEMENT", topology.get());
+	add_material("NAUTICAL_DISPLACEMENT", nautical.get());
+	add_material("NORMALMAP", normals.get());
+	add_material("RAINMAP", rain.get());
 	add_material("TEMPERATUREMAP", m_temperature.get());
-	add_material("MASKMAP", masks);
-	add_material("FACTIONSMAP", factions);
+	add_material("MASKMAP", masks.get());
+	add_material("FACTIONSMAP", factions.get());
 
 	land.compile("shaders/campaign/worldmap.vert", GL_VERTEX_SHADER);
 	land.compile("shaders/campaign/worldmap.tesc", GL_TESS_CONTROL_SHADER);
@@ -86,20 +86,6 @@ void Worldmap::add_material(const std::string &name, const Texture *texture)
 	};
 
 	materials.push_back(texture_binding);
-}
-
-Worldmap::~Worldmap(void)
-{
-	delete patches;
-	
-	delete topology;
-	delete rain;
-
-	delete normals;
-
-	delete masks;
-
-	delete factions;
 }
 
 void Worldmap::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *watermap, const UTIL::Image<uint8_t> *rainmap, const UTIL::Image<uint8_t> *materialmasks, const UTIL::Image<uint8_t> *factionsmap)
@@ -187,10 +173,16 @@ void Worldmap::display_water(const UTIL::Camera *camera, float time) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 	
-void Worldmap::change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush)
+void Worldmap::change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush, const glm::vec3 &base_rock_min, const glm::vec3 &base_rock_max, const glm::vec3 desert_rock_min, const glm::vec3 desert_rock_max)
 {
 	grass_dry = dry;
 	grass_lush = lush;
+
+	land.use();
+	land.uniform_vec3("ROCK_BASE_MIN", base_rock_min);
+	land.uniform_vec3("ROCK_BASE_MAX", base_rock_max);
+	land.uniform_vec3("ROCK_DESERT_MIN", desert_rock_min);
+	land.uniform_vec3("ROCK_DESERT_MAX", desert_rock_max);
 }
 	
 void Worldmap::set_faction_factor(float factor)

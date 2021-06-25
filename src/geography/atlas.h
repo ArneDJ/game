@@ -30,6 +30,7 @@ public:
 	void create_land_navigation(void);
 	void create_sea_navigation(void);
 public:
+	// TODO put these images in a struct
 	const UTIL::Image<float>* get_heightmap(void) const;
 	const UTIL::Image<uint8_t>* get_watermap(void) const;
 	const UTIL::Image<uint8_t>* get_rainmap(void) const;
@@ -37,6 +38,7 @@ public:
 	const UTIL::Image<uint8_t>* get_materialmasks(void) const;
 	const UTIL::Image<uint8_t>* get_vegetation(void) const;
 	const UTIL::Image<uint8_t>* get_factions(void) const;
+	const UTIL::Image<uint8_t>* get_volcanism(void) const;
 	const std::vector<transformation>& get_trees(void) const;
 	const struct navigation_soup_t& get_navsoup(void) const;
 	const std::unordered_map<uint32_t, holding_t>& get_holdings(void) const;

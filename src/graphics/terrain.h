@@ -46,6 +46,7 @@ public:
 	void reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre);
 	void change_atmosphere(const glm::vec3 &sun, const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &ambiance);
 	void change_grass(const glm::vec3 &color, bool enabled);
+	void change_rock_color(const glm::vec3 &color);
 	void display_land(const UTIL::Camera *camera) const;
 	void display_water(const UTIL::Camera *camera, float time) const;
 	void display_grass(const UTIL::Camera *camera) const;
@@ -65,6 +66,7 @@ private:
 	float fogfactor;
 	glm::vec3 fogcolor;
 	glm::vec3 grasscolor;
+	glm::vec3 m_rock_color;
 	glm::vec3 m_ambiance;
 	bool m_grass_enabled = false;
 };

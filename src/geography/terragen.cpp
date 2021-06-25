@@ -15,11 +15,14 @@
 // The parameter a is the height of the curve's peak, b is the position of the center of the peak and c (the standard deviation, sometimes called the Gaussian RMS width) controls the width of the "bell".
 static inline float gauss(float a, float b, float c, float x);
 
-Terragen::Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres)
+Terragen::Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres, uint16_t volcres)
 {
 	heightmap.resize(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
+
 	rainmap.resize(rainres, rainres, UTIL::COLORSPACE_GRAYSCALE);
 	tempmap.resize(tempres, tempres, UTIL::COLORSPACE_GRAYSCALE);
+
+	volcanism.resize(volcres, volcres, UTIL::COLORSPACE_GRAYSCALE);
 }
 
 void Terragen::generate(long seed, const struct MODULE::worldgen_parameters_t *params)
@@ -32,6 +35,9 @@ void Terragen::generate(long seed, const struct MODULE::worldgen_parameters_t *p
 
 	rainmap.clear();
 	gen_rainmap(seed, params);
+
+	volcanism.clear();
+	gen_volcanism(seed, params);
 }
 
 void Terragen::gen_heightmap(long seed, const struct MODULE::worldgen_parameters_t *params)
@@ -120,6 +126,31 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 			rainmap.plot(i, j, UTIL::CHANNEL_RED, 255 * glm::clamp(rain, 0.f, 1.f));
 		}
 	}
+}
+	
+void Terragen::gen_volcanism(long seed, const struct MODULE::worldgen_parameters_t *params)
+{
+	FastNoise fastnoise;
+	fastnoise.SetSeed(seed);
+	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
+	fastnoise.SetFractalType(FastNoise::FBM);
+	fastnoise.SetFrequency(0.005f);
+	fastnoise.SetPerturbFrequency(0.001f);
+	fastnoise.SetFractalOctaves(6);
+	fastnoise.SetFractalLacunarity(2.5f);
+	fastnoise.SetGradientPerturbAmp(100.f);
+
+	volcanism.noise(&fastnoise, params->height.sampling_scale, UTIL::CHANNEL_RED);
+
+	for (int i = 0; i < volcanism.width; i++) {
+		for (int j = 0; j < volcanism.height; j++) {
+			float volc = volcanism.sample(i, j, UTIL::CHANNEL_RED) / 255.f;
+			volc = glm::smoothstep(0.4f, 0.6f, volc);
+			volcanism.plot(i, j, UTIL::CHANNEL_RED, 255 * glm::clamp(volc, 0.f, 1.f));
+		}
+	}
+
+	volcanism.write("volcanism.png");
 }
 
 static inline float gauss(float a, float b, float c, float x)

@@ -12,7 +12,7 @@ uniform sampler2D DISPLACEMENT;
 uniform sampler2D NORMALMAP;
 uniform sampler2D SITEMASKS;
 uniform sampler2D STONEMAP;
-uniform sampler2D GRASSMAP;
+uniform sampler2D REGOLITH_MAP;
 uniform sampler2D GRAVELMAP;
 uniform sampler2D DETAILMAP;
 
@@ -26,7 +26,8 @@ uniform vec3 AMBIANCE_COLOR;
 uniform vec3 FOG_COLOR;
 uniform float FOG_FACTOR;
 
-uniform vec3 GRASS_COLOR;
+uniform vec3 REGOLITH_COLOR;
+uniform vec3 ROCK_COLOR;
 
 vec3 fog(vec3 color, float dist)
 {
@@ -110,12 +111,12 @@ void main(void)
 	float dirtlevel = texture(SITEMASKS, sitecoord / SITE_SCALE).r;
 	
 	vec3 stone = texture(STONEMAP, 100.0 * fragment.texcoord).rgb;
-	vec3 grass = texture(GRASSMAP, 400.0 * fragment.texcoord).rgb;
+	vec3 grass = texture(REGOLITH_MAP, 400.0 * fragment.texcoord).rgb;
 	vec3 gravel = texture(GRAVELMAP, 800.0 * fragment.texcoord).rgb;
 	
-	vec3 color = GRASS_COLOR * grass;
-	color = mix(color, gravel, dirtlevel);
-	color = mix(color, stone, slope);
+	vec3 color = REGOLITH_COLOR * grass;
+	color = mix(color, ROCK_COLOR * gravel, dirtlevel);
+	color = mix(color, ROCK_COLOR * stone, slope);
 	
 	// terrain lighting
 	const vec3 lightcolor = vec3(1.0, 1.0, 1.0);

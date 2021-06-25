@@ -467,7 +467,7 @@ void Battle::load_assets(const MODULE::Module *mod)
 	landscape->load_buildings(house_models);
 	
 	terrain->insert_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
-	terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
+	terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/grass.dds"));
 	terrain->insert_material("GRAVELMAP", MediaManager::load_texture("ground/gravel.dds"));
 	terrain->insert_material("DETAILMAP", MediaManager::load_texture("ground/stone_normal.dds"));
 	terrain->insert_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
@@ -636,7 +636,7 @@ private:
 	GRAPHICS::RenderManager renderman;
 	struct shader_group_t shaders;
 	float fog_factor = 0.0005f; // TODO atmosphere
-	glm::vec3 ambiance_color = { 0.9f, 0.9f, 0.85f };
+	glm::vec3 ambiance_color = { 1.f, 1.f, 1.f };
 private:
 	void load_settings();
 	void set_opengl_states();
@@ -912,7 +912,7 @@ void Game::prepare_battle()
 		}
 	}
 
-	glm::vec3 grasscolor = glm::mix(modular.vegetation.dry, modular.vegetation.lush, precipitation / 255.f);
+	glm::vec3 grasscolor = glm::mix(glm::vec3(1.5f)*modular.palette.grass.min, modular.palette.grass.max, precipitation / 255.f);
 
 	if (feature == tile_feature::WOODS) {
 		tree_density = 255;
@@ -926,20 +926,24 @@ void Game::prepare_battle()
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 	
+	glm::vec3 rock_color = glm::mix(glm::vec3(0.8f), glm::vec3(1.f), temperature / 255.f);
+	
 	bool grass_present = false;
 	// main terrain soil
 	if (regolith == tile_regolith::GRASS) {
 		grass_present = true;
-		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/grass.dds"));
+		battle.terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/grass.dds"));
 	} else if (regolith == tile_regolith::SAND) {
-		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/sand.dds"));
+		battle.terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/sand.dds"));
 		grasscolor = { 0.96, 0.83, 0.63 };
+		rock_color = glm::vec3(0.96, 0.83, 0.63);
 	} else {
-		battle.terrain->insert_material("GRASSMAP", MediaManager::load_texture("ground/snow.dds"));
+		battle.terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/snow.dds"));
 		grasscolor = { 1.f, 1.f, 1.f };
 	}
-	
+
 	battle.terrain->change_grass(grasscolor, grass_present);
+	battle.terrain->change_rock_color(rock_color);
 
 	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_RAY | PHYSICS::COLLISION_GROUP_RAGDOLL);
 
@@ -1126,8 +1130,8 @@ void Game::prepare_campaign()
 
 	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
 	campaign.worldmap->reload_temperature(campaign.atlas->get_tempmap());
-	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0005f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
-	campaign.worldmap->change_groundcolors(modular.vegetation.dry, modular.vegetation.lush);
+	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0002f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
+	campaign.worldmap->change_groundcolors(modular.palette.grass.min, modular.palette.grass.max, modular.palette.rock_base.min, modular.palette.rock_base.max, modular.palette.rock_desert.min, modular.palette.rock_desert.max);
 
 	campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
 	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
@@ -1136,7 +1140,7 @@ void Game::prepare_campaign()
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 
 	shaders.billboard.use();
-	shaders.billboard.uniform_float("FOG_FACTOR", fog_factor);
+	shaders.billboard.uniform_float("FOG_FACTOR", 0.0002f);
 	shaders.billboard.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 	shaders.billboard.uniform_vec3("AMBIANCE_COLOR", glm::vec3(1.f));
 

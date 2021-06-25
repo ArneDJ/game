@@ -182,8 +182,6 @@ struct grass_t {
 };
 
 struct vegetation_t {
-	glm::vec3 dry = { 1.f, 1.f, 0.2f };
-	glm::vec3 lush = { 0.7f, 1.f, 0.2f };
 	std::vector<tree_t> trees;
 	std::vector<grass_t> grasses;
 
@@ -191,10 +189,24 @@ struct vegetation_t {
 	void serialize(Archive &archive)
 	{
 		archive(
-			CEREAL_NVP(dry), 
-			CEREAL_NVP(lush),
 			CEREAL_NVP(trees),
 			CEREAL_NVP(grasses)
+		);
+	}
+};
+
+struct palette_t {
+	bounds_t<glm::vec3> grass;
+	bounds_t<glm::vec3> rock_base;
+	bounds_t<glm::vec3> rock_desert;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(grass), 
+			CEREAL_NVP(rock_base),
+			CEREAL_NVP(rock_desert)
 		);
 	}
 };
@@ -293,6 +305,7 @@ public:
 public:
 	struct vegetation_t vegetation;
 	struct atmosphere_t atmosphere;
+	palette_t palette;
 	std::vector<struct building_t> houses;
 public:
 	void load(const std::string &modname);

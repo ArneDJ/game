@@ -87,6 +87,11 @@ void Terrain::change_grass(const glm::vec3 &color, bool enabled)
 	grass->colorize(color, fogcolor, sunpos, fogfactor, m_ambiance);
 }
 
+void Terrain::change_rock_color(const glm::vec3 &color)
+{
+	m_rock_color = color;
+}
+
 void Terrain::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *normalmap, const UTIL::Image<uint8_t> *cadastre)
 {
 	relief->reload(heightmap);
@@ -109,7 +114,8 @@ void Terrain::display_land(const UTIL::Camera *camera) const
 	land.uniform_vec3("SUN_POS", sunpos);
 	land.uniform_vec3("FOG_COLOR", fogcolor);
 	land.uniform_float("FOG_FACTOR", fogfactor);
-	land.uniform_vec3("GRASS_COLOR", grasscolor);
+	land.uniform_vec3("REGOLITH_COLOR", grasscolor);
+	land.uniform_vec3("ROCK_COLOR", m_rock_color);
 	land.uniform_vec3("AMBIANCE_COLOR", m_ambiance);
 
 	int location = 0;
