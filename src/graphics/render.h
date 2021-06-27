@@ -44,33 +44,6 @@ struct RenderObject {
 	TransformBuffer tbuffer;
 };
 
-class Billboard {
-public:
-	Billboard(const Texture *tex, const Mesh *mesh) ;
-	~Billboard(void);
-	void clear(void);
-	void instance(const std::vector<const Entity*> &ents);
-	void display(GLuint unit) const;
-private:
-	const Texture *texture;
-	const Mesh *quad;
-	TransformBuffer tbuffer;
-};
-
-class BillboardGroup {
-public:
-	BillboardGroup(const Shader *shady);
-	~BillboardGroup(void);
-	void add_billboard(const Texture *tex, const std::vector<const Entity*> &ents);
-	void display(const UTIL::Camera *camera) const;
-	void clear(void);
-private:
-	const Shader *shader;
-	std::vector<Billboard*> billboards;
-	Mesh *quad;
-};
-
-
 class RenderGroup {
 public:
 	RenderGroup(const Shader *shady);

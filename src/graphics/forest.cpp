@@ -229,6 +229,9 @@ void Forest::display(const UTIL::Camera *camera) const
 	m_billboard->use();
 	m_billboard->uniform_mat4("VP", camera->VP);
 	m_billboard->uniform_vec3("CAM_POS", camera->position);
+	m_billboard->uniform_vec3("CAM_DIR", camera->direction);
+	m_billboard->uniform_mat4("PROJECT", camera->projection);
+	m_billboard->uniform_mat4("VIEW", camera->viewing);
 	m_billboard->uniform_bool("INSTANCED", true);
 
 	for (const auto &model : m_models) {

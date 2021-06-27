@@ -139,7 +139,6 @@ public:
 	std::unique_ptr<GRAPHICS::LabelManager> labelman;
 	std::unique_ptr<GRAPHICS::RenderGroup> ordinary;
 	std::unique_ptr<GRAPHICS::RenderGroup> creatures;
-	std::unique_ptr<GRAPHICS::BillboardGroup> billboards;
 	GRAPHICS::Skybox skybox;
 	// entities
 	Entity marker;
@@ -173,8 +172,6 @@ void Campaign::init(const UTIL::Window *window, const struct shader_group_t *sha
 
 	ordinary = std::make_unique<GRAPHICS::RenderGroup>(&shaders->debug);
 	creatures = std::make_unique<GRAPHICS::RenderGroup>(&shaders->object);
-
-	billboards = std::make_unique<GRAPHICS::BillboardGroup>(&shaders->billboard);
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
 	player = std::make_unique<Army>(startpos, 40.f);
@@ -218,7 +215,7 @@ void Campaign::add_trees()
 		ents.push_back(entity);
 	}
 
-	billboards->add_billboard(MediaManager::load_texture("trees/pine.dds"), ents);
+	ordinary->add_object(MediaManager::load_model("map/pines.glb"), ents);
 }
 
 void Campaign::add_settlements()
@@ -279,7 +276,6 @@ void Campaign::cleanup()
 
 	ordinary->clear();
 	creatures->clear();
-	billboards->clear();
 
 	collisionman.clear();
 
@@ -420,7 +416,6 @@ public:
 	// graphics
 	std::unique_ptr<GRAPHICS::RenderGroup> ordinary;
 	std::unique_ptr<GRAPHICS::RenderGroup> creatures;
-	std::unique_ptr<GRAPHICS::BillboardGroup> billboards;
 	std::unique_ptr<GRAPHICS::Terrain> terrain;
 	std::unique_ptr<GRAPHICS::Forest> forest;
 	GRAPHICS::Skybox skybox;
@@ -448,7 +443,6 @@ void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const s
 
 	load_assets(mod);
 
-	billboards = std::make_unique<GRAPHICS::BillboardGroup>(&shaders->billboard);
 	ordinary = std::make_unique<GRAPHICS::RenderGroup>(&shaders->debug);
 	creatures = std::make_unique<GRAPHICS::RenderGroup>(&shaders->creature);
 
@@ -589,7 +583,6 @@ void Battle::cleanup()
 	delete player;
 
 	physicsman.clear();
-	billboards->clear();
 	ordinary->clear();
 	creatures->clear();
 
@@ -1001,8 +994,6 @@ void Game::run_battle()
 
 		battle.forest->display(&battle.camera);
 
-		battle.billboards->display(&battle.camera);
-
 		battle.terrain->display_land(&battle.camera);
 
 		battle.skybox.display(&battle.camera);
@@ -1183,8 +1174,6 @@ void Game::run_campaign()
 		renderman.bind_depthmap(GL_TEXTURE20); // TODO bind by name
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
 		
-		campaign.billboards->display(&campaign.camera);
-
 		campaign.labelman->display(&campaign.camera);
 
 		renderman.final_render();
