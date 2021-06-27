@@ -149,6 +149,7 @@ private:
 	void gen_rivers(const struct MODULE::worldgen_parameters_t *params);
 	void gen_sites(long seed, const struct MODULE::worldgen_parameters_t *params);
 	void gen_properties(const UTIL::Image<uint8_t> *temperatures, const UTIL::Image<uint8_t> *rainfall);
+	void add_primitive_features(const UTIL::Image<uint8_t> *forestation, const UTIL::Image<uint8_t> *rainfall);
 	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);
 	void remove_echoriads(void);

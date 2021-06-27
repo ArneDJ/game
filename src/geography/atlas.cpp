@@ -50,13 +50,12 @@ static const uint16_t LANDMAP_RES = 2048;
 static const uint16_t WATERMAP_RES = 2048;
 static const uint16_t RAINMAP_RES = 512;
 static const uint16_t TEMPMAP_RES = 512;
-static const uint16_t VOLCMAP_RES = 512;
 static const uint16_t MATERIALMASKS_RES = 2048;
 static const uint16_t FACTIONSMAP_RES = 2048;
 
 Atlas::Atlas(void)
 {
-	terragen = std::make_unique<Terragen>(LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES, VOLCMAP_RES);
+	terragen = std::make_unique<Terragen>(LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES);
 
 	struct rectangle area = {
 		glm::vec2(0.F, 0.F),
@@ -74,7 +73,6 @@ Atlas::Atlas(void)
 	materialmasks.resize(MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT);
 	
 	vegetation.resize(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
-	tree_density.resize(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
 	factions.resize(FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB);
 }
@@ -494,32 +492,25 @@ void Atlas::create_materialmasks(void)
 		float(materialmasks.height) / SCALE.z
 	};
 
-	// snow
+	// base materials
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == tile_regolith::SNOW) {
-			glm::vec2 a = mapscale * t.center;
-			for (const auto &bord : t.borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				materialmasks.draw_triangle(a, b, c, CHANNEL_SNOW, 255);
-			}
+		enum material_channels_t channel = CHANNEL_ARID;
+		switch (t.regolith) {
+		case tile_regolith::SNOW: channel = CHANNEL_SNOW; break;
+		case tile_regolith::SAND: channel = CHANNEL_SAND; break;
+		case tile_regolith::GRASS: channel = CHANNEL_GRASS; break;
+		case tile_regolith::STONE: channel = CHANNEL_ARID; break;
 		}
-	}
-	// grass
-	#pragma omp parallel for
-	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == tile_regolith::GRASS || t.feature == tile_feature::FLOODPLAIN) {
-			glm::vec2 a = mapscale * t.center;
-			for (const auto &bord : t.borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				materialmasks.draw_triangle(a, b, c, CHANNEL_GRASS, 255);
-			}
+		glm::vec2 a = mapscale * t.center;
+		for (const auto &bord : t.borders) {
+			glm::vec2 b = mapscale * bord->c0->position;
+			glm::vec2 c = mapscale * bord->c1->position;
+			materialmasks.draw_triangle(a, b, c, channel, 255);
 		}
 	}
 
-	// sand
+	// sand near rivers
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
 		if (bord.river) {
@@ -529,9 +520,10 @@ void Atlas::create_materialmasks(void)
 			materialmasks.draw_thick_line(a.x, a.y, b.x, b.y, 1, CHANNEL_GRASS, 0);
 		}
 	}
+
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == tile_regolith::SAND || t.coast == true || t.river == true) {
+		if (t.coast == true || t.river == true) {
 			glm::vec2 a = mapscale * t.center;
 			for (const auto &bord : t.borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -555,12 +547,14 @@ void Atlas::create_materialmasks(void)
 
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		if (t.regolith == tile_regolith::SAND || t.regolith == tile_regolith::STONE) {
-			glm::vec2 a = mapscale * t.center;
-			for (const auto &bord : t.borders) {
-				glm::vec2 b = mapscale * bord->c0->position;
-				glm::vec2 c = mapscale * bord->c1->position;
-				materialmasks.draw_triangle(a, b, c, CHANNEL_ARID, 255);
+		if (t.land) {
+			if (t.regolith == tile_regolith::SAND || t.regolith == tile_regolith::STONE) {
+				glm::vec2 a = mapscale * t.center;
+				for (const auto &bord : t.borders) {
+					glm::vec2 b = mapscale * bord->c0->position;
+					glm::vec2 c = mapscale * bord->c1->position;
+					materialmasks.draw_triangle(a, b, c, CHANNEL_ARID, 255);
+				}
 			}
 		}
 	}
@@ -578,30 +572,17 @@ void Atlas::create_vegetation(long seed)
 		float(vegetation.height) / SCALE.z
 	};
 
-	// density map
-	FastNoise fastnoise;
-	fastnoise.SetSeed(seed);
-	fastnoise.SetNoiseType(FastNoise::SimplexFractal);
-	fastnoise.SetFractalType(FastNoise::FBM);
-	fastnoise.SetFractalOctaves(2);
-	fastnoise.SetFrequency(0.02f);
-
-	tree_density.noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
-
 	#pragma omp parallel for
-	for (auto &t : worldgraph->tiles) {
+	for (const auto &t : worldgraph->tiles) {
 		uint8_t color = 0;
 		glm::vec2 a = mapscale * t.center;
 		glm::vec2 center = t.center / glm::vec2(SCALE.x, SCALE.z);
-		if (t.regolith == tile_regolith::GRASS && t.precipitation > 200) {
-			uint8_t noise = tree_density.sample_scaled(center.x, center.y, UTIL::CHANNEL_RED);
-			if (noise > 150) {
-				t.feature = tile_feature::WOODS;
-				color = 255;
-			} else {
-				float rain = t.precipitation / 255.f;
-				color = 255 * (0.1f * rain);
-			}
+		if (t.feature == tile_feature::WOODS) {
+			color = 255;
+		} else if (t.regolith == tile_regolith::GRASS && t.precipitation > 200) {
+			uint8_t noise = terragen->forestation.sample_scaled(center.x, center.y, UTIL::CHANNEL_RED);
+			float rain = t.precipitation / 255.f;
+			color = 255 * (0.1f * rain);
 		}
 		for (const auto &bord : t.borders) {
 			glm::vec2 b = mapscale * bord->c0->position;
@@ -619,8 +600,6 @@ void Atlas::create_vegetation(long seed)
 			vegetation.draw_thick_line(a.x, a.y, b.x, b.y, 1, UTIL::CHANNEL_RED, 0);
 		}
 	}
-
-	vegetation.write("vegetation");
 }
 	
 void Atlas::create_factions_map(void)
@@ -706,11 +685,6 @@ const UTIL::Image<uint8_t>* Atlas::get_rainmap(void) const
 const UTIL::Image<uint8_t>* Atlas::get_tempmap(void) const
 {
 	return &terragen->tempmap;
-}
-
-const UTIL::Image<uint8_t>* Atlas::get_volcanism(void) const
-{
-	return &terragen->volcanism;
 }
 
 const UTIL::Image<uint8_t>* Atlas::get_vegetation(void) const

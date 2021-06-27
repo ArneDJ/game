@@ -119,6 +119,8 @@ void Worldgraph::generate(long seed, const struct MODULE::worldgen_parameters_t 
 	}
 
 	gen_properties(&terra->tempmap, &terra->rainmap);
+	
+	add_primitive_features(&terra->forestation, &terra->rainmap);
 
 	gen_sites(seed, params);
 }
@@ -824,9 +826,25 @@ void Worldgraph::gen_properties(const UTIL::Image<uint8_t> *temperatures, const 
 	// assign regolith types
 	for (struct tile &t : tiles) {
 		t.regolith = pick_regolith(t.relief, t.precipitation, t.temperature);
+	}
+}
+	
+void Worldgraph::add_primitive_features(const UTIL::Image<uint8_t> *forestation, const UTIL::Image<uint8_t> *rainfall)
+{
+	for (struct tile &t : tiles) {
 		if (t.river) {
 			if (t.regolith == tile_regolith::SAND) {
 				t.feature = tile_feature::FLOODPLAIN;
+			}
+		}
+		if (t.regolith == tile_regolith::GRASS && t.precipitation > 200) {
+			glm::vec2 center = { 
+				t.center.x / area.max.x, 
+				t.center.y / area.max.y 
+			};
+			uint8_t noise = forestation->sample_scaled(center.x, center.y, UTIL::CHANNEL_RED);
+			if (noise > 150) {
+				t.feature = tile_feature::WOODS;
 			}
 		}
 	}

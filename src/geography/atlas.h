@@ -38,7 +38,6 @@ public:
 	const UTIL::Image<uint8_t>* get_materialmasks(void) const;
 	const UTIL::Image<uint8_t>* get_vegetation(void) const;
 	const UTIL::Image<uint8_t>* get_factions(void) const;
-	const UTIL::Image<uint8_t>* get_volcanism(void) const;
 	const std::vector<transformation>& get_trees(void) const;
 	const struct navigation_soup_t& get_navsoup(void) const;
 	const std::unordered_map<uint32_t, holding_t>& get_holdings(void) const;
@@ -58,7 +57,6 @@ private:
 	UTIL::Image<float> container;
 	UTIL::Image<float> detail;
 	UTIL::Image<uint8_t> mask;
-	UTIL::Image<uint8_t> tree_density;
 private:
 	std::unordered_map<uint32_t, holding_t> holdings; // TODO put in worldgraph
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
