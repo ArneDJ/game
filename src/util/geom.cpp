@@ -11,6 +11,7 @@
 
 static inline float sign(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c);
 static bool projected_axis_test(glm::vec2 b1, glm::vec2 b2, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4);
+static inline float distance_point_AABB(const glm::vec3 &point, const AABB &aabb);
 
 bool clockwise(glm::vec2 a, glm::vec2 b, glm::vec2 c)
 {
@@ -301,4 +302,27 @@ bool convex_quadrilateral(const quadrilateral *quad)
 bool point_in_rectangle(const glm::vec2 &p, const rectangle &r)
 {
 	return (p.x >= r.min.x && p.x < r.max.x && p.y >= r.min.y && p.y < r.max.y);
+}
+
+bool sphere_intersects_AABB(const sphere_t &sphere, const AABB &aabb)
+{
+	float dist = distance_point_AABB(sphere.center, aabb);
+
+	// Sphere and AABB intersect if the (squared) distance
+	// between them is less than the (squared) sphere radius
+	return (dist <= sphere.radius * sphere.radius);
+}
+
+static inline float distance_point_AABB(const glm::vec3 &point, const AABB &aabb)
+{
+	float dist = 0.f;
+
+	// For each axis count any excess distance outside box extents
+	for (int i = 0; i < 3; i++) {
+		float v = point[i];
+		if (v < aabb.min[i]) { dist += (aabb.min[i] - v) * (aabb.min[i] - v); }
+		if (v > aabb.max[i]) { dist += (v - aabb.max[i]) * (v - aabb.max[i]); }
+	}
+
+	return dist;
 }

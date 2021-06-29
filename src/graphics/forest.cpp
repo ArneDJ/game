@@ -183,10 +183,10 @@ void Forest::display(const UTIL::Camera *camera) const
 	}
 	// tree
 	// linear
+	const sphere_t sphere = { camera->position, 400.f };
 	for (const auto leaf : m_bvh.leafs) {
 		if (AABB_in_frustum(leaf->bounds.min, leaf->bounds.max, planes)) {
-			glm::vec3 center = 0.5f * (leaf->bounds.max + leaf->bounds.min); // TODO precalc this
-			if (glm::distance(center, camera->position) < 400.f) {
+			if (sphere_intersects_AABB(sphere, leaf->bounds)) {
 				for (auto &object : leaf->objects) {
 					auto model = object.model;
 					model->detail_transforms.matrices[model->detail_count++] = object.T;

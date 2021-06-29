@@ -21,6 +21,7 @@
 #include "../graphics/texture.h"
 #include "../graphics/mesh.h"
 #include "../graphics/model.h"
+#include "../media.h"
 #include "sitegen.h"
 
 #include "landscape.h"
@@ -67,7 +68,7 @@ static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::F
 
 static struct landgen_parameters random_landgen_parameters(int32_t seed);
 
-static bool larger_building(const struct building_t &a, const struct building_t &b);
+static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::building_t &b);
 
 static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
@@ -88,13 +89,15 @@ Landscape::Landscape(const MODULE::Module *mod, uint16_t heightres)
 	sitemasks.resize(SITEMASK_RES, SITEMASK_RES, UTIL::COLORSPACE_GRAYSCALE);
 }
 
-void Landscape::load_buildings(const std::vector<const GRAPHICS::Model*> &house_models)
+void Landscape::load_buildings()
 {
-	for (const auto &model : house_models) {
+	for (const auto &house_info : m_module->houses) {
+		auto model = MediaManager::load_model(house_info.model);
 		glm::vec3 size = model->bound_max - model->bound_min;
-		struct building_t house = {
+		GEOGRAPHY::building_t house = {
 			model,
-			size
+			size,
+			house_info.temperature
 		};
 		houses.push_back(house);
 	}
@@ -137,7 +140,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	// if scene is a town generate the site
 	if (site_radius > 0) {
 		create_sitemasks(site_radius);
-		place_houses(walled, site_radius, local_seed);
+		place_houses(walled, site_radius, local_seed, temperature);
 	}
 
 	printf("precipitation %d\n", precipitation);
@@ -157,7 +160,7 @@ const std::vector<GEOGRAPHY::tree_t>& Landscape::get_trees(void) const
 	return m_trees;
 }
 
-const std::vector<building_t>& Landscape::get_houses(void) const
+const std::vector<GEOGRAPHY::building_t>& Landscape::get_houses(void) const
 {
 	return houses;
 }
@@ -377,7 +380,7 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	}
 }
 	
-void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
+void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t temperature)
 {
 	// create wall cull quads so houses don't go through city walls
 	std::vector<struct quadrilateral> wall_boxes;
@@ -398,7 +401,16 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 		}
 	}
 
+	std::vector<GEOGRAPHY::building_t*> buildings_pool;
+	for (auto &house : houses) {
+		if (within_bounds(temperature, house.temperature)) {
+			buildings_pool.push_back(&house);	
+		}
+	}
 	//printf("n house templates %d\n", houses.size());
+
+	// no valid houses found
+	if (buildings_pool.size() < 1) { return; }
 
 	// place the town houses
 	for (const auto &d : sitegen.districts) {
@@ -411,9 +423,9 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 			glm::quat rotation = glm::angleAxis(angle, glm::vec3(0.f, 1.f, 0.f));
 			float height = sample_heightmap(parc.centroid + SITE_BOUNDS.min);
 			glm::vec3 position = { parc.centroid.x+SITE_BOUNDS.min.x, height, parc.centroid.y+SITE_BOUNDS.min.y };
-			for (auto &house : houses) {
-				if ((front > house.bounds.x && back > house.bounds.x) && (left > house.bounds.z && right > house.bounds.z)) {
-					glm::vec2 halfwidths = {  0.5f*house.bounds.x, 0.5f*house.bounds.z };
+			for (auto &house : buildings_pool) {
+				if ((front > house->bounds.x && back > house->bounds.x) && (left > house->bounds.z && right > house->bounds.z)) {
+					glm::vec2 halfwidths = {  0.5f*house->bounds.x, 0.5f*house->bounds.z };
 					struct quadrilateral box = building_box(parc.centroid, halfwidths, angle);
 					bool valid = true;
 					if (walled) {
@@ -426,7 +438,7 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 					}
 					if (valid) {
 						struct transformation transform = { position, rotation, 1.f };
-						house.transforms.push_back(transform);
+						house->transforms.push_back(transform);
 					}
 
 					break;
@@ -436,11 +448,11 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 	}
 
 	// place some farm houses outside walls
-	if (houses.size() > 0) {
+	if (buildings_pool.size() > 0) {
 		std::random_device rd;
 		std::mt19937 gen(seed);
 		std::uniform_real_distribution<float> rot_dist(0.f, 360.f);
-		std::uniform_int_distribution<uint32_t> house_type_dist(0, houses.size()-1);
+		std::uniform_int_distribution<uint32_t> house_type_dist(0, buildings_pool.size()-1);
 
 		std::bernoulli_distribution bern(0.25f);
 
@@ -450,9 +462,9 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed)
 				glm::vec3 position = { district.center.x+SITE_BOUNDS.min.x, height, district.center.y+SITE_BOUNDS.min.y };
 				glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 				// pick a random house
-				auto &house = houses[house_type_dist(gen)];
+				auto &house = buildings_pool[house_type_dist(gen)];
 				struct transformation transform = { position, rotation, 1.f };
-				house.transforms.push_back(transform);
+				house->transforms.push_back(transform);
 			}
 		}
 	}
@@ -551,7 +563,7 @@ static struct landgen_parameters random_landgen_parameters(int32_t seed)
 	return params;
 }
 
-static bool larger_building(const struct building_t &a, const struct building_t &b)
+static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::building_t &b)
 {
 	return (a.bounds.x * a.bounds.z) > (b.bounds.x * b.bounds.z);
 }

@@ -1,35 +1,68 @@
 {
     "houses": [
         {
-            "model": "buildings/house_small.glb",
+            "model": "buildings/houses/cold/small.glb",
             "precipitation": {
                 "min": 0,
                 "max": 255
             },
             "temperature": {
                 "min": 0,
+                "max": 100
+            }
+        },
+        {
+            "model": "buildings/houses/cold/medium.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        {
+            "model": "buildings/houses/cold/large.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 0,
+                "max": 100
+            }
+        },
+        {
+            "model": "buildings/houses/mudbrick/small.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 100,
                 "max": 255
             }
         },
         {
-            "model": "buildings/house_medium.glb",
+            "model": "buildings/houses/mudbrick/medium.glb",
             "precipitation": {
                 "min": 0,
                 "max": 255
             },
             "temperature": {
-                "min": 0,
+                "min": 100,
                 "max": 255
             }
         },
         {
-            "model": "buildings/house_large.glb",
+            "model": "buildings/houses/mudbrick/large.glb",
             "precipitation": {
                 "min": 0,
                 "max": 255
             },
             "temperature": {
-                "min": 0,
+                "min": 100,
                 "max": 255
             }
         }

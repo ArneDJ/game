@@ -564,7 +564,8 @@ void Atlas::create_materialmasks(void)
 	
 void Atlas::create_vegetation(long seed)
 {
-	vegetation.copy(&terragen->rainmap);
+	//vegetation.copy(&terragen->rainmap);
+	vegetation.clear();
 
 	// some tiles like desert or snow don't have vegetation
 	const glm::vec2 mapscale = {
@@ -574,30 +575,38 @@ void Atlas::create_vegetation(long seed)
 
 	#pragma omp parallel for
 	for (const auto &t : worldgraph->tiles) {
-		uint8_t color = 0;
 		glm::vec2 a = mapscale * t.center;
 		glm::vec2 center = t.center / glm::vec2(SCALE.x, SCALE.z);
 		if (t.feature == tile_feature::WOODS) {
-			color = 255;
-		} else if (t.regolith == tile_regolith::GRASS && t.precipitation > 200) {
-			uint8_t noise = terragen->forestation.sample_scaled(center.x, center.y, UTIL::CHANNEL_RED);
-			float rain = t.precipitation / 255.f;
-			color = 255 * (0.1f * rain);
-		}
-		for (const auto &bord : t.borders) {
-			glm::vec2 b = mapscale * bord->c0->position;
-			glm::vec2 c = mapscale * bord->c1->position;
-			vegetation.draw_triangle(a, b, c, UTIL::CHANNEL_RED, color);
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				vegetation.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 255);
+			}
 		}
 	}
 	
-	// rivers and coasts don't have vegetation
+	vegetation.blur(2.f);
+	
+	// rivers, coasts and mountain borders don't have vegetation
 	#pragma omp parallel for
 	for (const auto &bord : worldgraph->borders) {
-		if (bord.coast || bord.river) {
+		if (bord.coast || bord.river || bord.wall) {
 			glm::vec2 a = mapscale * bord.c0->position;
 			glm::vec2 b = mapscale * bord.c1->position;
 			vegetation.draw_thick_line(a.x, a.y, b.x, b.y, 1, UTIL::CHANNEL_RED, 0);
+		}
+	}
+	#pragma omp parallel for
+	for (const auto &t : worldgraph->tiles) {
+		glm::vec2 a = mapscale * t.center;
+		glm::vec2 center = t.center / glm::vec2(SCALE.x, SCALE.z);
+		if (t.regolith != tile_regolith::GRASS) {
+			for (const auto &bord : t.borders) {
+				glm::vec2 b = mapscale * bord->c0->position;
+				glm::vec2 c = mapscale * bord->c1->position;
+				vegetation.draw_triangle(a, b, c, UTIL::CHANNEL_RED, 0);
+			}
 		}
 	}
 }
@@ -658,7 +667,6 @@ void Atlas::create_mapdata(long seed)
 
 	create_materialmasks();
 
-	// TODO worldgraph terragen should do this
 	create_vegetation(seed);
 	place_vegetation(seed);
 

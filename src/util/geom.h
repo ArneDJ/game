@@ -34,6 +34,11 @@ struct AABB {
 	glm::vec3 max;
 };
 
+struct sphere_t {
+	glm::vec3 center;
+	float radius;
+};
+
 struct segment_intersection {
 	bool intersects = false;
 	glm::vec2 point;
@@ -76,3 +81,5 @@ bool quad_quad_intersection(const quadrilateral &A, const quadrilateral &B);
 bool convex_quadrilateral(const quadrilateral *quad);
 
 bool point_in_rectangle(const glm::vec2 &p, const rectangle &r);
+
+bool sphere_intersects_AABB(const sphere_t &sphere, const AABB &aabb);

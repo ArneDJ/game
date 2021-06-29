@@ -859,7 +859,13 @@ void Worldgraph::gen_sites(long seed, const struct MODULE::worldgen_parameters_t
 	for (auto &t : tiles) {
 		visited[&t] = false;
 		depth[&t] = 0;
-		if (t.land == true && t.frontier == false && t.relief != HIGHLAND) {
+		bool valid_land = t.land == true && t.frontier == false && t.relief != HIGHLAND;
+		// reject site on forest tile unless it is near coast or river
+		bool valid_site = t.feature != tile_feature::WOODS;
+		if (valid_site == false) {
+			valid_site = t.coast || t.river;
+		}
+		if (valid_land && valid_site) {
 			if (t.regolith == tile_regolith::GRASS || t.feature == tile_feature::FLOODPLAIN) {
 				candidates.push_back(&t);
 			}
@@ -1046,6 +1052,7 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 					}
 				}
 				root->site = TOWN;
+				root->feature = tile_feature::SETTLEMENT;
 			}
 		}
 	}
@@ -1074,6 +1081,7 @@ static void spawn_towns(std::vector<struct tile*> &candidates, std::unordered_ma
 
 			if (valid) {
 				root->site = TOWN;
+				root->feature = tile_feature::SETTLEMENT;
 			}
 		}
 	}
@@ -1103,6 +1111,7 @@ static void spawn_castles(std::vector<struct tile*> &candidates, std::unordered_
 			}
 			if (max >= radius) {
 				root->site = CASTLE;
+				root->feature = tile_feature::SETTLEMENT;
 			}
 		}
 	}
@@ -1126,6 +1135,7 @@ static void spawn_villages(std::vector<struct tile*> &candidates, std::unordered
 				std::bernoulli_distribution d(p);
 				if (d(gen) == true) {
 					root->site = RESOURCE;
+					root->feature = tile_feature::RESOURCE;
 				}
 			}
 		}

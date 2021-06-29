@@ -215,7 +215,7 @@ void Campaign::add_trees()
 		ents.push_back(entity);
 	}
 
-	ordinary->add_object(MediaManager::load_model("map/pines.glb"), ents);
+	creatures->add_object(MediaManager::load_model("map/pines.glb"), ents);
 }
 
 void Campaign::add_settlements()
@@ -453,12 +453,7 @@ void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const s
 
 void Battle::load_assets(const MODULE::Module *mod)
 {
-	// import all the buildings of the module
-	std::vector<const GRAPHICS::Model*> house_models;
-	for (const auto &house : mod->houses) {
-		house_models.push_back(MediaManager::load_model(house.model));
-	}
-	landscape->load_buildings(house_models);
+	landscape->load_buildings();
 	
 	terrain->insert_material("STONEMAP", MediaManager::load_texture("ground/stone.dds"));
 	terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/grass.dds"));
@@ -1164,15 +1159,23 @@ void Game::run_campaign()
 
 		renderman.bind_FBO();
 	
-		campaign.ordinary->display(&campaign.camera);
-		campaign.creatures->display(&campaign.camera);
-
 		campaign.worldmap->display_land(&campaign.camera);
 
-		campaign.skybox.display(&campaign.camera);
-
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		renderman.bind_depthmap(GL_TEXTURE20); // TODO bind by name
 		campaign.worldmap->display_water(&campaign.camera, timer.elapsed);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	//
+		campaign.ordinary->display(&campaign.camera);
+
+		shaders.object.use();
+		shaders.object.uniform_float("FOG_FACTOR", 0.0002f);
+		shaders.object.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
+		shaders.object.uniform_vec3("CAM_POS", campaign.camera.position);
+		shaders.object.uniform_vec3("SUN_POS", glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
+		campaign.creatures->display(&campaign.camera);
+
+		campaign.skybox.display(&campaign.camera);
 		
 		campaign.labelman->display(&campaign.camera);
 

@@ -6,6 +6,7 @@ layout(location = 2) in vec2 vtexcoords;
 
 out vec3 normal;
 out vec2 texcoords;
+out vec3 position;
 
 layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
@@ -25,9 +26,13 @@ void main(void)
 		col[3] = texelFetch(TRANSFORMS, gl_InstanceID * 4 + 3);
 		mat4 T = mat4(col[0], col[1], col[2], col[3]);
 		normal = normalize(mat3(transpose(inverse(T))) * normalize(vnormal));
-		gl_Position = VP * T * vec4(vposition, 1.0);
+		vec4 worldpos = T * vec4(vposition, 1.0);
+		position = worldpos.xyz;
+		gl_Position = VP * worldpos;
 	} else {
 		normal = normalize(mat3(transpose(inverse(MODEL))) * normalize(vnormal));
-		gl_Position = VP * MODEL * vec4(vposition, 1.0);
+		vec4 worldpos = MODEL * vec4(vposition, 1.0);
+		position = worldpos.xyz;
+		gl_Position = VP * worldpos;
 	}
 }
