@@ -55,7 +55,7 @@ bool AnimationSampler::load(const std::string &filepath)
 	
 Animator::Animator(const std::string &skeletonpath, const std::vector<std::pair<uint32_t, std::string>> &animationpaths)
 {
-	valid = load_skeleton(skeletonpath);
+	m_valid = load_skeleton(skeletonpath);
 	const int num_soa_joints = skeleton.num_soa_joints();
 	const int num_joints = skeleton.num_joints();
 
@@ -137,7 +137,7 @@ void Animator::update(float delta, uint32_t first, uint32_t second, float mix)
 
 	// Setups blending job.
 	ozz::animation::BlendingJob blend_job;
-	blend_job.threshold = threshold;
+	blend_job.threshold = m_threshold;
 	blend_job.layers = ozz::make_span(layers);
 	blend_job.bind_pose = skeleton.joint_bind_poses();
 	blend_job.output = ozz::make_span(blended_locals);
@@ -184,21 +184,21 @@ bool Animator::load_skeleton(const std::string &filepath)
 	return true;
 }
 
-PlaybackController::PlaybackController(void)
+PlaybackController::PlaybackController()
 {
 	time_ratio = 0.f;
-	previous_time_ratio = 0.f;
-	playback_speed = 1.f;
-	playing = true;
-	looping = true;
+	m_previous_time_ratio = 0.f;
+	m_playback_speed = 1.f;
+	m_playing = true;
+	m_looping = true;
 }
 
 void PlaybackController::update(const ozz::animation::Animation& _animation, float _dt) 
 {
 	float new_time = time_ratio;
 
-	if (playing) {
-		new_time = time_ratio + _dt * playback_speed / _animation.duration();
+	if (m_playing) {
+		new_time = time_ratio + _dt * m_playback_speed / _animation.duration();
 	}
 
 	// Must be called even if time doesn't change, in order to update previous
@@ -210,8 +210,8 @@ void PlaybackController::update(const ozz::animation::Animation& _animation, flo
 
 void PlaybackController::set_time_ratio(float ratio) 
 {
-	previous_time_ratio = time_ratio;
-	if (looping) {
+	m_previous_time_ratio = time_ratio;
+	if (m_looping) {
 		// Wraps in the unit interval [0:1], even for negative values (the reason
 		// for using floorf).
 		time_ratio = ratio - floorf(ratio);
@@ -221,11 +221,11 @@ void PlaybackController::set_time_ratio(float ratio)
 	}
 }
 
-void PlaybackController::reset(void) 
+void PlaybackController::reset() 
 {
-	previous_time_ratio = time_ratio = 0.f;
-	playback_speed = 1.f;
-	playing = true;
+	m_previous_time_ratio = time_ratio = 0.f;
+	m_playback_speed = 1.f;
+	m_playing = true;
 }
 
 };

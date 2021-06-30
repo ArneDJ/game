@@ -1,17 +1,17 @@
 
 struct debug_box {
-	GRAPHICS::CubeMesh *mesh;
+	gfx::CubeMesh *mesh;
 	std::vector<const Entity*> entities;
 };
 
 struct debug_AABB_t {
-	std::unique_ptr<GRAPHICS::CubeMesh> mesh;
+	std::unique_ptr<gfx::CubeMesh> mesh;
 	glm::vec3 color;
 };
 
 class Debugger {
 public:
-	void init(const GRAPHICS::Shader *shady);
+	void init(const gfx::Shader *shady);
 	void teardown(void);
 	// to visualize the navigation meshes
 	void add_navmesh(const dtNavMesh *mesh);
@@ -23,8 +23,8 @@ public:
 	void render_bboxes(const UTIL::Camera *camera);
 	void delete_bboxes(void);
 private:
-	const GRAPHICS::Shader *shader;
-	std::vector<GRAPHICS::Mesh*> navmeshes;
+	const gfx::Shader *shader;
+	std::vector<gfx::Mesh*> navmeshes;
 	std::vector<debug_box> bboxes;
 	std::vector<std::unique_ptr<debug_AABB_t>> cube_meshes;
 };

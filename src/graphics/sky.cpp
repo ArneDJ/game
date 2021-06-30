@@ -15,7 +15,7 @@
 #include "clouds.h"
 #include "sky.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 static const float DIST_MIN_COVERAGE = 0.F;
 static const float DIST_MAX_COVERAGE = 0.8F;

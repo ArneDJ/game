@@ -20,9 +20,9 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
+#include "../geometry/voronoi.h"
 #include "../util/image.h"
-#include "../util/voronoi.h"
 #include "../module/module.h"
 #include "terragen.h"
 #include "worldgraph.h"
@@ -65,10 +65,10 @@ Atlas::Atlas()
 
 	watermap.resize(WATERMAP_RES, WATERMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
-	container.resize(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
-	detail.resize(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
+	container.resize(terragen->heightmap.width(), terragen->heightmap.height(), UTIL::COLORSPACE_GRAYSCALE);
+	detail.resize(terragen->heightmap.width(), terragen->heightmap.height(), UTIL::COLORSPACE_GRAYSCALE);
 
-	mask.resize(terragen->heightmap.width, terragen->heightmap.height, UTIL::COLORSPACE_GRAYSCALE);
+	mask.resize(terragen->heightmap.width(), terragen->heightmap.height(), UTIL::COLORSPACE_GRAYSCALE);
 	
 	materialmasks.resize(MATERIALMASKS_RES, MATERIALMASKS_RES, CHANNEL_COUNT);
 	
@@ -115,8 +115,8 @@ std::cout << "campaign image maps time: " << elapsed_seconds.count() << "s\n";
 void Atlas::smoothe_heightmap()
 {
 	const glm::vec2 mapscale = {
-		float(mask.width) / SCALE.x,
-		float(mask.height) / SCALE.z
+		float(mask.width()) / SCALE.x,
+		float(mask.height()) / SCALE.z
 	};
 
 	container.copy(&terragen->heightmap);
@@ -147,8 +147,8 @@ void Atlas::smoothe_heightmap()
 
 	// now mix the original map with the blurred version based on the mask
 	#pragma omp parallel for
-	for (int i = 0; i < terragen->heightmap.width; i++) {
-		for (int j = 0; j < terragen->heightmap.height; j++) {
+	for (int i = 0; i < terragen->heightmap.width(); i++) {
+		for (int j = 0; j < terragen->heightmap.height(); j++) {
 			uint8_t color = mask.sample(i, j, UTIL::CHANNEL_RED);
 			float h = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
 			float b = container.sample(i, j, UTIL::CHANNEL_RED);
@@ -163,8 +163,8 @@ void Atlas::smoothe_heightmap()
 void Atlas::plateau_heightmap()
 {
 	const glm::vec2 mapscale = {
-		float(mask.width) / SCALE.x,
-		float(mask.height) / SCALE.z
+		float(mask.width()) / SCALE.x,
+		float(mask.height()) / SCALE.z
 	};
 
 	// add mountains
@@ -207,8 +207,8 @@ void Atlas::plateau_heightmap()
 	mask.blur(10.f);
 
 	#pragma omp parallel for
-	for (int i = 0; i < terragen->heightmap.width; i++) {
-		for (int j = 0; j < terragen->heightmap.height; j++) {
+	for (int i = 0; i < terragen->heightmap.width(); i++) {
+		for (int j = 0; j < terragen->heightmap.height(); j++) {
 			uint8_t color = mask.sample(i, j, UTIL::CHANNEL_RED);
 			float h = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
 			terragen->heightmap.plot(i, j, UTIL::CHANNEL_RED, glm::mix(LAND_DOWNSCALE * h, 0.95f * h, color / 255.f));
@@ -221,8 +221,8 @@ void Atlas::plateau_heightmap()
 void Atlas::oregony_heightmap(long seed)
 {
 	const glm::vec2 mapscale = {
-		float(mask.width) / SCALE.x,
-		float(mask.height) / SCALE.z
+		float(mask.width()) / SCALE.x,
+		float(mask.height()) / SCALE.z
 	};
 
 	 // peaks
@@ -261,8 +261,8 @@ void Atlas::oregony_heightmap(long seed)
 	mask.blur(3.f);
 
 	#pragma omp parallel for
-	for (int i = 0; i < terragen->heightmap.width; i++) {
-		for (int j = 0; j < terragen->heightmap.height; j++) {
+	for (int i = 0; i < terragen->heightmap.width(); i++) {
+		for (int j = 0; j < terragen->heightmap.height(); j++) {
 			uint8_t color = mask.sample(i, j, UTIL::CHANNEL_RED);
 			float height = terragen->heightmap.sample(i, j, UTIL::CHANNEL_RED);
 			float m = container.sample(i, j, UTIL::CHANNEL_RED);
@@ -281,8 +281,8 @@ void Atlas::erode_heightmap(float ocean_level)
 	mask.clear();
 
 	const glm::vec2 mapscale = {
-		float(mask.width) / SCALE.x,
-		float(mask.height) / SCALE.z
+		float(mask.width()) / SCALE.x,
+		float(mask.height()) / SCALE.z
 	};
 
 	// add the rivers to the mask
@@ -298,8 +298,8 @@ void Atlas::erode_heightmap(float ocean_level)
 	mask.blur(0.6f);
 	// let the rivers erode the land heightmap
 	#pragma omp parallel for
-	for (int x = 0; x < terragen->heightmap.width; x++) {
-		for (int y = 0; y < terragen->heightmap.height; y++) {
+	for (int x = 0; x < terragen->heightmap.width(); x++) {
+		for (int y = 0; y < terragen->heightmap.height(); y++) {
 			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
@@ -340,8 +340,8 @@ void Atlas::erode_heightmap(float ocean_level)
 
 	//mask.write("mask.png");
 	#pragma omp parallel for
-	for (int x = 0; x < terragen->heightmap.width; x++) {
-		for (int y = 0; y < terragen->heightmap.height; y++) {
+	for (int x = 0; x < terragen->heightmap.width(); x++) {
+		for (int y = 0; y < terragen->heightmap.height(); y++) {
 			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
@@ -356,8 +356,8 @@ void Atlas::erode_heightmap(float ocean_level)
 void Atlas::clamp_heightmap(float land_level)
 {
 	const glm::vec2 mapscale = {
-		float(mask.width) / SCALE.x,
-		float(mask.height) / SCALE.z
+		float(mask.width()) / SCALE.x,
+		float(mask.height()) / SCALE.z
 	};
 
 	mask.clear();
@@ -377,8 +377,8 @@ void Atlas::clamp_heightmap(float land_level)
 	mask.blur(1.f);
 
 	#pragma omp parallel for
-	for (int x = 0; x < terragen->heightmap.width; x++) {
-		for (int y = 0; y < terragen->heightmap.height; y++) {
+	for (int x = 0; x < terragen->heightmap.width(); x++) {
+		for (int y = 0; y < terragen->heightmap.height(); y++) {
 			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(x, y, UTIL::CHANNEL_RED);
@@ -392,8 +392,8 @@ void Atlas::clamp_heightmap(float land_level)
 void Atlas::create_watermap(float ocean_level)
 {
 	const glm::vec2 mapscale = {
-		float(mask.width) / SCALE.x,
-		float(mask.height) / SCALE.z
+		float(mask.width()) / SCALE.x,
+		float(mask.height()) / SCALE.z
 	};
 
 	mask.clear();
@@ -411,11 +411,11 @@ void Atlas::create_watermap(float ocean_level)
 
 	// now create the heightmap of the water based on the land heightmap
 	const glm::vec2 scale = {
-		float(terragen->heightmap.width) / float(watermap.width) ,
-		float(terragen->heightmap.height) / float(watermap.height)
+		float(terragen->heightmap.width()) / float(watermap.width()) ,
+		float(terragen->heightmap.height()) / float(watermap.height())
 	};
-	for (int x = 0; x < watermap.width; x++) {
-		for (int y = 0; y < watermap.height; y++) {
+	for (int x = 0; x < watermap.width(); x++) {
+		for (int y = 0; y < watermap.height(); y++) {
 			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				float height = terragen->heightmap.sample(scale.x*x, scale.y*y, UTIL::CHANNEL_RED);
@@ -463,8 +463,8 @@ void Atlas::create_watermap(float ocean_level)
 		}
 	}
 
-	for (int x = 0; x < watermap.width; x++) {
-		for (int y = 0; y < watermap.height; y++) {
+	for (int x = 0; x < watermap.width(); x++) {
+		for (int y = 0; y < watermap.height(); y++) {
 			uint8_t masker = mask.sample(x, y, UTIL::CHANNEL_RED);
 			if (masker > 0) {
 				watermap.plot(x, y, UTIL::CHANNEL_RED, 255*(ocean_level));
@@ -478,8 +478,8 @@ void Atlas::create_materialmasks()
 	materialmasks.clear();
 
 	const glm::vec2 mapscale = {
-		float(materialmasks.width) / SCALE.x,
-		float(materialmasks.height) / SCALE.z
+		float(materialmasks.width()) / SCALE.x,
+		float(materialmasks.height()) / SCALE.z
 	};
 
 	// base materials
@@ -559,8 +559,8 @@ void Atlas::create_vegetation(long seed)
 
 	// some tiles like desert or snow don't have vegetation
 	const glm::vec2 mapscale = {
-		float(vegetation.width) / SCALE.x,
-		float(vegetation.height) / SCALE.z
+		float(vegetation.width()) / SCALE.x,
+		float(vegetation.height()) / SCALE.z
 	};
 
 	#pragma omp parallel for
@@ -606,8 +606,8 @@ void Atlas::create_factions_map()
 	factions.clear();
 
 	const glm::vec2 mapscale = {
-		float(factions.width) / SCALE.x,
-		float(factions.height) / SCALE.z
+		float(factions.width()) / SCALE.x,
+		float(factions.height()) / SCALE.z
 	};
 
 	// TODO faction colors need to be saved
@@ -734,8 +734,8 @@ const struct tile* Atlas::tile_at_position(const glm::vec2 &position) const
 void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 {
 	const glm::vec2 mapscale = {
-		float(factions.width) / SCALE.x,
-		float(factions.height) / SCALE.z
+		float(factions.width()) / SCALE.x,
+		float(factions.height()) / SCALE.z
 	};
 
 	auto search = holdings.find(holding);

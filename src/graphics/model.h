@@ -1,7 +1,7 @@
 #pragma once
 #include "../extern/cgltf/cgltf.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 struct node_t;
 

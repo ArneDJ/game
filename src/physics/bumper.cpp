@@ -11,14 +11,14 @@
 #include "../bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "../bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "heightfield.h"
 #include "physics.h"
 
 #include "bumper.h"
 
-namespace PHYSICS {
+namespace physics {
 
 class ClosestNotMe : public btCollisionWorld::ClosestRayResultCallback {
 public:
@@ -92,8 +92,8 @@ btRigidBody* Bumper::body() const
 void Bumper::update(const btDynamicsWorld *world)
 {
 	ClosestNotMe ray_callback(m_body.get());
-	ray_callback.m_collisionFilterGroup = PHYSICS::COLLISION_GROUP_ACTOR;
-	ray_callback.m_collisionFilterMask = PHYSICS::COLLISION_GROUP_ACTOR | PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_WORLD;
+	ray_callback.m_collisionFilterGroup = COLLISION_GROUP_ACTOR;
+	ray_callback.m_collisionFilterMask = COLLISION_GROUP_ACTOR | COLLISION_GROUP_HEIGHTMAP | COLLISION_GROUP_WORLD;
 	
 	// to avoid "snapping" the probe scales if the bumper is on the ground or in the air
 	float probe_scale = m_grounded ? m_probe_ground : m_probe_air;

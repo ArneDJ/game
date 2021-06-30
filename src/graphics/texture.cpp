@@ -17,11 +17,11 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "texture.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 static inline GLenum texture_format(ddsktx_format format);
 
@@ -101,7 +101,7 @@ Texture::Texture(const UTIL::Image<uint8_t> *image)
 	GLenum internalformat = 0;
 	GLenum type = GL_UNSIGNED_BYTE;
 
-	switch (image->channels) {
+	switch (image->channels()) {
 	case 1: 
 		internalformat = GL_R8; 
 		format = GL_RED; 
@@ -120,7 +120,7 @@ Texture::Texture(const UTIL::Image<uint8_t> *image)
 		break;
 	}
 
-	handle = generate_2D_texture(image->data.data(), image->width, image->height, internalformat, format, type);
+	handle = generate_2D_texture(image->raster().data(), image->width(), image->height(), internalformat, format, type);
 }
 
 Texture::Texture(const UTIL::Image<float> *image)
@@ -132,7 +132,7 @@ Texture::Texture(const UTIL::Image<float> *image)
 	GLenum type = GL_FLOAT;
 	GLenum internalformat = 0;
 
-	switch (image->channels) {
+	switch (image->channels()) {
 	case 1: 
 		internalformat = GL_R32F; 
 		format = GL_RED; 
@@ -151,7 +151,7 @@ Texture::Texture(const UTIL::Image<float> *image)
 		break;
 	}
 
-	handle = generate_2D_texture(image->data.data(), image->width, image->height, internalformat, format, type);
+	handle = generate_2D_texture(image->raster().data(), image->width(), image->height(), internalformat, format, type);
 }
 
 Texture::~Texture(void)
@@ -195,20 +195,20 @@ void Texture::bind(GLenum unit) const
 void Texture::reload(const UTIL::Image<float> *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_FLOAT, image->data.data());
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width(), image->height(), format, GL_FLOAT, image->raster().data());
 }
 
 void Texture::reload(const UTIL::Image<uint8_t> *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width, image->height, format, GL_UNSIGNED_BYTE, image->data.data());
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width(), image->height(), format, GL_UNSIGNED_BYTE, image->raster().data());
 }
 
 void Texture::unload(UTIL::Image<float> *image)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, handle);
-	glGetTexImage(GL_TEXTURE_2D, 0, format, GL_FLOAT, image->data.data());
+	glGetTexImage(GL_TEXTURE_2D, 0, format, GL_FLOAT, image->raster().data());
 }
 
 void Texture::load_DDS(const std::string &filepath)

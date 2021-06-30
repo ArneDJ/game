@@ -6,7 +6,6 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "entity.h"
 #include "camera.h"
 
 static const glm::vec3 UP_VECTOR = {0.F, 1.F, 0.F};

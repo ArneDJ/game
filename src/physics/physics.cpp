@@ -13,12 +13,12 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "heightfield.h"
 #include "physics.h"
 
-namespace PHYSICS {
+namespace physics {
 
 static const int MAX_SUB_STEPS = 10;
 static const btVector3 GRAVITY = { 0.F, -9.81F, 0.F }; // same gravity as in my house

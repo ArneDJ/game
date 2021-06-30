@@ -22,10 +22,10 @@
 
 #include "extern/aixlog/aixlog.h"
 
-#include "util/geom.h"
+#include "geometry/geom.h"
+#include "geometry/voronoi.h"
 #include "util/entity.h"
 #include "util/image.h"
-#include "util/voronoi.h"
 #include "util/navigation.h"
 #include "module/module.h"
 #include "geography/terragen.h"

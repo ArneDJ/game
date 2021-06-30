@@ -14,7 +14,7 @@
 
 #include "text.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 

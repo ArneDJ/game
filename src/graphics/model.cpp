@@ -16,13 +16,13 @@
 
 #define CGLTF_IMPLEMENTATION
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "texture.h"
 #include "mesh.h"
 #include "model.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 struct linkage {
 	std::map<const cgltf_node*, struct node_t*> nodes;

@@ -13,7 +13,7 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "../module/module.h"
 #include "heightfield.h"
@@ -46,7 +46,7 @@ static glm::mat4 bullet_to_mat4(const btTransform &t)
 	return m;
 }
 
-namespace PHYSICS {
+namespace physics {
 	
 RagdollBone::RagdollBone(float radius, float height, const glm::vec3 &start, const glm::vec3 &rotation)
 {
@@ -141,7 +141,7 @@ void Ragdoll::add_to_world(btDynamicsWorld *world, const glm::vec3 &pos, const g
 		bone->body->setWorldTransform(offset * transform);
 		bone->body->setLinearVelocity(vec3_to_bt(velocity));
 		bone->body->activate();
-		world->addRigidBody(bone->body.get(), COLLISION_GROUP_RAGDOLL, COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_WORLD);
+		world->addRigidBody(bone->body.get(), COLLISION_GROUP_RAGDOLL, COLLISION_GROUP_HEIGHTMAP | COLLISION_GROUP_WORLD);
 	}
 
 	for (auto &joint : m_joints) {

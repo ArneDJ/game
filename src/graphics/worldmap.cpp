@@ -12,16 +12,16 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../geometry/geom.h"
 #include "../util/entity.h"
 #include "../util/camera.h"
-#include "../util/geom.h"
 #include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
 #include "mesh.h"
 #include "worldmap.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
@@ -47,7 +47,7 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightma
 	m_temperature = std::make_unique<Texture>(rainmap);
 	m_temperature->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normalmap.resize(heightmap->width, heightmap->height, UTIL::COLORSPACE_RGB);
+	normalmap.resize(heightmap->width(), heightmap->height(), UTIL::COLORSPACE_RGB);
 	normals = std::make_unique<Texture>(&normalmap);
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 

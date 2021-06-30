@@ -17,9 +17,9 @@
 
 #include "../extern/aixlog/aixlog.h"
 
+#include "../geometry/geom.h"
 #include "../util/entity.h"
 #include "../util/camera.h"
-#include "../util/geom.h"
 #include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
@@ -28,7 +28,7 @@
 
 #include "forest.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 void BVH::build(const std::vector<tree_instance_t> &instances)
 {

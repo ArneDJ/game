@@ -27,6 +27,8 @@ include_directories("src/extern/bullet")
 file(GLOB all_SRCS
         "${PROJECT_SOURCE_DIR}/src/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/*.h"
+        "${PROJECT_SOURCE_DIR}/src/geometry/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/geometry/*.h"
         "${PROJECT_SOURCE_DIR}/src/util/*.cpp"
         "${PROJECT_SOURCE_DIR}/src/util/*.h"
         "${PROJECT_SOURCE_DIR}/src/module/*.cpp"

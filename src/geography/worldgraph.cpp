@@ -18,8 +18,8 @@
 
 #include "../extern/poisson/poisson_disk_sampling.h"
 
-#include "../util/voronoi.h"
-#include "../util/geom.h"
+#include "../geometry/geom.h"
+#include "../geometry/voronoi.h"
 #include "../util/image.h"
 #include "../module/module.h"
 #include "terragen.h"
@@ -237,8 +237,8 @@ void Worldgraph::gen_diagram(long seed, float radius)
 
 void Worldgraph::gen_relief(const UTIL::Image<float> *heightmap, const struct MODULE::worldgen_parameters_t *params)
 {
-	const float scale_x = float(heightmap->width) / area.max.x;
-	const float scale_y = float(heightmap->height) / area.max.y;
+	const float scale_x = float(heightmap->width()) / area.max.x;
+	const float scale_y = float(heightmap->height()) / area.max.y;
 
 	for (struct tile &t : tiles) {
 		float height = heightmap->sample(scale_x*t.center.x, scale_y*t.center.y, UTIL::CHANNEL_RED);
@@ -810,12 +810,12 @@ void Worldgraph::gen_properties(const UTIL::Image<uint8_t> *temperatures, const 
 	
 	// assign local tile temperature and precipitation
 	const glm::vec2 scale_temp = { 
-		float(temperatures->width) / area.max.x,
-		float(temperatures->height) / area.max.y
+		float(temperatures->width()) / area.max.x,
+		float(temperatures->height()) / area.max.y
 	};
 	const glm::vec2 scale_rain = { 
-		float(rainfall->width) / area.max.x,
-		float(rainfall->height) / area.max.y
+		float(rainfall->width()) / area.max.x,
+		float(rainfall->height()) / area.max.y
 	};
 
 	for (struct tile &t : tiles) {

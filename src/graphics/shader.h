@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 class Shader {
 public:

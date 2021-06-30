@@ -1,5 +1,5 @@
 
-namespace PHYSICS {
+namespace physics {
 
 enum collision_group_t {
     COLLISION_GROUP_NONE = 0,

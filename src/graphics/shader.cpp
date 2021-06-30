@@ -13,7 +13,7 @@
 
 #include "shader.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 Shader::~Shader(void)
 {

@@ -1,7 +1,7 @@
 #pragma once
 #include <array> // has to be included here to compile on windows
 
-namespace GRAPHICS {
+namespace gfx {
 
 struct depthmap {
 	GLuint FBO;

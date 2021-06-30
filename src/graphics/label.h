@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 struct label_batch_t {
 	GLuint VAO, VBO, EBO;

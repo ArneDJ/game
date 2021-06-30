@@ -24,7 +24,7 @@
 
 #include "../extern/aixlog/aixlog.h"
 
-#include "geom.h"
+#include "../geometry/geom.h"
 #include "image.h"
 
 namespace UTIL {
@@ -34,10 +34,10 @@ static glm::vec3 filter_normal(int x, int y, float strength, const Image<float> 
 template<>
 void Image<uint8_t>::blur(float sigma)
 {
-	uint8_t *blurred = new uint8_t[data.size()];
-	uint8_t *input = data.data();
+	uint8_t *blurred = new uint8_t[m_raster.size()];
+	uint8_t *input = m_raster.data();
 
-	fast_gaussian_blur_template(input, blurred, width, height, channels, sigma);
+	fast_gaussian_blur_template(input, blurred, m_width, m_height, m_channels, sigma);
 
 	std::swap(input, blurred);
 
@@ -47,10 +47,10 @@ void Image<uint8_t>::blur(float sigma)
 template<>
 void Image<float>::blur(float sigma)
 {
-	float *blurred = new float[data.size()];
-	float *input = data.data();
+	float *blurred = new float[m_raster.size()];
+	float *input = m_raster.data();
 
-	fast_gaussian_blur_template(input, blurred, width, height, channels, sigma);
+	fast_gaussian_blur_template(input, blurred, m_width, m_height, m_channels, sigma);
 
 	std::swap(input, blurred);
 
@@ -61,12 +61,12 @@ template<>
 void Image<uint8_t>::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)
 {
 	const int nsteps = 32;
-	const int stepsize = width / nsteps;
+	const int stepsize = m_width / nsteps;
 
 	#pragma omp parallel for
-	for (int step_x = 0; step_x < width; step_x += stepsize) {
+	for (int step_x = 0; step_x < m_width; step_x += stepsize) {
 		int w = step_x + stepsize;
-		int h = height;
+		int h = m_height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
 				float x = sample_freq.x * j;
@@ -83,12 +83,12 @@ template<>
 void Image<float>::noise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)
 {
 	const int nsteps = 32;
-	const int stepsize = width / nsteps;
+	const int stepsize = m_width / nsteps;
 
 	#pragma omp parallel for
-	for (int step_x = 0; step_x < width; step_x += stepsize) {
+	for (int step_x = 0; step_x < m_width; step_x += stepsize) {
 		int w = step_x + stepsize;
-		int h = height;
+		int h = m_height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
 				float x = sample_freq.x * j;
@@ -105,13 +105,13 @@ template<>
 void Image<float>::normalize(uint8_t chan)
 {
 	const int nsteps = 32;
-	const int stepsize = width / nsteps;
+	const int stepsize = m_width / nsteps;
 
 	// find min and max
 	float min = (std::numeric_limits<float>::max)();
 	float max = (std::numeric_limits<float>::min)();
-	for (int x = 0; x < width; x++) {
-		for (int y = 0; y < height; y++) {
+	for (int x = 0; x < m_width; x++) {
+		for (int y = 0; y < m_height; y++) {
 			float value = sample(x, y, chan);
 			min = (std::min)(min, value);
 			max = (std::max)(max, value);
@@ -126,9 +126,9 @@ void Image<float>::normalize(uint8_t chan)
 
 	// now normalize the values
 	#pragma omp parallel for
-	for (int step_x = 0; step_x < width; step_x += stepsize) {
+	for (int step_x = 0; step_x < m_width; step_x += stepsize) {
 		int w = step_x + stepsize;
-		int h = height;
+		int h = m_height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
 				float value = sample(j, i, chan);
@@ -143,12 +143,12 @@ template<>
 void Image<float>::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq, uint8_t chan)
 {
 	const int nsteps = 32;
-	const int stepsize = width / nsteps;
+	const int stepsize = m_width / nsteps;
 
 	#pragma omp parallel for
-	for (int step_x = 0; step_x < width; step_x += stepsize) {
+	for (int step_x = 0; step_x < m_width; step_x += stepsize) {
 		int w = step_x + stepsize;
-		int h = height;
+		int h = m_height;
 		for (int i = 0; i < h; i++) {
 			for (int j = step_x; j < w; j++) {
 				float x = sample_freq.x * j;
@@ -165,22 +165,22 @@ void Image<float>::cellnoise(FastNoise *fastnoise, const glm::vec2 &sample_freq,
 template<>
 void Image<uint8_t>::create_normalmap(const Image<float> *displacement, float strength)
 {
-	if (channels != COLORSPACE_RGB) {
+	if (m_channels != COLORSPACE_RGB) {
 		LOG(ERROR, "Image") << "Normal map creation error: image is not RGB";
 		return;
 	}
-	if (displacement->channels != COLORSPACE_GRAYSCALE) {
+	if (displacement->channels() != COLORSPACE_GRAYSCALE) {
 		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not grayscale";
 		return;
 	}
-	if (width != displacement->width || height != displacement->height) {
+	if (m_width != displacement->width() || m_height != displacement->height()) {
 		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not same resolution as normalmap image";
 		return;
 	}
 
 	#pragma omp parallel for
-	for (int x = 0; x < displacement->width; x++) {
-		for (int y = 0; y < displacement->height; y++) {
+	for (int x = 0; x < displacement->width(); x++) {
+		for (int y = 0; y < displacement->height(); y++) {
 			glm::vec3 normal = filter_normal(x, y, strength, displacement);
 			// convert to positive values to store in an image
 			normal.x = (normal.x + 1.f) / 2.f;
@@ -196,22 +196,22 @@ void Image<uint8_t>::create_normalmap(const Image<float> *displacement, float st
 template<>
 void Image<float>::create_normalmap(const Image<float> *displacement, float strength)
 {
-	if (channels != COLORSPACE_RGB) {
+	if (m_channels != COLORSPACE_RGB) {
 		LOG(ERROR, "Image") << "Normal map creation error: image is not RGB";
 		return;
 	}
-	if (displacement->channels != COLORSPACE_GRAYSCALE) {
+	if (displacement->m_channels != COLORSPACE_GRAYSCALE) {
 		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not grayscale";
 		return;
 	}
-	if (width != displacement->width || height != displacement->height) {
+	if (m_width != displacement->width() || m_height != displacement->height()) {
 		LOG(ERROR, "Image") << "Normal map creation error: displacement image is not same resolution as normalmap image";
 		return;
 	}
 
 	#pragma omp parallel for
-	for (int x = 0; x < displacement->width; x++) {
-		for (int y = 0; y < displacement->height; y++) {
+	for (int x = 0; x < displacement->width(); x++) {
+		for (int y = 0; y < displacement->height(); y++) {
 			const glm::vec3 normal = filter_normal(x, y, strength, displacement);
 			plot(x, y, CHANNEL_RED, normal.x);
 			plot(x, y, CHANNEL_GREEN, normal.y);
@@ -223,7 +223,7 @@ void Image<float>::create_normalmap(const Image<float> *displacement, float stre
 template<>
 void Image<uint8_t>::write(const std::string &filepath) const
 {
-	stbi_write_png(filepath.c_str(), width, height, channels, data.data(), channels*width);
+	stbi_write_png(filepath.c_str(), m_width, m_height, m_channels, m_raster.data(), m_channels*m_width);
 }
 
 static glm::vec3 filter_normal(int x, int y, float strength, const Image<float> *image)

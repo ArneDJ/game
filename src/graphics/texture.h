@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 // immutable OpenGL texture
 class Texture {

@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 // contains the parameters and creates the 3D textures
 
 // contains the buffers and textures where the actual clouds are rendered to

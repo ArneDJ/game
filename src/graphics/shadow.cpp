@@ -14,7 +14,7 @@
 #include "../util/camera.h"
 #include "shadow.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 static const glm::mat4 SCALE_BIAS = {
 	0.5F, 0.0F, 0.0F, 0.0F, 

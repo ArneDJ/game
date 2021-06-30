@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 struct glyph_batch_t {
 	GLuint VAO, VBO, EBO;

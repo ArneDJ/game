@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 // contains a set of random normalized points to be transformed for warparound grass
 class GrassRoots {

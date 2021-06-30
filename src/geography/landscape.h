@@ -2,7 +2,7 @@
 namespace GEOGRAPHY {
 
 struct building_t {
-	const GRAPHICS::Model *model;
+	const gfx::Model *model;
 	glm::vec3 bounds;
 	MODULE::bounds_t<uint8_t> temperature;
 	std::vector<geom::transformation_t> transforms;

@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 enum BVH_axis_t : uint8_t {
 	BVH_AXIS_X = 0,

@@ -13,15 +13,15 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../geometry/geom.h"
 #include "../util/entity.h"
-#include "../util/geom.h"
 #include "../util/image.h"
 #include "../util/camera.h"
 #include "shader.h"
 #include "texture.h"
 #include "clouds.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 

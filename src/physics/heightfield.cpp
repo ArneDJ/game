@@ -10,20 +10,20 @@
 #include "bullet/btBulletDynamicsCommon.h"
 #include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "heightfield.h"
 
-namespace PHYSICS {
+namespace physics {
 
 HeightField::HeightField(const UTIL::Image<float> *image, const glm::vec3 &scale)
 {
-	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width, image->height, image->data.data(), 1.f, 0.f, 1.f, 1, PHY_FLOAT, false);
+	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width(), image->height(), image->raster().data(), 1.f, 0.f, 1.f, 1, PHY_FLOAT, false);
 
 	btVector3 scaling = { 
-		scale.x / float(image->width), 
+		scale.x / float(image->width()), 
 		scale.y, 
-		scale.z / float(image->height)
+		scale.z / float(image->height())
 	};
 	m_shape->setLocalScaling(scaling);
 	m_shape->setFlipTriangleWinding(true);
@@ -43,12 +43,12 @@ HeightField::HeightField(const UTIL::Image<uint8_t> *image, const glm::vec3 &sca
 {
 	float yscale = scale.y / 255.f; // adjust scale
 
-	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width, image->height, image->data.data(), 1.f, 0.f, 1.f, 1, PHY_UCHAR, false);
+	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width(), image->height(), image->raster().data(), 1.f, 0.f, 1.f, 1, PHY_UCHAR, false);
 
 	btVector3 scaling = { 
-		scale.x / float(image->width), 
+		scale.x / float(image->width()), 
 		yscale, 
-		scale.z / float(image->height)
+		scale.z / float(image->height())
 	};
 	m_shape->setLocalScaling(scaling);
 	m_shape->setFlipTriangleWinding(true);

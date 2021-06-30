@@ -1,4 +1,4 @@
-namespace PHYSICS {
+namespace physics {
 
 class Bumper {
 public:

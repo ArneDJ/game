@@ -24,8 +24,8 @@
 #include "bullet/BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h"
 #include "extern/bullet/BulletCollision/CollisionDispatch/btGhostObject.h"
 
+#include "geometry/geom.h"
 #include "util/entity.h"
-#include "util/geom.h"
 #include "util/image.h"
 #include "util/animation.h"
 #include "module/module.h"
@@ -48,7 +48,7 @@ static inline glm::quat direction_to_quat(glm::vec2 direction)
 	return rotation;
 }
 
-Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::Model *model, const struct MODULE::ragdoll_armature_import_t &armature)
+Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const struct MODULE::ragdoll_armature_import_t &armature)
 {
 	position = pos;
 	rotation = rot;
@@ -65,7 +65,7 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const GRAPHICS::M
 
 	m_current_movement = CM_FORWARD;
 
-	m_bumper = std::make_unique<PHYSICS::Bumper>(pos, 0.5f, 2.f);
+	m_bumper = std::make_unique<physics::Bumper>(pos, 0.5f, 2.f);
 
 	const std::vector<std::pair<uint32_t, std::string>> animations = {
 		std::make_pair(CA_IDLE, "modules/native/media/animations/human/idle.ozz"),

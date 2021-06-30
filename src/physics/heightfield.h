@@ -1,5 +1,5 @@
 
-namespace PHYSICS {
+namespace physics {
 
 class HeightField {
 public:

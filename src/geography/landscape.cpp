@@ -15,7 +15,7 @@
 
 #include "../extern/poisson/PoissonGenerator.h"
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "../module/module.h"
 #include "../graphics/texture.h"
@@ -207,8 +207,8 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 
 	// spawn the forest
 	glm::vec2 hmapscale = {
-		float(heightmap.width) / SCALE.x,
-		float(heightmap.height) / SCALE.z
+		float(heightmap.width()) / SCALE.x,
+		float(heightmap.height()) / SCALE.z
 	};
 
 	std::random_device rd;
@@ -236,11 +236,11 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 			if (geom::point_in_rectangle(glm::vec2(position.x, position.z), SITE_BOUNDS)) {
 				glm::vec2 site_pos = { position.x - SITE_BOUNDS.min.x, position.z - SITE_BOUNDS.min.y };
 				site_pos /= (SITE_BOUNDS.max - SITE_BOUNDS.min);
-				if (sitemasks.sample(site_pos.x * sitemasks.width, site_pos.y * sitemasks.height, UTIL::CHANNEL_RED) > 0) {
+				if (sitemasks.sample(site_pos.x * sitemasks.width(), site_pos.y * sitemasks.height(), UTIL::CHANNEL_RED) > 0) {
 					continue;
 				}
 			}
-			float P = density.sample(point.x * density.width, point.y * density.height, UTIL::CHANNEL_RED) / 255.f;
+			float P = density.sample(point.x * density.width(), point.y * density.height(), UTIL::CHANNEL_RED) / 255.f;
 			if (P > 0.8f) { P = 1.f; }
 			// limit density
 			P = glm::clamp(P, 0.f, tree_density / 255.f);
@@ -270,7 +270,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 void Landscape::create_valleymap(void)
 {
 	glm::vec2 scale = SITE_BOUNDS.max - SITE_BOUNDS.min;
-	glm::vec2 imagescale = { valleymap.width, valleymap.height };
+	glm::vec2 imagescale = { valleymap.width(), valleymap.height() };
 
 	for (const auto &district : sitegen.districts) {
 		uint8_t amp = 255;
@@ -342,20 +342,20 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	container.cellnoise(&cellnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
 
 	// mix two noise images based on height
-	for (int i = 0; i < heightmap.data.size(); i++) {
-		float height = heightmap.data[i];
+	for (int i = 0; i < heightmap.raster().size(); i++) {
+		float height = heightmap.raster()[i];
 		height *= height;
-		float cell = container.data[i];
+		float cell = container.raster()[i];
 		height = amplitude * glm::mix(height, cell, height);
-		heightmap.data[i] = height;
+		heightmap.raster()[i] = height;
 	}
 
 	// apply mask
 	// apply a mask to lower the amplitude in the center of the map so two armies can fight eachother without having to climb steep cliffs
 	//printf("amp %f\n", amplitude);
 	if (amplitude > 0.5f) {
-		for (int x = 0; x < heightmap.width; x++) {
-			for (int y = 0; y < heightmap.height; y++) {
+		for (int x = 0; x < heightmap.width(); x++) {
+			for (int y = 0; y < heightmap.height(); y++) {
 				uint8_t valley = valleymap.sample(x, y, UTIL::CHANNEL_RED);
 				float height = heightmap.sample(x, y, UTIL::CHANNEL_RED);
 				height = (valley / 255.f) * height;
@@ -371,12 +371,12 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	container.copy(&heightmap);
 	container.blur(params.sediment_blur);
 
-	for (int i = 0; i < heightmap.data.size(); i++) {
-		float height = heightmap.data[i];
-		float blurry = container.data[i];
+	for (int i = 0; i < heightmap.raster().size(); i++) {
+		float height = heightmap.raster()[i];
+		float blurry = container.raster()[i];
 		height = glm::mix(blurry, height, height);
 		height = glm::clamp(height, 0.f, 1.f);
-		heightmap.data[i] = height;
+		heightmap.raster()[i] = height;
 	}
 }
 	
@@ -473,7 +473,7 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t 
 void Landscape::create_sitemasks(uint8_t radius)
 {
 	glm::vec2 scale = SITE_BOUNDS.max - SITE_BOUNDS.min;
-	glm::vec2 imagescale = { sitemasks.width, sitemasks.height };
+	glm::vec2 imagescale = { sitemasks.width(), sitemasks.height() };
 
 	for (const auto &district : sitegen.districts) {
 		for (const auto &parcel : district.parcels) {
@@ -489,7 +489,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 			}
 			glm::vec2 a = parcel.centroid / scale;
 			glm::vec2 b = street / scale;
-			sitemasks.draw_thick_line(a.x * sitemasks.width, a.y * sitemasks.height, b.x * sitemasks.width, b.y * sitemasks.height, 6, UTIL::CHANNEL_RED, 200);
+			sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 6, UTIL::CHANNEL_RED, 200);
 		}
 	}
 	sitemasks.blur(5.f);
@@ -498,7 +498,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 	for (const auto &road : sitegen.highways) {
 		glm::vec2 a = road.P0 / scale;
 		glm::vec2 b = road.P1 / scale;
-		sitemasks.draw_thick_line(a.x * sitemasks.width, a.y * sitemasks.height, b.x * sitemasks.width, b.y * sitemasks.height, 3, UTIL::CHANNEL_RED, 255);
+		sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 3, UTIL::CHANNEL_RED, 255);
 	}
 
 	for (const auto &sect : sitegen.sections) {
@@ -506,7 +506,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 			if (sect.j0->border == false && sect.j1->border == false) {
 				glm::vec2 a = sect.j0->position / scale;
 				glm::vec2 b = sect.j1->position / scale;
-				sitemasks.draw_thick_line(a.x * sitemasks.width, a.y * sitemasks.height, b.x * sitemasks.width, b.y * sitemasks.height, 3, UTIL::CHANNEL_RED, 210);
+				sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 3, UTIL::CHANNEL_RED, 210);
 			}
 		}
 	}
@@ -515,7 +515,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 	for (const auto &wall : sitegen.walls) {
 		glm::vec2 a = wall.S.P0 / scale;
 		glm::vec2 b = wall.S.P1 / scale;
-		sitemasks.draw_thick_line(a.x * sitemasks.width, a.y * sitemasks.height, b.x * sitemasks.width, b.y * sitemasks.height, 10, UTIL::CHANNEL_RED, 210);
+		sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 10, UTIL::CHANNEL_RED, 210);
 	}
 
 	sitemasks.blur(1.f);
@@ -524,8 +524,8 @@ void Landscape::create_sitemasks(uint8_t radius)
 float Landscape::sample_heightmap(const glm::vec2 &real) const
 {
 	glm::vec2 imagespace = {
-		heightmap.width * (real.x / SCALE.x),
-		heightmap.height * (real.y / SCALE.z)
+		heightmap.width() * (real.x / SCALE.x),
+		heightmap.height() * (real.y / SCALE.z)
 	};
 	return SCALE.y * heightmap.sample(roundf(imagespace.x), roundf(imagespace.y), UTIL::CHANNEL_RED);
 }

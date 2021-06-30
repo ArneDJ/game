@@ -1,4 +1,4 @@
-namespace PHYSICS {
+namespace physics {
  
 // left: skeleton target, right: ragdoll transform matrix
 // usually a ragdoll joint targets multiple skeleton joints

@@ -31,7 +31,7 @@
 #include "graphics/mesh.h"
 #include "debugger.h"
 
-void Debugger::init(const GRAPHICS::Shader *shady)
+void Debugger::init(const gfx::Shader *shady)
 {
 	shader = shady;
 }
@@ -51,7 +51,7 @@ void Debugger::render_navmeshes(void)
 
 void Debugger::add_navmesh(const dtNavMesh *mesh)
 {
-	std::vector<struct GRAPHICS::vertex_t> vertices;
+	std::vector<struct gfx::vertex_t> vertices;
 	std::vector<uint16_t> indices;
 	const glm::vec3 color = { 0.2f, 0.5f, 1.f };
 
@@ -73,7 +73,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 						float x = tile->verts[p->verts[t[k]]*3];
 						float y = tile->verts[p->verts[t[k]]*3 + 1] + 0.05f;
 						float z = tile->verts[p->verts[t[k]]*3 + 2];
-						struct GRAPHICS::vertex_t v = {
+						struct gfx::vertex_t v = {
 							{ x, y, z},
 							color
 						};
@@ -82,7 +82,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 						float x = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3];
 						float y = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 1];
 						float z = tile->detailVerts[(pd->vertBase+t[k]-p->vertCount)*3 + 2];
-						struct GRAPHICS::vertex_t v = {
+						struct gfx::vertex_t v = {
 							{ x, y, z},
 							color
 						};
@@ -93,7 +93,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 		}
 	}
 
-	GRAPHICS::Mesh *navmesh = new GRAPHICS::Mesh { vertices, indices, GL_TRIANGLES, GL_STATIC_DRAW };
+	gfx::Mesh *navmesh = new gfx::Mesh { vertices, indices, GL_TRIANGLES, GL_STATIC_DRAW };
 	navmeshes.push_back(navmesh);
 }
 
@@ -108,7 +108,7 @@ void Debugger::delete_navmeshes(void)
 void Debugger::add_bbox(const glm::vec3 &min, const glm::vec3 &max, const std::vector<const Entity*> &entities)
 {
 	struct debug_box box;
-	box.mesh = new GRAPHICS::CubeMesh { min, max };
+	box.mesh = new gfx::CubeMesh { min, max };
 	for (const auto &ent : entities) {
 		box.entities.push_back(ent);
 	}
@@ -119,7 +119,7 @@ void Debugger::add_cube_mesh(const glm::vec3 &min, const glm::vec3 &max, const g
 {
 	auto cube = std::make_unique<debug_AABB_t>();
 	cube->color = color;
-	cube->mesh = std::make_unique<GRAPHICS::CubeMesh>(min, max);
+	cube->mesh = std::make_unique<gfx::CubeMesh>(min, max);
 
 	cube_meshes.push_back(std::move(cube));
 }

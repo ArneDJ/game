@@ -13,9 +13,9 @@
 
 #include "../extern/aixlog/aixlog.h"
 
+#include "../geometry/geom.h"
 #include "../util/entity.h"
 #include "../util/camera.h"
-#include "../util/geom.h"
 #include "../util/image.h"
 #include "shader.h"
 #include "texture.h"
@@ -23,7 +23,7 @@
 #include "model.h"
 #include "render.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 #define INT_CEIL(n,d) (int)ceil((float)n/d)
 

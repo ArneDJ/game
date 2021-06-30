@@ -3,14 +3,14 @@
 
 namespace UTIL {
 
-enum color_channel_t : uint8_t {
+enum : uint8_t {
 	CHANNEL_RED = 0,
 	CHANNEL_GREEN = 1,
 	CHANNEL_BLUE = 2,
 	CHANNEL_ALPHA = 3
 };
 
-enum colorspace_t : uint8_t {
+enum : uint8_t {
 	COLORSPACE_GRAYSCALE = 1,
 	COLORSPACE_RGB = 3,
 	COLORSPACE_RGBA = 4
@@ -18,67 +18,62 @@ enum colorspace_t : uint8_t {
 
 template <class T> class Image {
 public:
-	uint16_t width = 0;
-	uint16_t height = 0;
-	uint8_t channels = 0;
-	std::vector<T> data;
-public:
 	void resize(uint16_t w, uint16_t h, uint8_t chan)
 	{
-		width = w;
-		height = h;
-		channels = chan;
+		m_width = w;
+		m_height = h;
+		m_channels = chan;
 
-		data.clear();
-		data.resize(width * height * channels);
+		m_raster.clear();
+		m_raster.resize(m_width * m_height * m_channels);
 
 		clear();
 	}
 	void copy(const Image<T> *original)
 	{
-		if (width != original->width || height != original->height || channels != original->channels || data.size() != original->data.size()) {
-			width = original->width;
-			height = original->height;
-			channels = original->channels;
+		if (m_width != original->m_width || m_height != original->m_height || m_channels != original->m_channels || m_raster.size() != original->m_raster.size()) {
+			m_width = original->m_width;
+			m_height = original->m_height;
+			m_channels = original->m_channels;
 
-			data.clear();
-			data.resize(original->data.size());
+			m_raster.clear();
+			m_raster.resize(original->m_raster.size());
 		}
 
-		std::copy(original->data.begin(), original->data.end(), data.begin());
+		std::copy(original->m_raster.begin(), original->m_raster.end(), m_raster.begin());
 	}
 	T sample(uint16_t x, uint16_t y, uint8_t chan) const
 	{
-		if (chan >= channels) { return 0; }
+		if (chan >= m_channels) { return 0; }
 
-		if (x >= width || y >= height) { return 0; }
+		if (x >= m_width || y >= m_height) { return 0; }
 
-		const auto index = y * width * channels + x * channels + chan;
+		const auto index = y * m_width * m_channels + x * m_channels + chan;
 
-		if (index >= data.size()) { return 0; }
+		if (index >= m_raster.size()) { return 0; }
 
-		return data[index];
+		return m_raster[index];
 	}
 	T sample_scaled(float x, float y, uint8_t chan) const
 	{
-		return sample(x * width, y * height, chan);
+		return sample(x * m_width, y * m_height, chan);
 	}
 	void plot(uint16_t x, uint16_t y, uint8_t chan, T color)
 	{
-		if (chan >= channels) { return; }
+		if (chan >= m_channels) { return; }
 
-		if (x >= width || y >= height) { return; }
+		if (x >= m_width || y >= m_height) { return; }
 
-		const auto index = y * width * channels + x * channels + chan;
+		const auto index = y * m_width * m_channels + x * m_channels + chan;
 
-		if (index >= data.size()) { return; }
+		if (index >= m_raster.size()) { return; }
 
-		data[index] = color;
+		m_raster[index] = color;
 	}
 	// wipe image clean but do not free memory
 	void clear()
 	{
-		std::fill(data.begin(), data.end(), 0);
+		std::fill(m_raster.begin(), m_raster.end(), 0);
 	}
 	// line drawing
 	void draw_line(int x0, int y0, int x1, int y1, uint8_t chan, T color)
@@ -124,8 +119,8 @@ public:
 		// Clip against screen bounds
 		minX = (std::max)(minX, 0);
 		minY = (std::max)(minY, 0);
-		maxX = (std::min)(maxX, width - 1);
-		maxY = (std::min)(maxY, height - 1);
+		maxX = (std::min)(maxX, m_width - 1);
+		maxY = (std::min)(maxY, m_height - 1);
 
 		// Triangle setup
 		int A01 = a.y - b.y, B01 = b.x - a.x;
@@ -206,6 +201,12 @@ public:
 		}
 	}
 public:
+	uint8_t channels() const { return m_channels; }
+	uint16_t width() const { return m_width; }
+	uint16_t height() const { return m_height; }
+	const std::vector<T>& raster() const { return m_raster; }
+	std::vector<T>& raster() { return m_raster; }
+public:
 	// save to file
 	void write(const std::string &filepath) const;
 	// gaussian blur
@@ -219,8 +220,13 @@ public:
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
-		archive(width, height, channels, data);
+		archive(m_width, m_height, m_channels, m_raster);
 	}
+private:
+	uint8_t m_channels = 0;
+	uint16_t m_width = 0;
+	uint16_t m_height = 0;
+	std::vector<T> m_raster;
 private:
 	int min3(int a, int b, int c)
 	{

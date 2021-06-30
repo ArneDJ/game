@@ -16,8 +16,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../geometry/geom.h"
 #include "../util/entity.h"
-#include "../util/geom.h"
 #include "../util/camera.h"
 #include "../util/image.h"
 #include "shader.h"
@@ -27,7 +27,7 @@
 #include "../media.h"
 #include "terrain.h"
 
-namespace GRAPHICS {
+namespace gfx {
 
 static const uint32_t TERRAIN_PATCH_RES = 85;
 
@@ -280,10 +280,10 @@ void GrassSystem::refresh(const UTIL::Image<float> *heightmap, const glm::vec3 &
 		glm::vec2 min = geom::translate_3D_to_2D(chunk->bbox.min) / geom::translate_3D_to_2D(scale);
 		glm::vec2 max = geom::translate_3D_to_2D(chunk->bbox.max) / geom::translate_3D_to_2D(scale);
 		
-		int rect_min_x = floorf(min.x * heightmap->width);
-		int rect_min_y = floorf(min.y * heightmap->height);
-		int rect_max_x = floorf(max.x * heightmap->width);
-		int rect_max_y = floorf(max.y * heightmap->height);
+		int rect_min_x = floorf(min.x * heightmap->width());
+		int rect_min_y = floorf(min.y * heightmap->height());
+		int rect_max_x = floorf(max.x * heightmap->width());
+		int rect_max_y = floorf(max.y * heightmap->height());
 
 		for (int i = rect_min_x; i < rect_max_x; i++) {
 			for (int j = rect_min_y; j < rect_max_y; j++) {

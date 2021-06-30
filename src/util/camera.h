@@ -3,7 +3,7 @@ namespace UTIL {
 
 class Camera {
 public:
-	glm::vec3 position;
+	glm::vec3 position = {};
 	glm::vec3 direction = { 0.f, 1.f, 0.f };
 	glm::mat4 projection, viewing;
 	glm::mat4 VP; // view * project
@@ -36,7 +36,6 @@ public:
 private:
 	float m_pitch = 0.f;
 	float m_yaw = 0.f;
-	// glm::vec4 frustum[6];
 };
 
 };

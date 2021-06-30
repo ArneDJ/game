@@ -1,4 +1,4 @@
-namespace GRAPHICS {
+namespace gfx {
 
 // only used for debugging
 struct vertex_t {

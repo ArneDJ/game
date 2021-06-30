@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../util/geom.h"
+#include "../geometry/geom.h"
 #include "../util/image.h"
 #include "../module/module.h"
 #include "terragen.h"
@@ -64,9 +64,9 @@ void Terragen::gen_tempmap(long seed, const struct MODULE::worldgen_parameters_t
 	fastnoise.SetPerturbFrequency(2.f*params->temperature.frequency);
 	fastnoise.SetGradientPerturbAmp(params->temperature.perturb);
 
-	const float longitude = float(tempmap.height);
-	for (int i = 0; i < tempmap.width; i++) {
-		for (int j = 0; j < tempmap.height; j++) {
+	const float longitude = float(tempmap.height());
+	for (int i = 0; i < tempmap.width(); i++) {
+		for (int j = 0; j < tempmap.height(); j++) {
 			float y = i; float x = j;
 			fastnoise.GradientPerturbFractal(x, y);
 			float temperature = 1.f - (y / longitude);
@@ -80,11 +80,11 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 	// create the land mask image
 	// land is white (255), sea is black (0)
 	glm::vec2 scale = {
-		heightmap.width / rainmap.width,
-		heightmap.height / rainmap.height,
+		heightmap.width() / rainmap.width(),
+		heightmap.height() / rainmap.height(),
 	};
-	for (int i = 0; i < rainmap.width; i++) {
-		for (int j = 0; j < rainmap.height; j++) {
+	for (int i = 0; i < rainmap.width(); i++) {
+		for (int j = 0; j < rainmap.height(); j++) {
 			float height = heightmap.sample(scale.x * i, scale.y * j, UTIL::CHANNEL_RED);
 			uint8_t color = (height > params->graph.lowland) ? 255 : 0;
 			rainmap.plot(i, j, UTIL::CHANNEL_RED, color);
@@ -92,8 +92,8 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 	}
 
 	glm::vec2 scale_temp = {
-		tempmap.width / rainmap.width,
-		tempmap.height / rainmap.height,
+		tempmap.width() / rainmap.width(),
+		tempmap.height() / rainmap.height(),
 	};
 
 	// blur the land mask
@@ -108,8 +108,8 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 	fastnoise.SetPerturbFrequency(params->rain.perturb_frequency);
 	fastnoise.SetGradientPerturbAmp(params->rain.perturb_amp);
 
-	for (int i = 0; i < rainmap.width; i++) {
-		for (int j = 0; j < rainmap.height; j++) {
+	for (int i = 0; i < rainmap.width(); i++) {
+		for (int j = 0; j < rainmap.height(); j++) {
 			float rain = 1.f - (rainmap.sample(i, j, UTIL::CHANNEL_RED) / 255.f);
 			float y = i; float x = j;
 			fastnoise.GradientPerturbFractal(x, y);
