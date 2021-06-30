@@ -40,7 +40,7 @@ static const uint8_t N_RELAXATIONS = 1;
 static const float BOUNDS_OFFSET = 10.F;
 static const float MIN_RIVER_DIST = 40.F;
 
-Worldgraph::Worldgraph(const struct rectangle bounds)
+Worldgraph::Worldgraph(const geom::rectangle_t bounds)
 {
 	area = bounds;
 }

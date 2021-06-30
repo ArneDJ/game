@@ -8,7 +8,7 @@
 
 #include "mapfield.h"
 
-bool Mapfield::triangle_in_area(glm::vec2 a, glm::vec2 b, glm::vec2 c, const struct rectangle *area)
+bool Mapfield::triangle_in_area(glm::vec2 a, glm::vec2 b, glm::vec2 c, const geom::rectangle_t *area)
 {
 	// check if grid points overlap with triangle
 	glm::vec2 points[4] = {
@@ -18,25 +18,25 @@ bool Mapfield::triangle_in_area(glm::vec2 a, glm::vec2 b, glm::vec2 c, const str
 		area->max
 	};
 	for (int i = 0; i < 4; i++) {
-		if (triangle_overlaps_point(a, b, c, points[i])) {
+		if (geom::triangle_overlaps_point(a, b, c, points[i])) {
 			return true;
 		}
 	}
 	// check if grid line segments overlap with triangle
-	struct segment segments[4] = {
+	geom::segment_t segments[4] = {
 		{points[0], points[1]},
 		{points[1], points[3]},
 		{points[3], points[2]},
 		{points[2], points[0]}
 	};
 	for (int i = 0; i < 4; i++) {
-		if (segment_intersects_segment(a, b, segments[i].P0, segments[i].P1)) {
+		if (geom::segment_intersects_segment(a, b, segments[i].P0, segments[i].P1)) {
 			return true;
 		}
-		if (segment_intersects_segment(b, c, segments[i].P0, segments[i].P1)) {
+		if (geom::segment_intersects_segment(b, c, segments[i].P0, segments[i].P1)) {
 			return true;
 		}
-		if (segment_intersects_segment(c, a, segments[i].P0, segments[i].P1)) {
+		if (geom::segment_intersects_segment(c, a, segments[i].P0, segments[i].P1)) {
 			return true;
 		}
 	}
@@ -87,7 +87,7 @@ void Mapfield::triangle_in_regions(const struct mosaictriangle *tess, uint32_t i
 	}
 }
 
-void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vector<struct mosaictriangle> &mosaictriangles, struct rectangle anchors)
+void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vector<struct mosaictriangle> &mosaictriangles, geom::rectangle_t anchors)
 {
 	regions.clear();
 	triangles.clear();
@@ -122,7 +122,7 @@ void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vecto
 		triangles[i].a = mosaictriangles[i].a;
 		triangles[i].b = mosaictriangles[i].b;
 		triangles[i].c = mosaictriangles[i].c;
-		if (clockwise(vertices[triangles[i].a], vertices[triangles[i].b], vertices[triangles[i].c])) {
+		if (geom::clockwise(vertices[triangles[i].a], vertices[triangles[i].b], vertices[triangles[i].c])) {
 			triangles[i].a = mosaictriangles[i].b;
 			triangles[i].b = mosaictriangles[i].a;
 			triangles[i].c = mosaictriangles[i].c;
@@ -145,7 +145,7 @@ struct mapfield_result Mapfield::index_in_field(const glm::vec2 &position) const
 	const struct mosaicregion *region = &regions[y * REGION_RES + x];
 	for (const uint32_t index : region->triangles) {
 		const struct mosaictriangle *tri = &triangles[index];
-		if (triangle_overlaps_point(vertices[tri->a], vertices[tri->b], vertices[tri->c], position)) {
+		if (geom::triangle_overlaps_point(vertices[tri->a], vertices[tri->b], vertices[tri->c], position)) {
 			result.found = true;
 			result.index = tri->index;
 			return result;

@@ -70,7 +70,7 @@ static struct landgen_parameters random_landgen_parameters(int32_t seed);
 
 static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::building_t &b);
 
-static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
+static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
 static bool within_bounds(uint8_t value, const MODULE::bounds_t<uint8_t> &bounds);
 
@@ -124,7 +124,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 {
 	clear();
 
-	struct rectangle site_scale = {
+	geom::rectangle_t site_scale = {
 		{ 0.F, 0.F },
 		SITE_BOUNDS.max - SITE_BOUNDS.min
 	};
@@ -233,7 +233,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 		position.y = sample_heightmap(glm::vec2(position.x,  position.z));
 		if (position.y < (0.5f * SCALE.y)) {
 			// if tree grows on road remove it
-			if (point_in_rectangle(glm::vec2(position.x, position.z), SITE_BOUNDS)) {
+			if (geom::point_in_rectangle(glm::vec2(position.x, position.z), SITE_BOUNDS)) {
 				glm::vec2 site_pos = { position.x - SITE_BOUNDS.min.x, position.z - SITE_BOUNDS.min.y };
 				site_pos /= (SITE_BOUNDS.max - SITE_BOUNDS.min);
 				if (sitemasks.sample(site_pos.x * sitemasks.width, site_pos.y * sitemasks.height, UTIL::CHANNEL_RED) > 0) {
@@ -261,7 +261,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 				scale = glm::smoothstep(0.4f, 1.f, 1.f - (position.y / SCALE.y));
 				scale = glm::clamp(scale, 0.1f, 1.f);
 			}
-			struct transformation transform = { position, rotation, scale };
+			geom::transformation_t transform = { position, rotation, scale };
 			m_trees[index_dist(gen)].transforms.push_back(transform);
 		}
 	}
@@ -383,18 +383,18 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t temperature)
 {
 	// create wall cull quads so houses don't go through city walls
-	std::vector<struct quadrilateral> wall_boxes;
+	std::vector<geom::quadrilateral_t> wall_boxes;
 
 	if (walled) {
 		for (const auto &d : sitegen.districts) {
 			for (const auto &sect : d.sections) {
 				if (sect->wall) {
-					struct segment S = { sect->d0->center, sect->d1->center };
-					glm::vec2 mid = segment_midpoint(S.P0, S.P1);
+					geom::segment_t S = { sect->d0->center, sect->d1->center };
+					glm::vec2 mid = geom::segment_midpoint(S.P0, S.P1);
 					glm::vec2 direction = glm::normalize(S.P1 - S.P0);
 					float angle = atan2(direction.x, direction.y);
 					glm::vec2 halfwidths = { 10.f, glm::distance(mid, S.P1) };
-					struct quadrilateral box = building_box(mid, halfwidths, angle);
+					geom::quadrilateral_t box = building_box(mid, halfwidths, angle);
 					wall_boxes.push_back(box);
 				}
 			}
@@ -426,18 +426,18 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t 
 			for (auto &house : buildings_pool) {
 				if ((front > house->bounds.x && back > house->bounds.x) && (left > house->bounds.z && right > house->bounds.z)) {
 					glm::vec2 halfwidths = {  0.5f*house->bounds.x, 0.5f*house->bounds.z };
-					struct quadrilateral box = building_box(parc.centroid, halfwidths, angle);
+					geom::quadrilateral_t box = building_box(parc.centroid, halfwidths, angle);
 					bool valid = true;
 					if (walled) {
 						for (auto &wallbox : wall_boxes) {
-							if (quad_quad_intersection(box, wallbox)) {
+							if (geom::quad_quad_intersection(box, wallbox)) {
 								valid = false;
 								break;
 							}
 						}
 					}
 					if (valid) {
-						struct transformation transform = { position, rotation, 1.f };
+						geom::transformation_t transform = { position, rotation, 1.f };
 						house->transforms.push_back(transform);
 					}
 
@@ -463,7 +463,7 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t 
 				glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 				// pick a random house
 				auto &house = buildings_pool[house_type_dist(gen)];
-				struct transformation transform = { position, rotation, 1.f };
+				geom::transformation_t transform = { position, rotation, 1.f };
 				house->transforms.push_back(transform);
 			}
 		}
@@ -480,7 +480,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 			glm::vec2 street = parcel.centroid + parcel.direction;
 			float min = std::numeric_limits<float>::max();
 			for (const auto &edge : district.sections) {
-				glm::vec2 p = closest_point_segment(parcel.centroid, edge->j0->position, edge->j1->position);
+				glm::vec2 p = geom::closest_point_segment(parcel.centroid, edge->j0->position, edge->j1->position);
 				float dist = glm::distance(p, parcel.centroid);
 				if (dist < min) {
 					min = dist;
@@ -568,7 +568,7 @@ static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::bui
 	return (a.bounds.x * a.bounds.z) > (b.bounds.x * b.bounds.z);
 }
 
-static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths, float angle)
+static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths, float angle)
 {
 	glm::vec2 a = {-halfwidths.x, halfwidths.y};
 	glm::vec2 b = {-halfwidths.x, -halfwidths.y};
@@ -580,7 +580,7 @@ static struct quadrilateral building_box(glm::vec2 center, glm::vec2 halfwidths,
 		sin(angle), cos(angle)
 	};
 
-	struct quadrilateral quad = {
+	geom::quadrilateral_t quad = {
 		center + R * a,
 		center + R * b,
 		center + R * c,

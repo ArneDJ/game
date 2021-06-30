@@ -53,11 +53,11 @@ static const uint16_t TEMPMAP_RES = 512;
 static const uint16_t MATERIALMASKS_RES = 2048;
 static const uint16_t FACTIONSMAP_RES = 2048;
 
-Atlas::Atlas(void)
+Atlas::Atlas()
 {
 	terragen = std::make_unique<Terragen>(LANDMAP_RES, RAINMAP_RES, TEMPMAP_RES);
 
-	struct rectangle area = {
+	geom::rectangle_t area = {
 		glm::vec2(0.F, 0.F),
 		glm::vec2(SCALE.x, SCALE.z)
 	};
@@ -75,11 +75,6 @@ Atlas::Atlas(void)
 	vegetation.resize(RAINMAP_RES, RAINMAP_RES, UTIL::COLORSPACE_GRAYSCALE);
 
 	factions.resize(FACTIONSMAP_RES, FACTIONSMAP_RES, UTIL::COLORSPACE_RGB);
-}
-
-Atlas::~Atlas(void)
-{
-	clear_entities();
 }
 
 void Atlas::generate(long seedling, const struct MODULE::worldgen_parameters_t *params)
@@ -117,12 +112,7 @@ std::chrono::duration<double> elapsed_seconds = end-start;
 std::cout << "campaign image maps time: " << elapsed_seconds.count() << "s\n";
 }
 	
-void Atlas::clear_entities(void)
-{
-	trees.clear();
-}
-
-void Atlas::smoothe_heightmap(void)
+void Atlas::smoothe_heightmap()
 {
 	const glm::vec2 mapscale = {
 		float(mask.width) / SCALE.x,
@@ -170,7 +160,7 @@ void Atlas::smoothe_heightmap(void)
 	mask.clear();
 }
 
-void Atlas::plateau_heightmap(void)
+void Atlas::plateau_heightmap()
 {
 	const glm::vec2 mapscale = {
 		float(mask.width) / SCALE.x,
@@ -483,7 +473,7 @@ void Atlas::create_watermap(float ocean_level)
 	}
 }
 	
-void Atlas::create_materialmasks(void)
+void Atlas::create_materialmasks()
 {
 	materialmasks.clear();
 
@@ -611,7 +601,7 @@ void Atlas::create_vegetation(long seed)
 	}
 }
 	
-void Atlas::create_factions_map(void)
+void Atlas::create_factions_map()
 {
 	factions.clear();
 
@@ -653,14 +643,14 @@ void Atlas::place_vegetation(long seed)
 		glm::vec3 position = { point.x * SCALE.x, 0.f, point.y * SCALE.z };
 		position.y = SCALE.y * terragen->heightmap.sample_scaled(point.x, point.y, UTIL::CHANNEL_RED);
 		glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
-		struct transformation transform = { position, rotation, 10.f };
+		geom::transformation_t transform = { position, rotation, 10.f };
 		trees.push_back(transform);
 	}
 }
 	
 void Atlas::create_mapdata(long seed)
 {
-	clear_entities();
+	trees.clear();
 
 	// create the spatial hash field data for the tiles
 	gen_mapfield();
@@ -680,62 +670,52 @@ void Atlas::create_mapdata(long seed)
 	create_factions_map();
 }
 	
-const UTIL::Image<float>* Atlas::get_heightmap(void) const
-{
-	return &terragen->heightmap;
-}
-
-const UTIL::Image<uint8_t>* Atlas::get_rainmap(void) const
-{
-	return &terragen->rainmap;
-}
-
-const UTIL::Image<uint8_t>* Atlas::get_tempmap(void) const
-{
-	return &terragen->tempmap;
-}
-
-const UTIL::Image<uint8_t>* Atlas::get_vegetation(void) const
+const UTIL::Image<uint8_t>* Atlas::get_vegetation() const
 {
 	return &vegetation;
 }
 	
-const UTIL::Image<uint8_t>* Atlas::get_watermap(void) const
+const UTIL::Image<uint8_t>* Atlas::get_watermap() const
 {
 	return &watermap;
 }
+	
+const Terragen* Atlas::get_terragen() const
+{
+	return terragen.get();
+}
 
-const UTIL::Image<uint8_t>* Atlas::get_materialmasks(void) const
+const UTIL::Image<uint8_t>* Atlas::get_materialmasks() const
 {
 	return &materialmasks;
 }
 
-const UTIL::Image<uint8_t>* Atlas::get_factions(void) const
+const UTIL::Image<uint8_t>* Atlas::get_factions() const
 {
 	return &factions;
 }
 	
-const struct navigation_soup_t& Atlas::get_navsoup(void) const
+const struct navigation_soup_t& Atlas::get_navsoup() const
 {
 	return navsoup;
 }
 
-const std::unordered_map<uint32_t, holding_t>& Atlas::get_holdings(void) const
+const std::unordered_map<uint32_t, holding_t>& Atlas::get_holdings() const
 {
 	return holdings;
 }
 
-const std::unordered_map<uint32_t, uint32_t>& Atlas::get_holding_tiles(void) const
+const std::unordered_map<uint32_t, uint32_t>& Atlas::get_holding_tiles() const
 {
 	return holding_tiles;
 }
 	
-const Worldgraph* Atlas::get_worldgraph(void) const
+const Worldgraph* Atlas::get_worldgraph() const
 {
 	return worldgraph.get();
 }
 
-const std::vector<transformation>& Atlas::get_trees(void) const
+const std::vector<geom::transformation_t>& Atlas::get_trees() const
 {
 	return trees;
 }
@@ -775,7 +755,7 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 	}
 }
 	
-void Atlas::gen_mapfield(void)
+void Atlas::gen_mapfield()
 {
 	std::vector<glm::vec2> vertdata;
 	std::vector<struct mosaictriangle> mosaics;
@@ -802,7 +782,7 @@ void Atlas::gen_mapfield(void)
 		}
 	}
 
-	struct rectangle area = {
+	geom::rectangle_t area = {
 		glm::vec2(0.F, 0.F),
 		glm::vec2(SCALE.x, SCALE.z)
 	};
@@ -810,7 +790,7 @@ void Atlas::gen_mapfield(void)
 	mapfield.generate(vertdata, mosaics, area);
 }
 
-void Atlas::gen_holds(void)
+void Atlas::gen_holds()
 {
 	uint32_t index = 0;
 	std::vector<struct tile*> candidates;
@@ -893,7 +873,7 @@ void Atlas::gen_holds(void)
 	}
 }
 	
-void Atlas::create_land_navigation(void)
+void Atlas::create_land_navigation()
 {
 	navsoup.vertices.clear();
 	navsoup.indices.clear();
@@ -956,7 +936,7 @@ void Atlas::create_land_navigation(void)
 	for (const auto &t : worldgraph->tiles) {
 		for (const auto &c : t.corners) {
 			if (c->river) {
-				glm::vec2 vertex = segment_midpoint(t.center, c->position);
+				glm::vec2 vertex = geom::segment_midpoint(t.center, c->position);
 				points.push_back(vertex);
 				tilevertex[std::minmax(t.index, c->index)] = index++;
 			}
@@ -984,11 +964,11 @@ void Atlas::create_land_navigation(void)
 		bool half_river = b.c0->river ^ b.c1->river;
 		marked_edges[b.index] = half_river;
 		if (half_river) {
-			glm::vec2 vertex = segment_midpoint(b.c0->position, b.c1->position);
+			glm::vec2 vertex = geom::segment_midpoint(b.c0->position, b.c1->position);
 			points.push_back(vertex);
 			edge_vertices[b.index] = index++;
 		} else if (b.river == false && b.c0->river && b.c1->river) {
-			glm::vec2 vertex = segment_midpoint(b.c0->position, b.c1->position);
+			glm::vec2 vertex = geom::segment_midpoint(b.c0->position, b.c1->position);
 			points.push_back(vertex);
 			edge_vertices[b.index] = index++;
 			marked_edges[b.index] = true;
@@ -1085,7 +1065,7 @@ void Atlas::create_land_navigation(void)
 			vertices[i].x = pos.x;
 			vertices[i].y = pos.y;
 		}
-		if (clockwise(vertices[0], vertices[1], vertices[2])) {
+		if (geom::clockwise(vertices[0], vertices[1], vertices[2])) {
 			navsoup.indices.push_back(triangle.vertices[0]);
 			navsoup.indices.push_back(triangle.vertices[1]);
 			navsoup.indices.push_back(triangle.vertices[2]);
@@ -1097,7 +1077,7 @@ void Atlas::create_land_navigation(void)
 	}
 }
 
-void Atlas::create_sea_navigation(void)
+void Atlas::create_sea_navigation()
 {
 	navsoup.vertices.clear();
 	navsoup.indices.clear();
@@ -1184,7 +1164,7 @@ void Atlas::create_sea_navigation(void)
 			vertices[i].x = pos.x;
 			vertices[i].y = pos.y;
 		}
-		if (clockwise(vertices[0], vertices[1], vertices[2])) {
+		if (geom::clockwise(vertices[0], vertices[1], vertices[2])) {
 			navsoup.indices.push_back(triangle.vertices[0]);
 			navsoup.indices.push_back(triangle.vertices[1]);
 			navsoup.indices.push_back(triangle.vertices[2]);

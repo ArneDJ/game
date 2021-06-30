@@ -15,7 +15,7 @@ public:
 	GrassChunk(const GrassRoots *grassroots, const glm::vec3 &min, const glm::vec3 &max);
 public:
 	const GrassRoots *roots;
-	struct AABB bbox;
+	geom::AABB_t bbox;
 	glm::vec2 offset;
 	glm::vec2 scale;
 };

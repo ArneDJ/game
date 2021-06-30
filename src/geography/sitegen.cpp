@@ -132,7 +132,7 @@ static bool clockwise_polygon(std::list<glm::vec2> &polygon)
 	return (sum > 0.f);
 }
 
-void Sitegen::generate(long seedling, uint32_t tileref, struct rectangle bounds, size_t wall_radius)
+void Sitegen::generate(long seedling, uint32_t tileref, geom::rectangle_t bounds, size_t wall_radius)
 {
 	walls.clear();
 	highways.clear();
@@ -168,7 +168,7 @@ void Sitegen::make_diagram(uint32_t tileref)
 		locations.push_back(glm::vec2(dist_x(gen), dist_y(gen)));
 	}
 
-	UTIL::Voronoi voronoi;
+	geom::Voronoi voronoi;
 	voronoi.gen_diagram(locations, area.min, area.max, true);
 
 	districts.resize(voronoi.cells.size());
@@ -259,7 +259,7 @@ void Sitegen::make_diagram(uint32_t tileref)
 	for (auto &d : districts) {
 		d. area = 0.f;
 		for (const auto s : d.sections) {
-			d.area += triangle_area(d.center, s->j0->position, s->j1->position);
+			d.area += geom::triangle_area(d.center, s->j0->position, s->j1->position);
 		}
 		// sort the polygon vertices in order
 		// ugly syntax
@@ -438,14 +438,14 @@ void Sitegen::outline_walls(size_t radius)
 	for (auto &sect : sections) {
 		sect.area = 0.f;
 		if (sect.wall) {
-			glm::vec2 outward = segment_midpoint(sect.d0->center, sect.d1->center);
+			glm::vec2 outward = geom::segment_midpoint(sect.d0->center, sect.d1->center);
 			glm::vec2 right = sect.d0->center - outward;
 			glm::vec2 a = sect.j0->position - right;;
 			glm::vec2 b = sect.j0->position + right;;
 			glm::vec2 c = sect.j1->position - right;;
 			glm::vec2 d = sect.j1->position + right;;
-			sect.area += triangle_area(a, c, d);
-			sect.area += triangle_area(a, d, b);
+			sect.area += geom::triangle_area(a, c, d);
+			sect.area += geom::triangle_area(a, d, b);
 		}
 	}
 }
@@ -514,7 +514,7 @@ void Sitegen::make_highways(void)
 	// highway from gateway to town core
 	for (auto &sect : sections) {
 		if (sect.gateway) {
-			struct segment S = { sect.j0->position, sect.j1->position };
+			geom::segment_t S = { sect.j0->position, sect.j1->position };
 			highways.push_back(S);
 			struct junction *start = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
 			std::queue<struct junction*> queue;
@@ -525,7 +525,7 @@ void Sitegen::make_highways(void)
 				for (auto neighbor : node->adjacent) {
 					if (neighbor->radius < node->radius) {
 						queue.push(neighbor);
-						struct segment highway = { node->position, neighbor->position };
+						geom::segment_t highway = { node->position, neighbor->position };
 						highways.push_back(highway);
 						break;
 					}
@@ -587,7 +587,7 @@ void Sitegen::make_highways(void)
 				}
 				if (next != nullptr) {
 					queue.push(next);
-					struct segment S = { node->position, next->position };
+					geom::segment_t S = { node->position, next->position };
 					highways.push_back(S);
 					node->street = true;
 					next->street = true;
@@ -617,7 +617,7 @@ void Sitegen::divide_parcels(size_t radius)
 				glm::vec2 a = *it;
 				glm::vec2 b = *next;
 				if (glm::distance(a, b) > PARCEL_DENSITY_DISTANCE) {
-					polygon.insert(next, segment_midpoint(a, b));
+					polygon.insert(next, geom::segment_midpoint(a, b));
 				}
 				if (next != polygon.begin()) {
 					it = next;
@@ -635,8 +635,8 @@ static struct parcel make_parcel(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec
 	struct parcel parc;
 	parc.quad = {a, b, c, d};
 
-	parc.centroid = quadrilateral_centroid(&parc.quad);
-	parc.direction = glm::normalize(segment_midpoint(a, b) - parc.centroid);
+	parc.centroid = geom::quadrilateral_centroid(parc.quad);
+	parc.direction = glm::normalize(geom::segment_midpoint(a, b) - parc.centroid);
 
 	return parc;
 }
@@ -660,7 +660,7 @@ static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
 			glm::vec2 c= polygon.front(); polygon.pop_front();
 			glm::vec2 d = polygon.front(); polygon.pop_front();
 			struct parcel parc = make_parcel(c, d, a, b);
-			if (convex_quadrilateral(&parc.quad)) {
+			if (geom::convex_quadrilateral(parc.quad)) {
 				cell->parcels.push_back(parc);
 			}
 		} else if (polygon.size() > 4) {
@@ -752,7 +752,7 @@ static struct chainsplit find_chainsplit(std::list<glm::vec2> &polygon, std::lis
 		if (it != split.a && it != split.b) {
 			glm::vec2 point = *it;
 			// now add the new vertex to the list
-			const glm::vec2 splitpoint = closest_point_segment(point, *split.a, *split.b);
+			const glm::vec2 splitpoint = geom::closest_point_segment(point, *split.a, *split.b);
 			const std::list<glm::vec2>::iterator splitstart = polygon.insert(split.b, splitpoint);
 			// now split the polygon in two
 			// first half
@@ -818,7 +818,7 @@ static float polygon_area(std::vector<glm::vec2> &vertices)
 {
 	// triangle
 	if (vertices.size() == 3) {
-		return triangle_area(vertices[0], vertices[1], vertices[2]);
+		return geom::triangle_area(vertices[0], vertices[1], vertices[2]);
 	}
 
 	float area = 0.f;

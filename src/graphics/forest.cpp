@@ -137,7 +137,7 @@ Forest::Forest(const Shader *detail, const Shader *billboard)
 	m_billboard = billboard;
 }
 
-void Forest::add_model(const Model *trunk, const Model *leaves, const Model *billboard, const std::vector<const transformation*> &transforms)
+void Forest::add_model(const Model *trunk, const Model *leaves, const Model *billboard, const std::vector<const geom::transformation_t*> &transforms)
 {
 	auto model = std::make_unique<tree_model_t>();
 	model->trunk = trunk;
@@ -156,7 +156,7 @@ void Forest::add_model(const Model *trunk, const Model *leaves, const Model *bil
 		//model->transforms.push_back(M);
 		model->detail_transforms.matrices.push_back(M);
 		model->billboard_transforms.matrices.push_back(M);
-		struct transformation t = {
+		geom::transformation_t t = {
 			transform->position,
 			transform->rotation,
 			transform->scale
@@ -175,7 +175,7 @@ void Forest::display(const UTIL::Camera *camera) const
 {
 	glm::mat4 projection = glm::perspective(glm::radians(camera->FOV), camera->aspectratio, camera->nearclip, 200.f);
 	glm::vec4 planes[6];
-	frustum_to_planes(camera->projection * camera->viewing, planes);
+	geom::frustum_to_planes(camera->projection * camera->viewing, planes);
 
 	for (const auto &model : m_models) {
 		model->detail_count = 0;
@@ -183,10 +183,10 @@ void Forest::display(const UTIL::Camera *camera) const
 	}
 	// tree
 	// linear
-	const sphere_t sphere = { camera->position, 400.f };
+	const geom::sphere_t sphere = { camera->position, 400.f };
 	for (const auto leaf : m_bvh.leafs) {
-		if (AABB_in_frustum(leaf->bounds.min, leaf->bounds.max, planes)) {
-			if (sphere_intersects_AABB(sphere, leaf->bounds)) {
+		if (geom::AABB_in_frustum(leaf->bounds.min, leaf->bounds.max, planes)) {
+			if (geom::sphere_intersects_AABB(sphere, leaf->bounds)) {
 				for (auto &object : leaf->objects) {
 					auto model = object.model;
 					model->detail_transforms.matrices[model->detail_count++] = object.T;

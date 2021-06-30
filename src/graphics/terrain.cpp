@@ -210,8 +210,8 @@ GrassChunk::GrassChunk(const GrassRoots *grassroots, const glm::vec3 &min, const
 	bbox.min = min;
 	bbox.max = max;
 
-	offset = translate_3D_to_2D(min);
-	scale = translate_3D_to_2D(max) - translate_3D_to_2D(min);
+	offset = geom::translate_3D_to_2D(min);
+	scale = geom::translate_3D_to_2D(max) - geom::translate_3D_to_2D(min);
 }
 
 GrassSystem::GrassSystem(const Model *mod)
@@ -277,8 +277,8 @@ void GrassSystem::refresh(const UTIL::Image<float> *heightmap, const glm::vec3 &
 		float min_height = std::numeric_limits<float>::max();
 		float max_height = std::numeric_limits<float>::min();
 
-		glm::vec2 min = translate_3D_to_2D(chunk->bbox.min) / translate_3D_to_2D(scale);
-		glm::vec2 max = translate_3D_to_2D(chunk->bbox.max) / translate_3D_to_2D(scale);
+		glm::vec2 min = geom::translate_3D_to_2D(chunk->bbox.min) / geom::translate_3D_to_2D(scale);
+		glm::vec2 max = geom::translate_3D_to_2D(chunk->bbox.max) / geom::translate_3D_to_2D(scale);
 		
 		int rect_min_x = floorf(min.x * heightmap->width);
 		int rect_min_y = floorf(min.y * heightmap->height);
@@ -336,10 +336,10 @@ void GrassSystem::display(const UTIL::Camera *camera, const glm::vec3 &scale) co
 	glm::mat4 projection = glm::perspective(glm::radians(camera->FOV), camera->aspectratio, camera->nearclip, 200.f);
 	// frustum culling first attempt
 	glm::vec4 planes[6];
-	frustum_to_planes(projection * camera->viewing, planes);
+	geom::frustum_to_planes(projection * camera->viewing, planes);
 
 	for (const auto &chunk : chunks) {
-		if (AABB_in_frustum(chunk->bbox.min, chunk->bbox.max, planes)) {
+		if (geom::AABB_in_frustum(chunk->bbox.min, chunk->bbox.max, planes)) {
 			shader.uniform_vec2("ROOT_OFFSET", chunk->offset);
 			shader.uniform_vec2("CHUNK_SCALE", chunk->scale);
 			chunk->roots->display();

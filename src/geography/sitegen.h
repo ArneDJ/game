@@ -3,7 +3,7 @@ struct junction;
 struct section;
 
 struct parcel {
-	struct quadrilateral quad;
+	geom::quadrilateral_t quad;
 	glm::vec2 centroid;
 	glm::vec2 direction; // normalized direction vector to the closest street, if a parcel has a building on it it will be rotated in that direction
 };
@@ -11,7 +11,7 @@ struct parcel {
 struct wallsegment {
 	const struct district *left = nullptr;
 	const struct district *right = nullptr;
-	struct segment S;
+	geom::segment_t S;
 	bool gate;
 };
 
@@ -56,15 +56,15 @@ public:
 	struct district *core;
 	long seed;
 	std::vector<struct wallsegment> walls;
-	std::vector<struct segment> highways;
+	std::vector<geom::segment_t> highways;
 	// graph structures
 	std::vector<struct district> districts;
 	std::vector<struct junction> junctions;
 	std::vector<struct section> sections;
 public:
-	void generate(long seedling, uint32_t tileref, struct rectangle bounds, size_t wall_radius);
+	void generate(long seedling, uint32_t tileref, geom::rectangle_t bounds, size_t wall_radius);
 private:
-	struct rectangle area;
+	geom::rectangle_t area;
 private:
 	void make_diagram(uint32_t tileref);
 	void mark_districts(void);

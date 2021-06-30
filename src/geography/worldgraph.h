@@ -131,18 +131,18 @@ struct basin {
 
 class Worldgraph {
 public:
-	struct rectangle area;
+	geom::rectangle_t area;
 	std::vector<struct tile> tiles;
 	std::vector<struct corner> corners;
 	std::vector<struct border> borders;
 public:
-	Worldgraph(const struct rectangle bounds);
+	Worldgraph(const geom::rectangle_t bounds);
 	~Worldgraph(void);
 	void generate(long seedling, const struct MODULE::worldgen_parameters_t *params, const Terragen *terra);
 	void reload_references(void);
 private:
 	std::list<struct basin> basins;
-	UTIL::Voronoi voronoi;
+	geom::Voronoi voronoi;
 private:
 	void gen_diagram(long seed, float radius);
 	void gen_relief(const UTIL::Image<float> *heightmap, const struct MODULE::worldgen_parameters_t *params);

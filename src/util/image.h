@@ -99,7 +99,7 @@ public:
 	void draw_triangle(glm::vec2 a, glm::vec2 b, glm::vec2 c, uint8_t chan, T color)
 	{
 		// make sure the triangle is counter clockwise
-		if (clockwise(a, b, c)) {
+		if (geom::clockwise(a, b, c)) {
 			std::swap(b, c);
 		}
 
@@ -134,9 +134,9 @@ public:
 
 		// Barycentric coordinates at minX/minY corner
 		glm::ivec2 p = { minX, minY };
-		int w0_row = orient(b.x, b.y, c.x, c.y, p.x, p.y);
-		int w1_row = orient(c.x, c.y, a.x, a.y, p.x, p.y);
-		int w2_row = orient(a.x, a.y, b.x, b.y, p.x, p.y);
+		int w0_row = geom::orient(b.x, b.y, c.x, c.y, p.x, p.y);
+		int w1_row = geom::orient(c.x, c.y, a.x, a.y, p.x, p.y);
+		int w2_row = geom::orient(a.x, a.y, b.x, b.y, p.x, p.y);
 
 		// Rasterize
 		for (p.y = minY; p.y <= maxY; p.y++) {

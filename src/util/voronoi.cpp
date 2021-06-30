@@ -16,7 +16,7 @@
 
 #include "voronoi.h"
 
-namespace UTIL {
+namespace geom {
 
 static void prune_vertices(std::vector<const struct voronoi_vertex*> &v)
 {

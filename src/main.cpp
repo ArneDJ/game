@@ -168,7 +168,8 @@ void Campaign::init(const UTIL::Window *window, const struct shader_group_t *sha
 {
 	atlas = std::make_unique<Atlas>();
 
-	worldmap = std::make_unique<GRAPHICS::Worldmap>(atlas->SCALE, atlas->get_heightmap(), atlas->get_watermap(), atlas->get_rainmap(), atlas->get_materialmasks(), atlas->get_factions());
+	const auto terragen = atlas->get_terragen();
+	worldmap = std::make_unique<GRAPHICS::Worldmap>(atlas->SCALE, &terragen->heightmap, atlas->get_watermap(), &terragen->rainmap, atlas->get_materialmasks(), atlas->get_factions());
 
 	ordinary = std::make_unique<GRAPHICS::RenderGroup>(&shaders->debug);
 	creatures = std::make_unique<GRAPHICS::RenderGroup>(&shaders->object);
@@ -383,9 +384,9 @@ void Campaign::change_player_target(const glm::vec3 &ray)
 			}
 		}
 		// get tile
-		glm::vec2 position = translate_3D_to_2D(result.point);
+		glm::vec2 position = geom::translate_3D_to_2D(result.point);
 		const struct tile *tily = atlas->tile_at_position(position);
-		if (tily != nullptr && glm::distance(position, translate_3D_to_2D(player->position)) < 10.f) {
+		if (tily != nullptr && glm::distance(position, geom::translate_3D_to_2D(player->position)) < 10.f) {
 			// embark or disembark
 			if (player->get_movement_mode() == MOVEMENT_LAND && tily->land == false) {
 				player->set_movement_mode(MOVEMENT_SEA);
@@ -398,10 +399,10 @@ void Campaign::change_player_target(const glm::vec3 &ray)
 		// change path if found
 		std::list<glm::vec2> waypoints;
 		if (player->get_movement_mode() == MOVEMENT_LAND) {
-			landnav.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
+			landnav.find_2D_path(geom::translate_3D_to_2D(player->position), geom::translate_3D_to_2D(marker.position), waypoints);
 			player->set_path(waypoints);
 		} else if (player->get_movement_mode() == MOVEMENT_SEA) {
-			seanav.find_2D_path(translate_3D_to_2D(player->position), translate_3D_to_2D(marker.position), waypoints);
+			seanav.find_2D_path(geom::translate_3D_to_2D(player->position), geom::translate_3D_to_2D(marker.position), waypoints);
 			player->set_path(waypoints);
 		}
 	}
@@ -547,7 +548,7 @@ void Battle::add_trees()
 				tree_stationaries.push_back(stationary);
 			}
 		}
-		std::vector<const transformation*> transformations;
+		std::vector<const geom::transformation_t*> transformations;
 		for (int i = 0; i < tree.transforms.size(); i++) {
 			transformations.push_back(&tree.transforms[i]);
 		}
@@ -869,7 +870,7 @@ void Game::prepare_battle()
 	battle.camera.project();
 
 	// find the campaign tile the player is on and prepare local scene properties based on it
-	glm::vec2 position = translate_3D_to_2D(campaign.player->position);
+	glm::vec2 position = geom::translate_3D_to_2D(campaign.player->position);
 	const struct tile *tily = campaign.atlas->tile_at_position(position);
 	uint32_t tileref = 0;
 	float amp = 0.f;
@@ -1052,7 +1053,7 @@ void Game::update_campaign()
 
 	// trigger battle
 	if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
-		if (glm::distance(translate_3D_to_2D(campaign.player->position), translate_3D_to_2D(campaign.marker.position)) < 1.f) {
+		if (glm::distance(geom::translate_3D_to_2D(campaign.player->position), geom::translate_3D_to_2D(campaign.marker.position)) < 1.f) {
 			state = game_state::BATTLE;
 		}
 	}
@@ -1114,12 +1115,13 @@ void Game::prepare_campaign()
 	// campaign world map data
 	campaign.atlas->create_mapdata(campaign.seed);
 
-	campaign.worldmap->reload(campaign.atlas->get_heightmap(), campaign.atlas->get_watermap(), campaign.atlas->get_rainmap(), campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
-	campaign.worldmap->reload_temperature(campaign.atlas->get_tempmap());
+	const auto terragen = campaign.atlas->get_terragen();
+	campaign.worldmap->reload(&terragen->heightmap, campaign.atlas->get_watermap(), &terragen->rainmap, campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
+	campaign.worldmap->reload_temperature(&terragen->tempmap);
 	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0002f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.palette.grass.min, modular.palette.grass.max, modular.palette.rock_base.min, modular.palette.rock_base.max, modular.palette.rock_desert.min, modular.palette.rock_desert.max);
 
-	campaign.collisionman.add_heightfield(campaign.atlas->get_heightmap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
+	campaign.collisionman.add_heightfield(&terragen->heightmap, campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
 	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, PHYSICS::COLLISION_GROUP_HEIGHTMAP, PHYSICS::COLLISION_GROUP_HEIGHTMAP | PHYSICS::COLLISION_GROUP_RAY);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };

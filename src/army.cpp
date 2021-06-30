@@ -48,7 +48,7 @@ void Pathfinder::update(float delta, float speed)
 		state = PATH_STATE_MOVING;
 	} else if (state == PATH_STATE_MOVING) {
 		glm::vec2 offset = location + delta * speed * velocity;
-		if (point_in_circle(offset, origin, radius)) {
+		if (geom::point_in_circle(offset, origin, radius)) {
 			location = offset;
 		} else {
 			location = destination;

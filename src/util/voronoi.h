@@ -1,4 +1,4 @@
-namespace UTIL {
+namespace geom {
 
 struct voronoi_cell;
 struct voronoi_vertex;

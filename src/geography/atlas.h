@@ -23,26 +23,22 @@ class Atlas {
 public:
 	const glm::vec3 SCALE = { 4096.F, 200.F, 4096.F };
 public:
-	Atlas(void);
-	~Atlas(void);
+	Atlas();
 	void generate(long seedling, const struct MODULE::worldgen_parameters_t *params);
 	void create_mapdata(long seed);
-	void create_land_navigation(void);
-	void create_sea_navigation(void);
+	void create_land_navigation();
+	void create_sea_navigation();
 public:
-	// TODO put these images in a struct
-	const UTIL::Image<float>* get_heightmap(void) const;
-	const UTIL::Image<uint8_t>* get_watermap(void) const;
-	const UTIL::Image<uint8_t>* get_rainmap(void) const;
-	const UTIL::Image<uint8_t>* get_tempmap(void) const;
-	const UTIL::Image<uint8_t>* get_materialmasks(void) const;
-	const UTIL::Image<uint8_t>* get_vegetation(void) const;
-	const UTIL::Image<uint8_t>* get_factions(void) const;
-	const std::vector<transformation>& get_trees(void) const;
-	const struct navigation_soup_t& get_navsoup(void) const;
-	const std::unordered_map<uint32_t, holding_t>& get_holdings(void) const;
-	const std::unordered_map<uint32_t, uint32_t>& get_holding_tiles(void) const;
-	const Worldgraph* get_worldgraph(void) const;
+	const Terragen* get_terragen() const;
+	const UTIL::Image<uint8_t>* get_watermap() const;
+	const UTIL::Image<uint8_t>* get_materialmasks() const;
+	const UTIL::Image<uint8_t>* get_vegetation() const;
+	const UTIL::Image<uint8_t>* get_factions() const;
+	const std::vector<geom::transformation_t>& get_trees() const;
+	const struct navigation_soup_t& get_navsoup() const;
+	const std::unordered_map<uint32_t, holding_t>& get_holdings() const;
+	const std::unordered_map<uint32_t, uint32_t>& get_holding_tiles() const;
+	const Worldgraph* get_worldgraph() const;
 public:
 	const struct tile* tile_at_position(const glm::vec2 &position) const;
 public:
@@ -62,19 +58,19 @@ private:
 	std::unordered_map<uint32_t, uint32_t> holding_tiles;
 	Mapfield mapfield;
 	struct navigation_soup_t navsoup;
-	std::vector<transformation> trees;
+	std::vector<geom::transformation_t> trees;
 private:
-	void gen_holds(void);
-	void smoothe_heightmap(void);
-	void plateau_heightmap(void);
+	void gen_holds();
+	void smoothe_heightmap();
+	void plateau_heightmap();
 	void oregony_heightmap(long seed);
-	void gen_mapfield(void);
+	void gen_mapfield();
 	void create_watermap(float ocean_level);
 	void erode_heightmap(float ocean_level);
 	void clamp_heightmap(float land_level);
-	void create_materialmasks(void);
+	void create_materialmasks();
 	void create_vegetation(long seed);
-	void create_factions_map(void);
+	void create_factions_map();
 	void place_vegetation(long seed);
-	void clear_entities(void);
+	void clear_entities();
 };

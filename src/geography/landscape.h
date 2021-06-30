@@ -5,14 +5,14 @@ struct building_t {
 	const GRAPHICS::Model *model;
 	glm::vec3 bounds;
 	MODULE::bounds_t<uint8_t> temperature;
-	std::vector<struct transformation> transforms;
+	std::vector<geom::transformation_t> transforms;
 };
 
 struct tree_t {
 	std::string trunk;
 	std::string leaves;
 	std::string billboard;
-	std::vector<struct transformation> transforms;
+	std::vector<geom::transformation_t> transforms;
 };
 
 };
@@ -20,7 +20,7 @@ struct tree_t {
 class Landscape {
 public:
 	glm::vec3 SCALE = { 6144.F, 512.F, 6144.F };
-	const struct rectangle SITE_BOUNDS = {
+	const geom::rectangle_t SITE_BOUNDS = {
 		{ 2048.F, 2048.F },
 		{ 4096.F, 4096.F }
 	};

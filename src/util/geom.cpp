@@ -9,19 +9,17 @@
 
 #include "geom.h"
 
-static inline float sign(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c);
-static bool projected_axis_test(glm::vec2 b1, glm::vec2 b2, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4);
-static inline float distance_point_AABB(const glm::vec3 &point, const AABB &aabb);
+namespace geom {
 
-bool clockwise(glm::vec2 a, glm::vec2 b, glm::vec2 c)
+static inline float sign(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c);
+static bool projected_axis_test(const glm::vec2 &b1, const glm::vec2 &b2, const glm::vec2 &p1, const glm::vec2 &p2, const glm::vec2 &p3, const glm::vec2 &p4);
+static inline float distance_point_AABB(const glm::vec3 &point, const AABB_t &aabb);
+
+bool clockwise(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c)
 {
 	int wise = (b.x - a.x) * (c.y - a.y) - (c.x - a.x) * (b.y - a.y);
 
-	if (wise < 0) {
-		return true;
-	}
-		
-	return false;
+	return (wise < 0);
 }
 
 // http://fgiesen.wordpress.com/2013/02/08/triangle-rasterization-in-practice/
@@ -83,7 +81,7 @@ static inline float sign(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2
 	return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
 }
 
-void frustum_to_planes(glm::mat4 M, glm::vec4 planes[6])
+void frustum_to_planes(const glm::mat4 &M, glm::vec4 planes[6])
 {
 	planes[0] = {
 		M[0][3] + M[0][0],
@@ -123,7 +121,7 @@ void frustum_to_planes(glm::mat4 M, glm::vec4 planes[6])
 	};
 }
 
-bool AABB_in_frustum(glm::vec3 &min, glm::vec3 &max, glm::vec4 frustum_planes[6])
+bool AABB_in_frustum(const glm::vec3 &min, const glm::vec3 &max, glm::vec4 frustum_planes[6])
 {
 	bool inside = true; //test all 6 frustum planes
 	for (int i = 0; i < 6; i++) { //pick closest point to plane and check if it behind the plane //if yes - object outside frustum
@@ -134,9 +132,9 @@ bool AABB_in_frustum(glm::vec3 &min, glm::vec3 &max, glm::vec4 frustum_planes[6]
 	return inside;
 }
 
-segment_intersection segment_segment_intersection(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d)
+segment_intersection_t segment_segment_intersection(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c, const glm::vec2 &d)
 {
-	segment_intersection intersection = {
+	segment_intersection_t intersection = {
 		false,
 		{ 0.f, 0.f }
 	};
@@ -173,20 +171,20 @@ float triangle_area(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c)
 
 glm::vec2 triangle_centroid(const glm::vec2 &a, const glm::vec2 &b, const glm::vec2 &c)
 {
-	segment_intersection intersection = segment_segment_intersection(a, segment_midpoint(b, c), b, segment_midpoint(a, c));
+	segment_intersection_t intersection = segment_segment_intersection(a, segment_midpoint(b, c), b, segment_midpoint(a, c));
 
 	return intersection.point;
 }
 
-glm::vec2 quadrilateral_centroid(const quadrilateral *quad)
+glm::vec2 quadrilateral_centroid(const quadrilateral_t &quad)
 {
-	glm::vec2 a = triangle_centroid(quad->b, quad->a, quad->d);
-	glm::vec2 b = triangle_centroid(quad->b, quad->c, quad->d);
+	glm::vec2 a = triangle_centroid(quad.b, quad.a, quad.d);
+	glm::vec2 b = triangle_centroid(quad.b, quad.c, quad.d);
 
-	glm::vec2 c = triangle_centroid(quad->a, quad->d, quad->c);
-	glm::vec2 d = triangle_centroid(quad->a, quad->b, quad->c);
+	glm::vec2 c = triangle_centroid(quad.a, quad.d, quad.c);
+	glm::vec2 d = triangle_centroid(quad.a, quad.b, quad.c);
 
-	segment_intersection intersection = segment_segment_intersection(a, b, c, d);
+	segment_intersection_t intersection = segment_segment_intersection(a, b, c, d);
 
 	return intersection.point;
 }
@@ -204,7 +202,7 @@ glm::vec2 closest_point_segment(const glm::vec2 &c, const glm::vec2 &a, const gl
 	return a + t * ab;
 }
 
-bool quad_quad_intersection(const quadrilateral &A, const quadrilateral &B)
+bool quad_quad_intersection(const quadrilateral_t &A, const quadrilateral_t &B)
 {
 	if (!projected_axis_test(A.a, A.b, B.a, B.b, B.c, B.d)) {
 		return false;
@@ -225,7 +223,7 @@ bool quad_quad_intersection(const quadrilateral &A, const quadrilateral &B)
 	return true;
 }
 
-static bool projected_axis_test(glm::vec2 b1, glm::vec2 b2, glm::vec2 p1, glm::vec2 p2, glm::vec2 p3, glm::vec2 p4)
+static bool projected_axis_test(const glm::vec2 &b1, const glm::vec2 &b2, const glm::vec2 &p1, const glm::vec2 &p2, const glm::vec2 &p3, const glm::vec2 &p4)
 {
 	float x1, x2, x3, x4;
 	float y1, y2, y3, y4;
@@ -282,12 +280,12 @@ static bool projected_axis_test(glm::vec2 b1, glm::vec2 b2, glm::vec2 p1, glm::v
 	return true;
 }
 
-bool convex_quadrilateral(const quadrilateral *quad)
+bool convex_quadrilateral(const quadrilateral_t &quad)
 {
-	glm::vec3 a = {quad->a.x, 0.f, quad->a.y};
-	glm::vec3 b = {quad->b.x, 0.f, quad->b.y};
-	glm::vec3 c = {quad->c.x, 0.f, quad->c.y};
-	glm::vec3 d = {quad->d.x, 0.f, quad->d.y};
+	glm::vec3 a = {quad.a.x, 0.f, quad.a.y};
+	glm::vec3 b = {quad.b.x, 0.f, quad.b.y};
+	glm::vec3 c = {quad.c.x, 0.f, quad.c.y};
+	glm::vec3 d = {quad.d.x, 0.f, quad.d.y};
 	// Quad is nonconvex if Dot(Cross(bd, ba), Cross(bd, bc)) >= 0
 	glm::vec2 bda = glm::cross(d - b, a - b);
 	glm::vec2 bdc = glm::cross(d - b, c - b);
@@ -299,12 +297,12 @@ bool convex_quadrilateral(const quadrilateral *quad)
 	return glm::dot(acd, acb) < 0.0f;
 }
 
-bool point_in_rectangle(const glm::vec2 &p, const rectangle &r)
+bool point_in_rectangle(const glm::vec2 &p, const rectangle_t &r)
 {
 	return (p.x >= r.min.x && p.x < r.max.x && p.y >= r.min.y && p.y < r.max.y);
 }
 
-bool sphere_intersects_AABB(const sphere_t &sphere, const AABB &aabb)
+bool sphere_intersects_AABB(const sphere_t &sphere, const AABB_t &aabb)
 {
 	float dist = distance_point_AABB(sphere.center, aabb);
 
@@ -313,7 +311,7 @@ bool sphere_intersects_AABB(const sphere_t &sphere, const AABB &aabb)
 	return (dist <= sphere.radius * sphere.radius);
 }
 
-static inline float distance_point_AABB(const glm::vec3 &point, const AABB &aabb)
+static inline float distance_point_AABB(const glm::vec3 &point, const AABB_t &aabb)
 {
 	float dist = 0.f;
 
@@ -326,3 +324,5 @@ static inline float distance_point_AABB(const glm::vec3 &point, const AABB &aabb
 
 	return dist;
 }
+
+};
