@@ -1,15 +1,8 @@
+namespace geography {
+
 struct tile_t;
 struct corner_t;
 struct border_t;
-
-// TODO slated for removal
-enum SITE : uint8_t {
-	VACANT,
-	RESOURCE,
-	TOWN,
-	CASTLE,
-	RUIN
-};
 
 enum RELIEF : uint8_t {
 	SEABED,
@@ -105,14 +98,13 @@ struct tile_t {
 	uint8_t precipitation;
 	uint8_t temperature;
 	enum RELIEF relief;
-	enum SITE site;
 	enum tile_regolith regolith = tile_regolith::SAND;
 	enum tile_feature feature = tile_feature::NONE;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
-		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, site, regolith, feature);
+		archive(index, frontier, land, coast, river, center.x, center.y, neighborIDs, cornerIDs, borderIDs, amp, precipitation, temperature, relief, regolith, feature);
 	}
 };
 
@@ -162,4 +154,6 @@ private:
 	void trim_river_basins(uint8_t min_stream);
 	void trim_stubby_rivers(uint8_t min_branch, uint8_t min_basin);
 	void prune_basins(void);
+};
+
 };

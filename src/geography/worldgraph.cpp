@@ -25,6 +25,8 @@
 #include "terragen.h"
 #include "worldgraph.h"
 
+namespace geography {
+
 static branch_t *insert_branch(const corner_t *confluence);
 static void delete_basin(basin_t *tree);
 static void prune_branches(branch_t *root);
@@ -32,7 +34,7 @@ static bool prunable(const branch_t *node, uint8_t min_stream);
 static void stream_postorder(basin_t *tree);
 static void spawn_towns(std::vector<tile_t*> &candidates, std::unordered_map<const tile_t*, bool> &visited, std::unordered_map<const tile_t*, int> &depth, uint8_t radius);
 static void spawn_castles(std::vector<tile_t*> &candidates, std::unordered_map<const tile_t*, bool> &visited, std::unordered_map<const tile_t*, int> &depth, uint8_t radius);
-static void spawn_villages(std::vector<tile_t*> &candidates, std::unordered_map<const tile_t*, bool> &visited, std::unordered_map<const tile_t*, int> &depth, long seed);
+static void spawn_resources(std::vector<tile_t*> &candidates, std::unordered_map<const tile_t*, bool> &visited, std::unordered_map<const tile_t*, int> &depth, long seed);
 
 static enum tile_regolith pick_regolith(enum RELIEF relief, uint8_t precipitation, uint8_t temperature);
 
@@ -156,7 +158,6 @@ void Worldgraph::gen_diagram(long seed, float radius)
 		t.precipitation = 0;
 		t.temperature = 0;
 		t.relief = SEABED;
-		t.site = VACANT;
 
 		for (const auto &neighbor : cell.neighbors) {
 			t.neighbors.push_back(&tiles[neighbor->index]);
@@ -879,7 +880,7 @@ void Worldgraph::gen_sites(long seed, const module::worldgen_parameters_t *param
 	spawn_castles(candidates, visited, depth, params->graph.castle_spawn_radius);
 
 	// third priority to villages
-	spawn_villages(candidates, visited, depth, seed);
+	spawn_resources(candidates, visited, depth, seed);
 }
 
 static void prune_branches(branch_t *root)
@@ -1051,7 +1052,7 @@ static void spawn_towns(std::vector<tile_t*> &candidates, std::unordered_map<con
 						}
 					}
 				}
-				root->site = TOWN;
+				//root->site = TOWN;
 				root->feature = tile_feature::SETTLEMENT;
 			}
 		}
@@ -1080,7 +1081,7 @@ static void spawn_towns(std::vector<tile_t*> &candidates, std::unordered_map<con
 			valid = true;
 
 			if (valid) {
-				root->site = TOWN;
+				//root->site = TOWN;
 				root->feature = tile_feature::SETTLEMENT;
 			}
 		}
@@ -1110,21 +1111,21 @@ static void spawn_castles(std::vector<tile_t*> &candidates, std::unordered_map<c
 				}
 			}
 			if (max >= radius) {
-				root->site = CASTLE;
+				//root->site = CASTLE;
 				root->feature = tile_feature::SETTLEMENT;
 			}
 		}
 	}
 }
 
-static void spawn_villages(std::vector<tile_t*> &candidates, std::unordered_map<const tile_t*, bool> &visited, std::unordered_map<const tile_t*, int> &depth, long seed)
+static void spawn_resources(std::vector<tile_t*> &candidates, std::unordered_map<const tile_t*, bool> &visited, std::unordered_map<const tile_t*, int> &depth, long seed)
 {
 	std::mt19937 gen(seed);
 	for (auto root : candidates) {
-		if (root->site == VACANT) {
+		if (root->feature != tile_feature::SETTLEMENT) {
 			bool valid = true;
 			for (auto neighbor : root->neighbors) {
-				if (neighbor->site != VACANT) {
+				if (neighbor->feature == tile_feature::SETTLEMENT) {
 					valid = false;
 					break;
 				}
@@ -1134,7 +1135,7 @@ static void spawn_villages(std::vector<tile_t*> &candidates, std::unordered_map<
 				p *= 2.f;
 				std::bernoulli_distribution d(p);
 				if (d(gen) == true) {
-					root->site = RESOURCE;
+					//root->site = RESOURCE;
 					root->feature = tile_feature::RESOURCE;
 				}
 			}
@@ -1176,3 +1177,5 @@ static enum tile_regolith pick_regolith(enum RELIEF relief, uint8_t precipitatio
 
 	return tile_regolith::GRASS;
 }
+
+};

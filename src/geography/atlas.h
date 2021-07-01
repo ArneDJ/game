@@ -1,3 +1,4 @@
+namespace geography {
 
 // graph structure of the holding
 struct holding_t {
@@ -19,7 +20,6 @@ struct navigation_soup_t {
 };
 
 class Atlas {
-	friend class Saver; // needs acces to internal data to save it
 public:
 	const glm::vec3 SCALE = { 4096.F, 200.F, 4096.F };
 public:
@@ -39,6 +39,7 @@ public:
 	const std::unordered_map<uint32_t, holding_t>& get_holdings() const;
 	const std::unordered_map<uint32_t, uint32_t>& get_holding_tiles() const;
 	const Worldgraph* get_worldgraph() const;
+	Worldgraph* get_worldgraph();
 public:
 	const tile_t* tile_at_position(const glm::vec2 &position) const;
 public:
@@ -89,4 +90,6 @@ private:
 	void create_factions_map();
 	void place_vegetation(long seed);
 	void clear_entities();
+};
+
 };

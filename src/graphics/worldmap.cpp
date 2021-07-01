@@ -27,55 +27,55 @@ static const uint32_t WORLDMAP_PATCH_RES = 85;
 
 Worldmap::Worldmap(const glm::vec3 &mapscale, const util::Image<float> *heightmap, const util::Image<uint8_t> *watermap, const util::Image<uint8_t> *rainmap, const util::Image<uint8_t> *materialmasks, const util::Image<uint8_t> *factionsmap)
 {
-	scale = mapscale;
+	m_scale = mapscale;
 	faction_factor = 0.f;
 	glm::vec2 min = { -5.f, -5.f };
 	glm::vec2 max = { mapscale.x + 5.f, mapscale.z + 5.f };
-	patches = std::make_unique<Mesh>(WORLDMAP_PATCH_RES, min, max);
+	m_mesh = std::make_unique<Mesh>(WORLDMAP_PATCH_RES, min, max);
 
-	topology = std::make_unique<Texture>(heightmap);
+	m_textures.topology = std::make_unique<Texture>(heightmap);
 	// special wrapping mode so edges of the map are at height 0
-	topology->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_textures.topology->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	nautical = std::make_unique<Texture>(watermap);
+	m_textures.nautical = std::make_unique<Texture>(watermap);
 	// special wrapping mode so edges of the map are at height 0
-	nautical->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_textures.nautical->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	rain = std::make_unique<Texture>(rainmap);
-	rain->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_textures.rain = std::make_unique<Texture>(rainmap);
+	m_textures.rain->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	m_temperature = std::make_unique<Texture>(rainmap);
-	m_temperature->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_textures.temperature = std::make_unique<Texture>(rainmap);
+	m_textures.temperature->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normalmap.resize(heightmap->width(), heightmap->height(), util::COLORSPACE_RGB);
-	normals = std::make_unique<Texture>(&normalmap);
-	normals->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_normalmap.resize(heightmap->width(), heightmap->height(), util::COLORSPACE_RGB);
+	m_textures.normals = std::make_unique<Texture>(&m_normalmap);
+	m_textures.normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	masks = std::make_unique<Texture>(materialmasks);
-	masks->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_textures.masks = std::make_unique<Texture>(materialmasks);
+	m_textures.masks->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	factions = std::make_unique<Texture>(factionsmap);
-	factions->change_wrapping(GL_CLAMP_TO_EDGE);
+	m_textures.factions = std::make_unique<Texture>(factionsmap);
+	m_textures.factions->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	add_material("DISPLACEMENT", topology.get());
-	add_material("NAUTICAL_DISPLACEMENT", nautical.get());
-	add_material("NORMALMAP", normals.get());
-	add_material("RAINMAP", rain.get());
-	add_material("TEMPERATUREMAP", m_temperature.get());
-	add_material("MASKMAP", masks.get());
-	add_material("FACTIONSMAP", factions.get());
+	add_material("DISPLACEMENT", m_textures.topology.get());
+	add_material("NAUTICAL_DISPLACEMENT", m_textures.nautical.get());
+	add_material("NORMALMAP", m_textures.normals.get());
+	add_material("RAINMAP", m_textures.rain.get());
+	add_material("TEMPERATUREMAP", m_textures.temperature.get());
+	add_material("MASKMAP", m_textures.masks.get());
+	add_material("FACTIONSMAP", m_textures.factions.get());
 
-	land.compile("shaders/campaign/worldmap.vert", GL_VERTEX_SHADER);
-	land.compile("shaders/campaign/worldmap.tesc", GL_TESS_CONTROL_SHADER);
-	land.compile("shaders/campaign/worldmap.tese", GL_TESS_EVALUATION_SHADER);
-	land.compile("shaders/campaign/worldmap.frag", GL_FRAGMENT_SHADER);
-	land.link();
+	m_land.compile("shaders/campaign/worldmap.vert", GL_VERTEX_SHADER);
+	m_land.compile("shaders/campaign/worldmap.tesc", GL_TESS_CONTROL_SHADER);
+	m_land.compile("shaders/campaign/worldmap.tese", GL_TESS_EVALUATION_SHADER);
+	m_land.compile("shaders/campaign/worldmap.frag", GL_FRAGMENT_SHADER);
+	m_land.link();
 
-	water.compile("shaders/campaign/ocean.vert", GL_VERTEX_SHADER);
-	water.compile("shaders/campaign/ocean.tesc", GL_TESS_CONTROL_SHADER);
-	water.compile("shaders/campaign/ocean.tese", GL_TESS_EVALUATION_SHADER);
-	water.compile("shaders/campaign/ocean.frag", GL_FRAGMENT_SHADER);
-	water.link();
+	m_water.compile("shaders/campaign/ocean.vert", GL_VERTEX_SHADER);
+	m_water.compile("shaders/campaign/ocean.tesc", GL_TESS_CONTROL_SHADER);
+	m_water.compile("shaders/campaign/ocean.tese", GL_TESS_EVALUATION_SHADER);
+	m_water.compile("shaders/campaign/ocean.frag", GL_FRAGMENT_SHADER);
+	m_water.link();
 }
 	
 void Worldmap::add_material(const std::string &name, const Texture *texture)
@@ -85,36 +85,36 @@ void Worldmap::add_material(const std::string &name, const Texture *texture)
 		texture
 	};
 
-	materials.push_back(texture_binding);
+	m_materials.push_back(texture_binding);
 }
 
 void Worldmap::reload(const util::Image<float> *heightmap, const util::Image<uint8_t> *watermap, const util::Image<uint8_t> *rainmap, const util::Image<uint8_t> *materialmasks, const util::Image<uint8_t> *factionsmap)
 {
-	topology->reload(heightmap);
-	nautical->reload(watermap);
-	rain->reload(rainmap);
+	m_textures.topology->reload(heightmap);
+	m_textures.nautical->reload(watermap);
+	m_textures.rain->reload(rainmap);
 
-	normalmap.create_normalmap(heightmap, 32.f);
-	normals->reload(&normalmap);
+	m_normalmap.create_normalmap(heightmap, 32.f);
+	m_textures.normals->reload(&m_normalmap);
 
-	masks->reload(materialmasks);
+	m_textures.masks->reload(materialmasks);
 
-	factions->reload(factionsmap);
+	m_textures.factions->reload(factionsmap);
 }
 	
 void Worldmap::reload_temperature(const util::Image<uint8_t> *temperature)
 {
-	m_temperature->reload(temperature);
+	m_textures.temperature->reload(temperature);
 }
 
 void Worldmap::reload_factionsmap(const util::Image<uint8_t> *factionsmap)
 {
-	factions->reload(factionsmap);
+	m_textures.factions->reload(factionsmap);
 }
 	
 void Worldmap::reload_masks(const util::Image<uint8_t> *mask_image)
 {
-	masks->reload(mask_image);
+	m_textures.masks->reload(mask_image);
 }
 
 void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const glm::vec3 &sunposition)
@@ -126,50 +126,50 @@ void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const g
 
 void Worldmap::display_land(const util::Camera *camera) const
 {
-	land.use();
-	land.uniform_mat4("VP", camera->VP);
-	land.uniform_vec3("CAM_POS", camera->position);
-	land.uniform_vec3("MAP_SCALE", scale);
-	land.uniform_vec3("FOG_COLOR", fogcolor);
-	land.uniform_float("FOG_FACTOR", fogfactor);
-	land.uniform_vec3("GRASS_DRY", grass_dry);
-	land.uniform_vec3("GRASS_LUSH", grass_lush);
-	land.uniform_float("FACTION_FACTOR", faction_factor);
+	m_land.use();
+	m_land.uniform_mat4("VP", camera->VP);
+	m_land.uniform_vec3("CAM_POS", camera->position);
+	m_land.uniform_vec3("MAP_SCALE", m_scale);
+	m_land.uniform_vec3("FOG_COLOR", fogcolor);
+	m_land.uniform_float("FOG_FACTOR", fogfactor);
+	m_land.uniform_vec3("GRASS_DRY", grass_dry);
+	m_land.uniform_vec3("GRASS_LUSH", grass_lush);
+	m_land.uniform_float("FACTION_FACTOR", faction_factor);
 
-	for (int i = 0; i < materials.size(); i++) {
-		const auto &binding = materials[i];
-		land.uniform_int(binding.name.c_str(), i);
+	for (int i = 0; i < m_materials.size(); i++) {
+		const auto &binding = m_materials[i];
+		m_land.uniform_int(binding.name.c_str(), i);
 		binding.texture->bind(GL_TEXTURE0 + i);
 	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
-	patches->draw();
+	m_mesh->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void Worldmap::display_water(const util::Camera *camera, float time) const
 {
-	water.use();
-	water.uniform_mat4("VP", camera->VP);
-	water.uniform_vec3("CAM_POS", camera->position);
-	water.uniform_float("NEAR_CLIP", camera->nearclip);
-	water.uniform_float("FAR_CLIP", camera->farclip);
-	water.uniform_float("TIME", time);
-	water.uniform_vec3("MAP_SCALE", scale);
-	water.uniform_vec3("FOG_COLOR", fogcolor);
-	water.uniform_float("FOG_FACTOR", fogfactor);
-	water.uniform_vec3("SUN_POS", sunpos);
+	m_water.use();
+	m_water.uniform_mat4("VP", camera->VP);
+	m_water.uniform_vec3("CAM_POS", camera->position);
+	m_water.uniform_float("NEAR_CLIP", camera->nearclip);
+	m_water.uniform_float("FAR_CLIP", camera->farclip);
+	m_water.uniform_float("TIME", time);
+	m_water.uniform_vec3("MAP_SCALE", m_scale);
+	m_water.uniform_vec3("FOG_COLOR", fogcolor);
+	m_water.uniform_float("FOG_FACTOR", fogfactor);
+	m_water.uniform_vec3("SUN_POS", sunpos);
 
-	for (int i = 0; i < materials.size(); i++) {
-		const auto &binding = materials[i];
-		water.uniform_int(binding.name.c_str(), i);
+	for (int i = 0; i < m_materials.size(); i++) {
+		const auto &binding = m_materials[i];
+		m_water.uniform_int(binding.name.c_str(), i);
 		binding.texture->bind(GL_TEXTURE0 + i);
 	}
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glPatchParameteri(GL_PATCH_VERTICES, 4);
-	patches->draw();
+	m_mesh->draw();
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 	
@@ -178,11 +178,11 @@ void Worldmap::change_groundcolors(const glm::vec3 &dry, const glm::vec3 &lush, 
 	grass_dry = dry;
 	grass_lush = lush;
 
-	land.use();
-	land.uniform_vec3("ROCK_BASE_MIN", base_rock_min);
-	land.uniform_vec3("ROCK_BASE_MAX", base_rock_max);
-	land.uniform_vec3("ROCK_DESERT_MIN", desert_rock_min);
-	land.uniform_vec3("ROCK_DESERT_MAX", desert_rock_max);
+	m_land.use();
+	m_land.uniform_vec3("ROCK_BASE_MIN", base_rock_min);
+	m_land.uniform_vec3("ROCK_BASE_MAX", base_rock_max);
+	m_land.uniform_vec3("ROCK_DESERT_MIN", desert_rock_min);
+	m_land.uniform_vec3("ROCK_DESERT_MAX", desert_rock_max);
 }
 	
 void Worldmap::set_faction_factor(float factor)

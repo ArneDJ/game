@@ -2,10 +2,10 @@ namespace gfx {
 
 class Shader {
 public:
-	~Shader(void);
+	~Shader();
 	void compile(const std::string &filepath, GLenum type);
-	void link(void);
-	void use(void) const;
+	void link();
+	void use() const;
 	void uniform_bool(const GLchar *name, bool boolean) const;
 	void uniform_int(const GLchar *name, int integer) const;
 	void uniform_float(const GLchar *name, GLfloat scalar) const;

@@ -97,11 +97,11 @@ void Ragdoll::create(const module::ragdoll_armature_import_t &armature)
 		localA.setOrigin(btVector3(btScalar(joint.parent.origin.x), btScalar(joint.parent.origin.y), btScalar(joint.parent.origin.z)));
 		localB.getBasis().setEulerZYX(joint.child.rotation.z, joint.child.rotation.y, joint.child.rotation.x);
 		localB.setOrigin(btVector3(btScalar(joint.child.origin.x), btScalar(joint.child.origin.y), btScalar(joint.child.origin.z)));
-		if (joint.type == "hinge") { // TODO use enums
+		if (joint.type == "hinge") {
 			auto hingeC = std::make_unique<btHingeConstraint>(*m_bones[joint.parent.bone]->body.get(), *m_bones[joint.child.bone]->body.get(), localA, localB);
 			hingeC->setLimit(btScalar(joint.limit.x), btScalar(joint.limit.y));
 			m_joints.push_back(std::move(hingeC));
-		} else if (joint.type == "cone") { // TODO use enums
+		} else if (joint.type == "cone") {
 			auto coneC = std::make_unique<btConeTwistConstraint>(*m_bones[joint.parent.bone]->body.get(), *m_bones[joint.child.bone]->body.get(), localA, localB);
 			coneC->setLimit(joint.limit.x, joint.limit.y, joint.limit.z);
 			m_joints.push_back(std::move(coneC));

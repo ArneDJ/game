@@ -29,6 +29,8 @@
 #include "mapfield.h"
 #include "atlas.h"
 
+namespace geography {
+
 enum material_channels_t {
 	CHANNEL_SNOW = 0,
 	CHANNEL_GRASS,
@@ -714,6 +716,11 @@ const Worldgraph* Atlas::get_worldgraph() const
 {
 	return worldgraph.get();
 }
+	
+Worldgraph* Atlas::get_worldgraph()
+{
+	return worldgraph.get();
+}
 
 const std::vector<geom::transformation_t>& Atlas::get_trees() const
 {
@@ -742,7 +749,7 @@ void Atlas::colorize_holding(uint32_t holding, const glm::vec3 &color)
 	if (search != holdings.end()) {
 		auto &hold = search->second;
 		for (auto tileID : hold.lands) {
-			const tile_t *t = &worldgraph->tiles[tileID]; // TODO use map
+			const tile_t *t = &worldgraph->tiles[tileID];
 			glm::vec2 a = mapscale * t->center;
 			for (const auto &bord : t->borders) {
 				glm::vec2 b = mapscale * bord->c0->position;
@@ -801,7 +808,7 @@ void Atlas::gen_holds()
 	for (auto &t : worldgraph->tiles) {
 		visited[&t] = false;
 		depth[&t] = 0;
-		if (t.site == TOWN || t.site == CASTLE) {
+		if (t.feature == tile_feature::SETTLEMENT) {
 			candidates.push_back(&t);
 			holding_t hold;
 			hold.ID = index++;
@@ -824,7 +831,7 @@ void Atlas::gen_holds()
 				if (border->frontier == false && border->river == false) {
 					auto neighbor = border->t0 == node ? border->t1 : border->t0;
 					bool valid = neighbor->relief == LOWLAND || neighbor->relief == UPLAND;
-					if ((neighbor->site == VACANT || neighbor->site == RESOURCE) && valid == true) {
+					if ((neighbor->feature != tile_feature::SETTLEMENT) && valid == true) {
 						if (visited[neighbor] == false) {
 							visited[neighbor] = true;
 							depth[neighbor] = layer;
@@ -866,11 +873,13 @@ void Atlas::gen_holds()
 	}
 
 	// sites always have to be part of a hold
+	/*
 	for (auto &t : worldgraph->tiles) {
 		if (holding_tiles.find(t.index) == holding_tiles.end()) {
 			t.site = VACANT;
 		}
 	}
+	*/
 }
 	
 void Atlas::create_land_navigation()
@@ -1175,3 +1184,5 @@ void Atlas::create_sea_navigation()
 		}
 	}
 }
+
+};

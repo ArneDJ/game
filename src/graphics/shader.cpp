@@ -15,7 +15,7 @@
 
 namespace gfx {
 
-Shader::~Shader(void)
+Shader::~Shader()
 {
 	// detach and delete shader objects
 	for (GLuint object : shaders) {
@@ -70,7 +70,7 @@ void Shader::compile(const std::string &filepath, GLenum type)
 	shaders.push_back(shader);
 }
 	
-void Shader::link(void)
+void Shader::link()
 {
 	program = glCreateProgram();
 
@@ -102,7 +102,7 @@ void Shader::link(void)
 	}
 }
 	
-void Shader::use(void) const
+void Shader::use() const
 {
 	glUseProgram(program);
 }

@@ -40,7 +40,7 @@ void Saver::change_directory(const std::string &dir)
 	directory = dir; 
 }
 
-void Saver::save(const std::string &filename, const Atlas &atlas, const util::Navigation *landnav, const util::Navigation *seanav, const long seed)
+void Saver::save(const std::string &filename, const geography::Atlas &atlas, const util::Navigation *landnav, const util::Navigation *seanav, const long seed)
 {
 	const std::string filepath = directory + filename;
 
@@ -105,11 +105,11 @@ void Saver::save(const std::string &filename, const Atlas &atlas, const util::Na
 	}
 }
 
-void Saver::load(const std::string &filename, Atlas &atlas, util::Navigation *landnav, util::Navigation *seanav, long &seed)
+void Saver::load(const std::string &filename, geography::Atlas &atlas, util::Navigation *landnav, util::Navigation *seanav, long &seed)
 {
 	const std::string filepath = directory + filename;
 
-	Worldgraph *worldgraph = atlas.worldgraph.get();
+	geography::Worldgraph *worldgraph = atlas.get_worldgraph();
 
 	std::ifstream stream(filepath, std::ios::binary);
 

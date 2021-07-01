@@ -26,6 +26,8 @@
 
 #include "landscape.h"
 
+namespace geography {
+
 struct landgen_parameters {
 	// mountain ridge
 	float ridge_freq;
@@ -68,7 +70,7 @@ static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::F
 
 static landgen_parameters random_landgen_parameters(int32_t seed);
 
-static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::building_t &b);
+static bool larger_building(const building_t &a, const building_t &b);
 
 static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
@@ -94,7 +96,7 @@ void Landscape::load_buildings()
 	for (const auto &house_info : m_module->houses) {
 		auto model = MediaManager::load_model(house_info.model);
 		glm::vec3 size = model->bound_max - model->bound_min;
-		GEOGRAPHY::building_t house = {
+		building_t house = {
 			model,
 			size,
 			house_info.temperature
@@ -155,12 +157,12 @@ const util::Image<float>* Landscape::get_heightmap(void) const
 	return &heightmap;
 }
 	
-const std::vector<GEOGRAPHY::tree_t>& Landscape::get_trees(void) const
+const std::vector<tree_t>& Landscape::get_trees(void) const
 {
 	return m_trees;
 }
 
-const std::vector<GEOGRAPHY::building_t>& Landscape::get_houses(void) const
+const std::vector<building_t>& Landscape::get_houses(void) const
 {
 	return houses;
 }
@@ -181,7 +183,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 	// add valid trees
 	for (const auto &tree_info : m_module->vegetation.trees) {
 		if (within_bounds(precipitation, tree_info.precipitation) && within_bounds(temperature, tree_info.temperature)) {
-			GEOGRAPHY::tree_t tree;
+			tree_t tree;
 			tree.trunk = tree_info.trunk;
 			tree.leaves = tree_info.leaves;
 			tree.billboard = tree_info.billboard;
@@ -401,7 +403,7 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t 
 		}
 	}
 
-	std::vector<GEOGRAPHY::building_t*> buildings_pool;
+	std::vector<building_t*> buildings_pool;
 	for (auto &house : houses) {
 		if (within_bounds(temperature, house.temperature)) {
 			buildings_pool.push_back(&house);	
@@ -563,7 +565,7 @@ static landgen_parameters random_landgen_parameters(int32_t seed)
 	return params;
 }
 
-static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::building_t &b)
+static bool larger_building(const building_t &a, const building_t &b)
 {
 	return (a.bounds.x * a.bounds.z) > (b.bounds.x * b.bounds.z);
 }
@@ -594,3 +596,5 @@ static bool within_bounds(uint8_t value, const module::bounds_t<uint8_t> &bounds
 {
 	return (value >= bounds.min && value <= bounds.max);
 }
+
+};

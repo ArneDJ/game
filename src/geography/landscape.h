@@ -1,5 +1,4 @@
-
-namespace GEOGRAPHY {
+namespace geography {
 
 struct building_t {
 	const gfx::Model *model;
@@ -13,8 +12,6 @@ struct tree_t {
 	std::string leaves;
 	std::string billboard;
 	std::vector<geom::transformation_t> transforms;
-};
-
 };
 
 class Landscape {
@@ -35,8 +32,8 @@ public:
 	const util::Image<float>* get_heightmap(void) const;
 	const util::Image<uint8_t>* get_normalmap(void) const;
 	const util::Image<uint8_t>* get_sitemasks(void) const;
-	const std::vector<GEOGRAPHY::tree_t>& get_trees(void) const;
-	const std::vector<GEOGRAPHY::building_t>& get_houses(void) const;
+	const std::vector<tree_t>& get_trees(void) const;
+	const std::vector<building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
 	util::Image<float> heightmap;
@@ -49,12 +46,14 @@ private:
 	Sitegen sitegen;
 	const module::Module *m_module;
 private:
-	std::vector<GEOGRAPHY::tree_t> m_trees;
-	std::vector<GEOGRAPHY::building_t> houses;
+	std::vector<tree_t> m_trees;
+	std::vector<building_t> houses;
 private:
 	void gen_heightmap(int32_t local_seed, float amplitude);
 	void gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature, uint8_t tree_density);
 	void place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t temperature);
 	void create_sitemasks(uint8_t radius);
 	void create_valleymap(void);
+};
+
 };

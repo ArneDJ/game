@@ -8,6 +8,8 @@
 
 #include "mapfield.h"
 
+namespace geography {
+
 bool Mapfield::triangle_in_area(glm::vec2 a, glm::vec2 b, glm::vec2 c, const geom::rectangle_t *area)
 {
 	// check if grid points overlap with triangle
@@ -153,3 +155,5 @@ mapfield_result Mapfield::index_in_field(const glm::vec2 &position) const
 
 	return result;
 }
+
+};

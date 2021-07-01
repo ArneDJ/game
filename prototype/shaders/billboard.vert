@@ -7,7 +7,7 @@ layout(location = 2) in vec2 vtexcoords;
 out vec3 position;
 out vec2 texcoords;
 
-layout(binding = 10) uniform samplerBuffer TRANSFORMS; // for instanced rendering
+uniform samplerBuffer TRANSFORMS; // for instanced rendering
 
 uniform bool INSTANCED;
 uniform mat4 VP;

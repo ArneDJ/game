@@ -17,6 +17,8 @@
 #include "../geometry/voronoi.h"
 #include "sitegen.h"
 
+namespace geography {
+
 struct chain_segment_t {
 	std::list<glm::vec2>::iterator left;
 	std::list<glm::vec2>::iterator right;
@@ -43,7 +45,7 @@ static const size_t MAX_CELLS = 128;
 static const size_t MIN_GATEWAY_DISTANCE = 5;
 static const float PARCEL_DENSITY_DISTANCE = 25.F;
 
-static void divide_polygon(std::list<glm::vec2> start, district *cell);
+static void divide_polygon(std::list<glm::vec2> start, district_t *cell);
 static float polygon_area(std::vector<glm::vec2> &vertices);
 static chain_split_t find_chainsplit(std::list<glm::vec2> &polygon, std::list<glm::vec2>::iterator &longesta, std::list<glm::vec2>::iterator &longestb);
 
@@ -88,9 +90,9 @@ static glm::vec2 polygon_centroid(const std::vector<glm::vec2> &vertices)
 	return centroid;
 }
 
-static wallsegment make_wallsegment(const district *left, const district *right)
+static wall_segment_t make_wallsegment(const district_t *left, const district_t *right)
 {
-	wallsegment wall;
+	wall_segment_t wall;
 	wall.left = left;
 	wall.right = right;
 	wall.S = {left->center, right->center};
@@ -98,7 +100,7 @@ static wallsegment make_wallsegment(const district *left, const district *right)
 	return wall;
 }
 
-static bool winding(junction *a, junction *b, glm::vec2 center)
+static bool winding(junction_t *a, junction_t *b, glm::vec2 center)
 {
 	glm::vec2 av = glm::normalize(a->position - center);
 	glm::vec2 ab = glm::normalize(b->position - center);
@@ -106,12 +108,12 @@ static bool winding(junction *a, junction *b, glm::vec2 center)
 	return atan2(av.y, av.x) < atan2(ab.y, ab.x);
 }
 
-static bool comp_area(const section *a, const section*b)
+static bool comp_area(const section_t *a, const section_t*b)
 {
 	return a->area > b->area;
 }
 
-static bool comp_distance(const section *a, const section*b)
+static bool comp_distance(const section_t *a, const section_t*b)
 {
 	return glm::distance(a->d0->center, a->d1->center) > glm::distance(b->d0->center, b->d1->center);
 }
@@ -177,20 +179,20 @@ void Sitegen::make_diagram(uint32_t tileref)
 
 	// adopt cell structures
 	for (const auto &cell : voronoi.cells) {
-		std::vector<district*> dneighbors;
+		std::vector<district_t*> dneighbors;
 		for (const auto &neighbor : cell.neighbors) {
 			dneighbors.push_back(&districts[neighbor->index]);
 		}
-		std::vector<junction*> djunctions;
+		std::vector<junction_t*> djunctions;
 		for (const auto &vertex : cell.vertices) {
 			djunctions.push_back(&junctions[vertex->index]);
 		}
-		std::vector<section*> dsections;
+		std::vector<section_t*> dsections;
 		for (const auto &edge : cell.edges) {
 			dsections.push_back(&sections[edge->index]);
-	}
+		}
 
-		district d;
+		district_t d;
 		d.index = cell.index;
 		d.center = cell.center;
 		d.neighbors = dneighbors;
@@ -207,16 +209,16 @@ void Sitegen::make_diagram(uint32_t tileref)
 
 	// adapt vertex structures
 	for (const auto &vertex : voronoi.vertices) {
-		std::vector<junction*> adjacent;
+		std::vector<junction_t*> adjacent;
 		for (const auto &neighbor : vertex.adjacent) {
 			adjacent.push_back(&junctions[neighbor->index]);
 		}
-		std::vector<district*> touches;
+		std::vector<district_t*> touches;
 		for (const auto &cell : vertex.cells) {
 			touches.push_back(&districts[cell->index]);
 		}
 
-		junction c;
+		junction_t c;
 		c.index = vertex.index;
 		c.position = vertex.position;
 		c.adjacent = adjacent;
@@ -291,11 +293,11 @@ void Sitegen::mark_districts(void)
 	}
 
 	// distance to center tile in graph
-	std::queue<const district*> queue;
+	std::queue<const district_t*> queue;
 	queue.push(core);
 	visited[core->index] = true;
 	while (!queue.empty()) {
-		const district *node = queue.front();
+		const district_t *node = queue.front();
 		queue.pop();
 		int depth = node->radius + 1;
 		for (auto neighbor : node->neighbors) {
@@ -321,10 +323,10 @@ void Sitegen::mark_junctions(void)
 
 	// town center
 	for (const auto &root : core->junctions) {
-		std::queue<const junction*> queue;
+		std::queue<const junction_t*> queue;
 		queue.push(root);
 		while (!queue.empty()) {
-			const junction *node = queue.front();
+			const junction_t *node = queue.front();
 			queue.pop();
 			int layer = node->radius + 1;
 			for (auto neighbor : node->adjacent) {
@@ -372,7 +374,7 @@ void Sitegen::outline_walls(size_t radius)
 			while (!queue.empty()) {
 				ham_node_t *node = queue.front();
 				queue.pop();
-				const district *dist = &districts[node->index];
+				const district_t *dist = &districts[node->index];
 				ham_node_t *finish = nullptr;
 				for (const auto neighbor : dist->neighbors) {
 					if (neighbor->index == start->index) {
@@ -419,12 +421,12 @@ void Sitegen::outline_walls(size_t radius)
 		ham_node_t *node = end;
 		while (node != start) {
 			ham_node_t *parent = node->parent;
-			wallsegment wall = make_wallsegment(&districts[node->index], &districts[parent->index]);
+			auto wall = make_wallsegment(&districts[node->index], &districts[parent->index]);
 			walls.push_back(wall);
 			link[std::minmax(node->index, parent->index)] = true;
 			node = parent;
 		}
-		wallsegment wall = make_wallsegment(&districts[start->index], &districts[end->index]);
+		auto wall = make_wallsegment(&districts[start->index], &districts[end->index]);
 		walls.push_back(wall);
 		link[std::minmax(start->index, end->index)] = true;
 	}
@@ -452,7 +454,7 @@ void Sitegen::outline_walls(size_t radius)
 
 void Sitegen::make_gateways(void)
 {
-	std::vector<section*> candidates;
+	std::vector<section_t*> candidates;
 	for (auto &sect : sections) {
 		if (sect.wall) {
 			candidates.push_back(&sect);
@@ -470,11 +472,11 @@ void Sitegen::make_gateways(void)
 	for (auto sect : candidates) {
 		if (reserved[sect->d0->index] == false && reserved[sect->d1->index] == false) {
 			sect->gateway = true;
-			std::queue<district*> queue;
+			std::queue<district_t*> queue;
 			queue.push(sect->d0);
 			queue.push(sect->d1);
 			while (!queue.empty()) {
-				district *node = queue.front();
+				district_t *node = queue.front();
 				queue.pop();
 				int layer = depth[node->index] + 1;
 				reserved[node->index] = true;
@@ -516,11 +518,11 @@ void Sitegen::make_highways(void)
 		if (sect.gateway) {
 			geom::segment_t S = { sect.j0->position, sect.j1->position };
 			highways.push_back(S);
-			junction *start = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
-			std::queue<junction*> queue;
+			junction_t *start = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
+			std::queue<junction_t*> queue;
 			queue.push(start);
 			while (!queue.empty()) {
-				junction *node = queue.front();
+				junction_t *node = queue.front();
 				queue.pop();
 				for (auto neighbor : node->adjacent) {
 					if (neighbor->radius < node->radius) {
@@ -544,10 +546,10 @@ void Sitegen::make_highways(void)
 
 	for (const auto &root : junctions) {
 		if (root.border == true) {
-			std::queue<const junction*> queue;
+			std::queue<const junction_t*> queue;
 			queue.push(&root);
 			while (!queue.empty()) {
-				const junction *node = queue.front();
+				const junction_t *node = queue.front();
 				queue.pop();
 				int layer = depth[node->index] + 1;
 				for (auto neighbor : node->adjacent) {
@@ -565,15 +567,15 @@ void Sitegen::make_highways(void)
 	}
 	for (auto &sect : sections) {
 		if (sect.gateway) {
-			junction *outward = sect.j0->radius > sect.j1->radius ? sect.j0 : sect.j1;
-			junction *inward = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
-			std::queue<junction*> queue;
+			junction_t *outward = sect.j0->radius > sect.j1->radius ? sect.j0 : sect.j1;
+			junction_t *inward = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
+			std::queue<junction_t*> queue;
 			queue.push(outward);
 			glm::vec2 dir = glm::normalize(outward->position - inward->position);
 			while (!queue.empty()) {
-				junction *node = queue.front();
+				junction_t *node = queue.front();
 				queue.pop();
-				junction *next = nullptr;
+				junction_t *next = nullptr;
 				float maxdot = -1.f;
 				for (auto neighbor : node->adjacent) {
 					if (depth[neighbor->index] < depth[node->index]) {
@@ -630,9 +632,9 @@ void Sitegen::divide_parcels(size_t radius)
 	}
 }
 
-static parcel make_parcel(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d)
+static parcel_t make_parcel(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d)
 {
-	parcel parc;
+	parcel_t parc;
 	parc.quad = {a, b, c, d};
 
 	parc.centroid = geom::quadrilateral_centroid(parc.quad);
@@ -646,7 +648,7 @@ static bool longest_segment(chain_segment_t &a, chain_segment_t &b)
 	return a.distance > b.distance;
 }
 
-static void divide_polygon(std::list<glm::vec2> start, district *cell)
+static void divide_polygon(std::list<glm::vec2> start, district_t *cell)
 {
 	std::queue<std::list<glm::vec2>> queue; // queue of polygons to split
 	queue.push(start);
@@ -659,7 +661,7 @@ static void divide_polygon(std::list<glm::vec2> start, district *cell)
 			glm::vec2 b = polygon.front(); polygon.pop_front();
 			glm::vec2 c= polygon.front(); polygon.pop_front();
 			glm::vec2 d = polygon.front(); polygon.pop_front();
-			parcel parc = make_parcel(c, d, a, b);
+			auto parc = make_parcel(c, d, a, b);
 			if (geom::convex_quadrilateral(parc.quad)) {
 				cell->parcels.push_back(parc);
 			}
@@ -833,3 +835,4 @@ static float polygon_area(std::vector<glm::vec2> &vertices)
 	return fabs(area / 2.f);
 }
 
+};

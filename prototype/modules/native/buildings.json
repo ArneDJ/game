@@ -40,7 +40,7 @@
                 "max": 255
             },
             "temperature": {
-                "min": 100,
+                "min": 200,
                 "max": 255
             }
         },
@@ -51,7 +51,7 @@
                 "max": 255
             },
             "temperature": {
-                "min": 100,
+                "min": 200,
                 "max": 255
             }
         },
@@ -62,8 +62,52 @@
                 "max": 255
             },
             "temperature": {
-                "min": 100,
+                "min": 200,
                 "max": 255
+            }
+        },
+        {
+            "model": "buildings/houses/temperate/small.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 100,
+                "max": 200
+            }
+        },
+        {
+            "model": "buildings/houses/temperate/medium.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 100,
+                "max": 200
+            }
+        },
+        {
+            "model": "buildings/houses/temperate/medium_wide.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 100,
+                "max": 200
+            }
+        },
+        {
+            "model": "buildings/houses/temperate/large.glb",
+            "precipitation": {
+                "min": 0,
+                "max": 255
+            },
+            "temperature": {
+                "min": 100,
+                "max": 200
             }
         }
     ]

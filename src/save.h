@@ -30,8 +30,8 @@ struct navmesh_record {
 class Saver {
 public:
 	void change_directory(const std::string &dir);
-	void save(const std::string &filename, const Atlas &atlas, const util::Navigation *landnav, const util::Navigation *seanav, const long seed);
-	void load(const std::string &filename, Atlas &atlas, util::Navigation *landnav, util::Navigation *seanav, long &seed);
+	void save(const std::string &filename, const geography::Atlas &atlas, const util::Navigation *landnav, const util::Navigation *seanav, const long seed);
+	void load(const std::string &filename, geography::Atlas &atlas, util::Navigation *landnav, util::Navigation *seanav, long &seed);
 private:
 	std::string directory;
 	struct navmesh_record navmesh_land;

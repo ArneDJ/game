@@ -12,6 +12,8 @@
 #include "../module/module.h"
 #include "terragen.h"
 
+namespace geography {
+
 // The parameter a is the height of the curve's peak, b is the position of the center of the peak and c (the standard deviation, sometimes called the Gaussian RMS width) controls the width of the "bell".
 static inline float gauss(float a, float b, float c, float x);
 
@@ -146,3 +148,5 @@ static inline float gauss(float a, float b, float c, float x)
 
 	return a * std::exp(-exponent);
 }
+
+};

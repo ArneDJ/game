@@ -30,6 +30,8 @@
 
 namespace gfx {
 
+static int TRANSFORM_LOCATION = 10;
+
 void BVH::build(const std::vector<tree_instance_t> &instances)
 {
 	root = new BVH_node_t(instances, BVH_AXIS_Z);
@@ -200,18 +202,19 @@ void Forest::display(const util::Camera *camera) const
 	m_detailed->uniform_mat4("VP", camera->VP);
 	m_detailed->uniform_vec3("CAM_POS", camera->position);
 	m_detailed->uniform_bool("INSTANCED", true);
+	m_detailed->uniform_int("TRANSFORMS", TRANSFORM_LOCATION);
 
 	// draw leaves
 	glDisable(GL_CULL_FACE);
 	for (const auto &model : m_models) {
-		model->detail_transforms.bind(GL_TEXTURE10); // TODO bind to name
+		model->detail_transforms.bind(GL_TEXTURE0 + TRANSFORM_LOCATION);
 		model->leaves->display_instanced(model->detail_count);
 	}
 	glEnable(GL_CULL_FACE);
 
 	// draw trunks
 	for (const auto &model : m_models) {
-		model->detail_transforms.bind(GL_TEXTURE10); // TODO bind to name
+		model->detail_transforms.bind(GL_TEXTURE0 + TRANSFORM_LOCATION);
 		model->trunk->display_instanced(model->detail_count);
 	}
 	
@@ -224,10 +227,10 @@ void Forest::display(const util::Camera *camera) const
 	m_billboard->uniform_mat4("PROJECT", camera->projection);
 	m_billboard->uniform_mat4("VIEW", camera->viewing);
 	m_billboard->uniform_bool("INSTANCED", true);
+	m_billboard->uniform_int("TRANSFORMS", TRANSFORM_LOCATION);
 
 	for (const auto &model : m_models) {
-
-		model->billboard_transforms.bind(GL_TEXTURE10); // TODO bind to name
+		model->billboard_transforms.bind(GL_TEXTURE0 + TRANSFORM_LOCATION);
 		model->billboard->display_instanced(model->billboard_count);
 	}
 }

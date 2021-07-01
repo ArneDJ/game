@@ -133,7 +133,7 @@ public:
 	util::Navigation seanav;
 	util::Camera camera;
 	physics::PhysicsManager collisionman;
-	Atlas atlas;
+	geography::Atlas atlas;
 	// graphics
 	std::unique_ptr<gfx::Worldmap> worldmap;
 	std::unique_ptr<gfx::LabelManager> labelman;
@@ -225,7 +225,7 @@ void Campaign::add_settlements()
 	collisionman.add_shape(shape);
 
 	for (const auto &tile : atlas.get_worldgraph()->tiles) {
-		if (tile.site == CASTLE || tile.site == TOWN) {
+		if (tile.feature == geography::tile_feature::SETTLEMENT) {
 			glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
 			glm::vec3 origin = { tile.center.x, atlas.SCALE.y, tile.center.y };
 			auto result = collisionman.cast_ray(origin, position, physics::COLLISION_GROUP_HEIGHTMAP);
@@ -413,7 +413,7 @@ public:
 	bool naval = false;
 	util::Camera camera;
 	physics::PhysicsManager physicsman;
-	std::unique_ptr<Landscape> landscape;
+	std::unique_ptr<geography::Landscape> landscape;
 	// graphics
 	std::unique_ptr<gfx::RenderGroup> ordinary;
 	std::unique_ptr<gfx::RenderGroup> creatures;
@@ -438,7 +438,7 @@ public:
 	
 void Battle::init(const module::Module *mod, const util::Window *window, const shader_group_t *shaders)
 {
-	landscape = std::make_unique<Landscape>(mod, 2048);
+	landscape = std::make_unique<geography::Landscape>(mod, 2048);
 
 	terrain = std::make_unique<gfx::Terrain>(landscape->SCALE, landscape->get_heightmap(), landscape->get_normalmap(), landscape->get_sitemasks());
 
@@ -879,8 +879,8 @@ void Game::prepare_battle()
 	uint8_t temperature = 0;
 	int32_t local_seed = 0;
 	uint8_t site_radius = 0;
-	enum tile_regolith regolith = tile_regolith::SAND;
-	enum tile_feature feature = tile_feature::NONE;
+	enum geography::tile_regolith regolith = geography::tile_regolith::SAND;
+	enum geography::tile_feature feature = geography::tile_feature::NONE;
 	if (tily) {
 		battle.naval = !tily->land;
 		amp = tily->amp;
@@ -894,18 +894,21 @@ void Game::prepare_battle()
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
 		local_seed = local_seed_distrib(gen);
 		if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
+			/*
 			switch (tily->site) {
-			case CASTLE: site_radius = 1; break;
-			case TOWN: site_radius = 2; break;
+			case geography::CASTLE: site_radius = 1; break;
+			case geography::TOWN: site_radius = 2; break;
 			}
+			*/
+			site_radius = 3;
 		}
 	}
 
 	glm::vec3 grasscolor = glm::mix(glm::vec3(1.5f)*modular.palette.grass.min, modular.palette.grass.max, precipitation / 255.f);
 
-	if (feature == tile_feature::WOODS) {
+	if (feature == geography::tile_feature::WOODS) {
 		tree_density = 255;
-	} else if (regolith == tile_regolith::SNOW || regolith == tile_regolith::SAND) {
+	} else if (regolith == geography::tile_regolith::SNOW || regolith == geography::tile_regolith::SAND) {
 		tree_density = 0;
 	} else {
 		tree_density = (precipitation > 64) ? 64 : precipitation;
@@ -919,10 +922,10 @@ void Game::prepare_battle()
 	
 	bool grass_present = false;
 	// main terrain soil
-	if (regolith == tile_regolith::GRASS) {
+	if (regolith == geography::tile_regolith::GRASS) {
 		grass_present = true;
 		battle.terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/grass.dds"));
-	} else if (regolith == tile_regolith::SAND) {
+	} else if (regolith == geography::tile_regolith::SAND) {
 		battle.terrain->insert_material("REGOLITH_MAP", MediaManager::load_texture("ground/sand.dds"));
 		grasscolor = { 0.96, 0.83, 0.63 };
 		rock_color = glm::vec3(0.96, 0.83, 0.63);

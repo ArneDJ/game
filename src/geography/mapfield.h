@@ -1,3 +1,4 @@
+namespace geography {
 
 struct mosaictriangle {
 	uint32_t index; // index of the tile the triangle belongs to
@@ -30,3 +31,4 @@ private:
 	void triangle_in_regions(const mosaictriangle *tess, uint32_t id);
 };
 
+};

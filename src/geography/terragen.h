@@ -1,3 +1,4 @@
+namespace geography {
 
 class Terragen {
 public:
@@ -14,4 +15,6 @@ private:
 	void gen_rainmap(long seed, const module::worldgen_parameters_t *params);
 	//void gen_volcanism(long seed, const module::worldgen_parameters_t *params);
 	void gen_forestation(long seed, const module::worldgen_parameters_t *params);
+};
+
 };
