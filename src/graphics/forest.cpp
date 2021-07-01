@@ -34,7 +34,6 @@ void BVH::build(const std::vector<tree_instance_t> &instances)
 {
 	root = new BVH_node_t(instances, BVH_AXIS_Z);
 
-	puts("build linear array of nodes");
 	// build linear array of nodes
 	std::queue<BVH_node_t*> queue;
 	queue.push(root);
@@ -52,11 +51,9 @@ void BVH::build(const std::vector<tree_instance_t> &instances)
 			leafs.push_back(node);
 		}
 	}
-	std::cout << "total nodes " << nodes.size() << std::endl;
-	std::cout << "total leafs " << leafs.size() << std::endl;
 }
 
-BVH_node_t::BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_axis_t parent_axis)
+BVH_node_t::BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_axis parent_axis)
 {
 	// calculate total bounding volume
 	bounds.min = glm::vec3((std::numeric_limits<float>::max)());
@@ -82,8 +79,6 @@ BVH_node_t::BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_a
 	// create the tree
 	auto best_axis = (parent_axis == BVH_AXIS_X) ? BVH_AXIS_Z : BVH_AXIS_X;
 
-	//printf("best axis %d\n", best_axis);
-	//puts("build lists to recurse on");
 	// build lists to recurse on
 	std::vector<tree_instance_t> leftList;
 	std::vector<tree_instance_t> rightList;
@@ -100,9 +95,6 @@ BVH_node_t::BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_a
 		}
 	}
 
-	//std::cout << "right list: " << rightList.size() << std::endl;
-	//std::cout << "left list: " << leftList.size() << std::endl;
-
 	if (!rightList.empty() && !leftList.empty()) {
 		right = new BVH_node_t(rightList, best_axis);
 		left = new BVH_node_t(leftList, best_axis);
@@ -113,7 +105,6 @@ BVH_node_t::BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_a
 			objects = leftList;
 		}
     	}
-	//std::cout << "BVH num nodes: " << objects.size() << std::endl;
 }
 
 BVH::~BVH()
@@ -171,7 +162,7 @@ void Forest::add_model(const Model *trunk, const Model *leaves, const Model *bil
 	m_models.push_back(std::move(model));
 }
 
-void Forest::display(const UTIL::Camera *camera) const
+void Forest::display(const util::Camera *camera) const
 {
 	glm::mat4 projection = glm::perspective(glm::radians(camera->FOV), camera->aspectratio, camera->nearclip, 200.f);
 	glm::vec4 planes[6];
@@ -252,7 +243,7 @@ void Forest::build_hierarchy()
 			glm::mat4 R = glm::mat4(transform.rotation);
 			glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(transform.scale));
 			glm::mat4 M = T * R * S;
-			struct tree_instance_t instance = {
+			tree_instance_t instance = {
 				model.get(),
 				transform,
 				M

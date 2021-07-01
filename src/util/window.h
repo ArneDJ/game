@@ -1,5 +1,5 @@
 
-namespace UTIL {
+namespace util {
 
 class Window {
 public:
@@ -9,9 +9,9 @@ public:
 	uint16_t height = 0;
 public:
 	bool open(uint16_t w, uint16_t h);
-	void close(void);
-	void swap(void);
-	void set_fullscreen(void);
+	void close();
+	void swap();
+	void set_fullscreen();
 };
 
 }

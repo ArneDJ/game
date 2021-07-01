@@ -1,6 +1,6 @@
-struct tile;
-struct corner;
-struct border;
+struct tile_t;
+struct corner_t;
+struct border_t;
 
 // TODO slated for removal
 enum SITE : uint8_t {
@@ -33,7 +33,7 @@ enum class tile_feature : uint8_t {
 	SETTLEMENT
 };
 
-struct border {
+struct border_t {
 	uint32_t index;
 	// world data
 	bool frontier;
@@ -41,10 +41,10 @@ struct border {
 	bool river;
 	bool wall;
 	// graph data
-	struct corner *c0 = nullptr;
-	struct corner *c1 = nullptr;
-	struct tile *t0 = nullptr;
-	struct tile *t1 = nullptr;
+	corner_t *c0 = nullptr;
+	corner_t *c1 = nullptr;
+	tile_t *t0 = nullptr;
+	tile_t *t1 = nullptr;
 	// save
 	uint32_t c0ID;
 	uint32_t c1ID;
@@ -58,7 +58,7 @@ struct border {
 	}
 };
 
-struct corner {
+struct corner_t {
 	// graph data
 	uint32_t index;
 	// world data
@@ -68,8 +68,8 @@ struct corner {
 	bool wall;
 	// graph data
 	glm::vec2 position;
-	std::vector<struct corner*> adjacent;
-	std::vector<struct tile*> touches;
+	std::vector<corner_t*> adjacent;
+	std::vector<tile_t*> touches;
 	// save
 	std::vector<uint32_t> adjacentIDs;
 	std::vector<uint32_t> touchesIDs;
@@ -83,7 +83,7 @@ struct corner {
 	}
 };
 
-struct tile {
+struct tile_t {
 	// graph data
 	uint32_t index;
 	// world data
@@ -93,9 +93,9 @@ struct tile {
 	bool river;
 	// graph data
 	glm::vec2 center;
-	std::vector<const struct tile*> neighbors;
-	std::vector<const struct corner*> corners;
-	std::vector<const struct border*> borders;
+	std::vector<const tile_t*> neighbors;
+	std::vector<const corner_t*> corners;
+	std::vector<const border_t*> borders;
 	// to store in save file
 	std::vector<uint32_t> neighborIDs;
 	std::vector<uint32_t> cornerIDs;
@@ -116,44 +116,44 @@ struct tile {
 	}
 };
 
-struct branch {
-	const struct corner *confluence = nullptr;
-	struct branch *left = nullptr;
-	struct branch *right = nullptr;
+struct branch_t {
+	const corner_t *confluence = nullptr;
+	branch_t *left = nullptr;
+	branch_t *right = nullptr;
 	int streamorder;
 	int depth;
 };
 
-struct basin {
-	struct branch *mouth; // binary tree root
+struct basin_t {
+	branch_t *mouth; // binary tree root
 	size_t height; // binary tree height
 };
 
 class Worldgraph {
 public:
 	geom::rectangle_t area;
-	std::vector<struct tile> tiles;
-	std::vector<struct corner> corners;
-	std::vector<struct border> borders;
+	std::vector<tile_t> tiles;
+	std::vector<corner_t> corners;
+	std::vector<border_t> borders;
 public:
 	Worldgraph(const geom::rectangle_t bounds);
 	~Worldgraph(void);
-	void generate(long seedling, const struct MODULE::worldgen_parameters_t *params, const Terragen *terra);
+	void generate(long seedling, const module::worldgen_parameters_t *params, const Terragen *terra);
 	void reload_references(void);
 private:
-	std::list<struct basin> basins;
+	std::list<basin_t> basins;
 	geom::Voronoi voronoi;
 private:
 	void gen_diagram(long seed, float radius);
-	void gen_relief(const UTIL::Image<float> *heightmap, const struct MODULE::worldgen_parameters_t *params);
-	void gen_rivers(const struct MODULE::worldgen_parameters_t *params);
-	void gen_sites(long seed, const struct MODULE::worldgen_parameters_t *params);
-	void gen_properties(const UTIL::Image<uint8_t> *temperatures, const UTIL::Image<uint8_t> *rainfall);
-	void add_primitive_features(const UTIL::Image<uint8_t> *forestation, const UTIL::Image<uint8_t> *rainfall);
+	void gen_relief(const util::Image<float> *heightmap, const module::worldgen_parameters_t *params);
+	void gen_rivers(const module::worldgen_parameters_t *params);
+	void gen_sites(long seed, const module::worldgen_parameters_t *params);
+	void gen_properties(const util::Image<uint8_t> *temperatures, const util::Image<uint8_t> *rainfall);
+	void add_primitive_features(const util::Image<uint8_t> *forestation, const util::Image<uint8_t> *rainfall);
 	//
 	void floodfill_relief(unsigned int minsize, enum RELIEF target, enum RELIEF replacement);
 	void remove_echoriads(void);
-	void gen_drainage_basins(std::vector<const struct corner*> &graph);
+	void gen_drainage_basins(std::vector<const corner_t*> &graph);
 	void erode_mountains(void);
 	void correct_border_rivers(void);
 	void find_obstructions(void);

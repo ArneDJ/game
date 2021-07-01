@@ -10,7 +10,7 @@
 
 #include "module.h"
 	
-namespace MODULE {
+namespace module {
 
 void Module::load(const std::string &modname)
 {

@@ -78,7 +78,7 @@ RagdollBone::RagdollBone(float radius, float height, const glm::vec3 &start, con
 	body->setCcdSweptSphereRadius(0.05f);
 }
 	
-void Ragdoll::create(const struct MODULE::ragdoll_armature_import_t &armature)
+void Ragdoll::create(const module::ragdoll_armature_import_t &armature)
 {
 	clean();
 

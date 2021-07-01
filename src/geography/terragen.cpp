@@ -17,15 +17,15 @@ static inline float gauss(float a, float b, float c, float x);
 
 Terragen::Terragen(uint16_t heightres, uint16_t rainres, uint16_t tempres)
 {
-	heightmap.resize(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
+	heightmap.resize(heightres, heightres, util::COLORSPACE_GRAYSCALE);
 
-	rainmap.resize(rainres, rainres, UTIL::COLORSPACE_GRAYSCALE);
-	tempmap.resize(tempres, tempres, UTIL::COLORSPACE_GRAYSCALE);
+	rainmap.resize(rainres, rainres, util::COLORSPACE_GRAYSCALE);
+	tempmap.resize(tempres, tempres, util::COLORSPACE_GRAYSCALE);
 
-	forestation.resize(rainres, rainres, UTIL::COLORSPACE_GRAYSCALE);
+	forestation.resize(rainres, rainres, util::COLORSPACE_GRAYSCALE);
 }
 
-void Terragen::generate(long seed, const struct MODULE::worldgen_parameters_t *params)
+void Terragen::generate(long seed, const module::worldgen_parameters_t *params)
 {
 	heightmap.clear();
 	gen_heightmap(seed, params);
@@ -40,7 +40,7 @@ void Terragen::generate(long seed, const struct MODULE::worldgen_parameters_t *p
 	gen_forestation(seed, params);
 }
 
-void Terragen::gen_heightmap(long seed, const struct MODULE::worldgen_parameters_t *params)
+void Terragen::gen_heightmap(long seed, const module::worldgen_parameters_t *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -52,10 +52,10 @@ void Terragen::gen_heightmap(long seed, const struct MODULE::worldgen_parameters
 	fastnoise.SetFractalLacunarity(params->height.lacunarity);
 	fastnoise.SetGradientPerturbAmp(params->height.perturbamp);
 
-	heightmap.noise(&fastnoise, params->height.sampling_scale, UTIL::CHANNEL_RED);
+	heightmap.noise(&fastnoise, params->height.sampling_scale, util::CHANNEL_RED);
 }
 
-void Terragen::gen_tempmap(long seed, const struct MODULE::worldgen_parameters_t *params)
+void Terragen::gen_tempmap(long seed, const module::worldgen_parameters_t *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -70,12 +70,12 @@ void Terragen::gen_tempmap(long seed, const struct MODULE::worldgen_parameters_t
 			float y = i; float x = j;
 			fastnoise.GradientPerturbFractal(x, y);
 			float temperature = 1.f - (y / longitude);
-			tempmap.plot(j, i, UTIL::CHANNEL_RED, 255 * glm::clamp(temperature, 0.f, 1.f));
+			tempmap.plot(j, i, util::CHANNEL_RED, 255 * glm::clamp(temperature, 0.f, 1.f));
 		}
 	}
 }
 
-void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t *params)
+void Terragen::gen_rainmap(long seed, const module::worldgen_parameters_t *params)
 {
 	// create the land mask image
 	// land is white (255), sea is black (0)
@@ -85,9 +85,9 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 	};
 	for (int i = 0; i < rainmap.width(); i++) {
 		for (int j = 0; j < rainmap.height(); j++) {
-			float height = heightmap.sample(scale.x * i, scale.y * j, UTIL::CHANNEL_RED);
+			float height = heightmap.sample(scale.x * i, scale.y * j, util::CHANNEL_RED);
 			uint8_t color = (height > params->graph.lowland) ? 255 : 0;
-			rainmap.plot(i, j, UTIL::CHANNEL_RED, color);
+			rainmap.plot(i, j, util::CHANNEL_RED, color);
 		}
 	}
 
@@ -110,25 +110,25 @@ void Terragen::gen_rainmap(long seed, const struct MODULE::worldgen_parameters_t
 
 	for (int i = 0; i < rainmap.width(); i++) {
 		for (int j = 0; j < rainmap.height(); j++) {
-			float rain = 1.f - (rainmap.sample(i, j, UTIL::CHANNEL_RED) / 255.f);
+			float rain = 1.f - (rainmap.sample(i, j, util::CHANNEL_RED) / 255.f);
 			float y = i; float x = j;
 			fastnoise.GradientPerturbFractal(x, y);
 			float detail = 0.5f * (fastnoise.GetNoise(x, y) + 1.f);
 			float dev = gauss(1.f, params->rain.gauss_center, params->rain.gauss_sigma, rain);
 			rain = glm::mix(rain, detail, params->rain.detail_mix*dev);
 			// let temperature have influence on rain
-			float temp = tempmap.sample(scale_temp.x * i, scale_temp.y * j, UTIL::CHANNEL_RED) / 255.f;
+			float temp = tempmap.sample(scale_temp.x * i, scale_temp.y * j, util::CHANNEL_RED) / 255.f;
 			float inverse_temp = 1.f - temp;
 			if (temp > 0.5f) {
 				rain = glm::mix(rain, inverse_temp*inverse_temp, detail*temp);
 			}
 			rain = glm::smoothstep(0.1f, 0.3f, rain);
-			rainmap.plot(i, j, UTIL::CHANNEL_RED, 255 * glm::clamp(rain, 0.f, 1.f));
+			rainmap.plot(i, j, util::CHANNEL_RED, 255 * glm::clamp(rain, 0.f, 1.f));
 		}
 	}
 }
 	
-void Terragen::gen_forestation(long seed, const struct MODULE::worldgen_parameters_t *params)
+void Terragen::gen_forestation(long seed, const module::worldgen_parameters_t *params)
 {
 	FastNoise fastnoise;
 	fastnoise.SetSeed(seed);
@@ -137,7 +137,7 @@ void Terragen::gen_forestation(long seed, const struct MODULE::worldgen_paramete
 	fastnoise.SetFractalOctaves(2);
 	fastnoise.SetFrequency(0.02f);
 
-	forestation.noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+	forestation.noise(&fastnoise, glm::vec2(1.f, 1.f), util::CHANNEL_RED);
 }
 
 static inline float gauss(float a, float b, float c, float x)

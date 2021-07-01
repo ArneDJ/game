@@ -28,9 +28,9 @@ static const float FARCLIP_ADJUST = 0.03F;
 
 // implementation based on:
 // https://github.com/SaschaWillems/Vulkan/blob/master/examples/shadowmappingcascade/shadowmappingcascade.cpp
-static struct depthmap gen_depthmap(GLsizei size, GLsizei layers)
+static depthmap_t gen_depthmap(GLsizei size, GLsizei layers)
 {
-	struct depthmap depth;
+	depthmap_t depth;
 	depth.height = size;
 	depth.width = size;
 
@@ -99,7 +99,7 @@ void Shadow::disable(void)
 	glCullFace(GL_BACK);
 }
 
-void Shadow::update(const UTIL::Camera *camera, const glm::vec3 &lightpos)
+void Shadow::update(const util::Camera *camera, const glm::vec3 &lightpos)
 {
 	const float near = camera->nearclip;
 	const float far = FARCLIP_ADJUST * camera->farclip;

@@ -18,7 +18,7 @@
 
 namespace geom {
 
-static void prune_vertices(std::vector<const struct voronoi_vertex*> &v)
+static void prune_vertices(std::vector<const voronoi_vertex_t*> &v)
 {
 	auto end = v.end();
 	for (auto it = v.begin(); it != end; ++it) {
@@ -62,14 +62,14 @@ static void relax_points(const jcv_diagram *diagram, std::vector<jcv_point> &poi
 	}
 }
 
-static void adapt_cells(const jcv_diagram *diagram, std::vector<struct voronoi_cell> &cells)
+static void adapt_cells(const jcv_diagram *diagram, std::vector<voronoi_cell_t> &cells)
 {
 	const jcv_site *sites = jcv_diagram_get_sites(diagram);
 
 	// get each cell
 	for (int i = 0; i < diagram->numsites; i++) {
 		const jcv_site *site = &sites[i];
-		struct voronoi_cell cell;
+		voronoi_cell_t cell;
 		jcv_point p = site->p;
 		cell.center = glm::vec2(p.x, p.y);
 		cell.index = site->index;
@@ -90,12 +90,12 @@ static void adapt_cells(const jcv_diagram *diagram, std::vector<struct voronoi_c
 	}
 }
 
-static void adapt_vertices(const jcv_diagram *diagram, std::vector<struct voronoi_vertex> &vertices)
+static void adapt_vertices(const jcv_diagram *diagram, std::vector<voronoi_vertex_t> &vertices)
 {
 	const jcv_site *sites = jcv_diagram_get_sites(diagram);
 	const jcv_vertex *vertex = jcv_diagram_get_vertices(diagram);
 	while (vertex) {
-		struct voronoi_vertex c;
+		voronoi_vertex_t c;
 		c.index = vertex->index;
 		c.position = glm::vec2(vertex->pos.x, vertex->pos.y);
 		jcv_vertex_edge *edges = vertex->edges;
@@ -109,7 +109,7 @@ static void adapt_vertices(const jcv_diagram *diagram, std::vector<struct vorono
 	}
 }
 
-static void pair_duality(const jcv_diagram *diagram, std::vector<struct voronoi_cell> &cells, std::vector<struct voronoi_vertex> &vertices)
+static void pair_duality(const jcv_diagram *diagram, std::vector<voronoi_cell_t> &cells, std::vector<voronoi_vertex_t> &vertices)
 {
 	const jcv_site *sites = jcv_diagram_get_sites(diagram);
 
@@ -136,11 +136,11 @@ static void pair_duality(const jcv_diagram *diagram, std::vector<struct voronoi_
 	}
 }
 
-static void adapt_edges(const jcv_diagram *diagram, std::vector<struct voronoi_cell> &cells, std::vector<struct voronoi_vertex> &vertices, std::vector<struct voronoi_edge> &edges)
+static void adapt_edges(const jcv_diagram *diagram, std::vector<voronoi_cell_t> &cells, std::vector<voronoi_vertex_t> &vertices, std::vector<voronoi_edge_t> &edges)
 {
 	const jcv_edge *jcedge = jcv_diagram_get_edges(diagram);
 	while (jcedge) {
-		struct voronoi_edge e;
+		voronoi_edge_t e;
 		if (jcedge->sites[0] != nullptr) {
 			e.c0 = &cells[jcedge->sites[0]->index];
 		}
@@ -157,7 +157,7 @@ static void adapt_edges(const jcv_diagram *diagram, std::vector<struct voronoi_c
 	}
 
 	for (int i = 0; i < edges.size(); i++) {
-		struct voronoi_edge *e = &edges[i];
+		voronoi_edge_t *e = &edges[i];
 		e->index = i;
 		if (e->c0 != nullptr) {
 			cells[e->c0->index].edges.push_back(&edges[i]);

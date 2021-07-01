@@ -1,37 +1,36 @@
 namespace gfx {
-// contains the parameters and creates the 3D textures
 
 // contains the buffers and textures where the actual clouds are rendered to
 // also does the drawing
 class Clouds {
 public:
 	void init(int SW, int SH);
-	void teardown(void);
+	void teardown();
 	void gen_parameters(float covrg);
-	void update(const UTIL::Camera *camera, const glm::vec3 &lightpos, float time);
+	void update(const util::Camera *camera, const glm::vec3 &lightpos, float time);
 	void bind(GLenum unit) const;
 private:
-	int SCR_WIDTH, SCR_HEIGHT;
+	int m_screen_width = 0, m_screen_height = 0;
 	//
-	float coverage, speed;
-	glm::vec3 wind_direction; 
-	glm::vec3 topcolor, bottomcolor;
-	glm::vec3 seed; 
+	float m_coverage = 1.f, m_speed = 1.f;
+	glm::vec3 m_wind_direction; 
+	glm::vec3 m_top_color, m_bottom_color;
+	glm::vec3 m_seed; 
 	// 2D textures
-	GLuint weathermap;
-	GLuint cloudscape;
-	GLuint blurred_cloudscape;
+	GLuint m_weathermap;
+	GLuint m_cloudscape;
+	GLuint m_blurred_cloudscape;
 	// 3D textures
-	GLuint perlin, worley32;
+	GLuint m_perlin, m_worley32;
 	//
-	Shader volumetric;
-	Shader weather;
-	Shader perlinworley;
-	Shader worley;
-	Shader blurry; // to blur final texture
+	Shader m_volumetric;
+	Shader m_weather;
+	Shader m_perlinworley;
+	Shader m_worley;
+	Shader m_blurry; // to blur final texture
 private:
-	void init_shaders(void);
-	void generate_noise(void);
+	void init_shaders();
+	void generate_noise();
 };
 
 };

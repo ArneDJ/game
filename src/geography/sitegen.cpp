@@ -17,13 +17,13 @@
 #include "../geometry/voronoi.h"
 #include "sitegen.h"
 
-struct chainsegment {
+struct chain_segment_t {
 	std::list<glm::vec2>::iterator left;
 	std::list<glm::vec2>::iterator right;
 	float distance;
 };
 
-struct chainsplit {
+struct chain_split_t {
 	std::list<glm::vec2>::iterator target;
 	std::list<glm::vec2>::iterator a;
 	std::list<glm::vec2>::iterator b;
@@ -32,10 +32,10 @@ struct chainsplit {
 	float arearight;
 };
 
-struct hamnode {
+struct ham_node_t {
 	int index;
-	struct hamnode *parent = nullptr;
-	std::vector<struct hamnode*> children;
+	ham_node_t *parent = nullptr;
+	std::vector<ham_node_t*> children;
 };
 
 static const float CELL_PLACE_SCALE = 0.75F;
@@ -43,9 +43,9 @@ static const size_t MAX_CELLS = 128;
 static const size_t MIN_GATEWAY_DISTANCE = 5;
 static const float PARCEL_DENSITY_DISTANCE = 25.F;
 
-static void divide_polygon(std::list<glm::vec2> start, struct district *cell);
+static void divide_polygon(std::list<glm::vec2> start, district *cell);
 static float polygon_area(std::vector<glm::vec2> &vertices);
-static struct chainsplit find_chainsplit(std::list<glm::vec2> &polygon, std::list<glm::vec2>::iterator &longesta, std::list<glm::vec2>::iterator &longestb);
+static chain_split_t find_chainsplit(std::list<glm::vec2> &polygon, std::list<glm::vec2>::iterator &longesta, std::list<glm::vec2>::iterator &longestb);
 
 static glm::vec2 polygon_centroid(const std::vector<glm::vec2> &vertices)
 {
@@ -88,9 +88,9 @@ static glm::vec2 polygon_centroid(const std::vector<glm::vec2> &vertices)
 	return centroid;
 }
 
-static struct wallsegment make_wallsegment(const struct district *left, const struct district *right)
+static wallsegment make_wallsegment(const district *left, const district *right)
 {
-	struct wallsegment wall;
+	wallsegment wall;
 	wall.left = left;
 	wall.right = right;
 	wall.S = {left->center, right->center};
@@ -98,7 +98,7 @@ static struct wallsegment make_wallsegment(const struct district *left, const st
 	return wall;
 }
 
-static bool winding(struct junction *a, struct junction *b, glm::vec2 center)
+static bool winding(junction *a, junction *b, glm::vec2 center)
 {
 	glm::vec2 av = glm::normalize(a->position - center);
 	glm::vec2 ab = glm::normalize(b->position - center);
@@ -106,12 +106,12 @@ static bool winding(struct junction *a, struct junction *b, glm::vec2 center)
 	return atan2(av.y, av.x) < atan2(ab.y, ab.x);
 }
 
-static bool comp_area(const struct section *a, const struct section*b)
+static bool comp_area(const section *a, const section*b)
 {
 	return a->area > b->area;
 }
 
-static bool comp_distance(const struct section *a, const struct section*b)
+static bool comp_distance(const section *a, const section*b)
 {
 	return glm::distance(a->d0->center, a->d1->center) > glm::distance(b->d0->center, b->d1->center);
 }
@@ -177,20 +177,20 @@ void Sitegen::make_diagram(uint32_t tileref)
 
 	// adopt cell structures
 	for (const auto &cell : voronoi.cells) {
-		std::vector<struct district*> dneighbors;
+		std::vector<district*> dneighbors;
 		for (const auto &neighbor : cell.neighbors) {
 			dneighbors.push_back(&districts[neighbor->index]);
 		}
-		std::vector<struct junction*> djunctions;
+		std::vector<junction*> djunctions;
 		for (const auto &vertex : cell.vertices) {
 			djunctions.push_back(&junctions[vertex->index]);
 		}
-		std::vector<struct section*> dsections;
+		std::vector<section*> dsections;
 		for (const auto &edge : cell.edges) {
 			dsections.push_back(&sections[edge->index]);
 	}
 
-		struct district d;
+		district d;
 		d.index = cell.index;
 		d.center = cell.center;
 		d.neighbors = dneighbors;
@@ -207,16 +207,16 @@ void Sitegen::make_diagram(uint32_t tileref)
 
 	// adapt vertex structures
 	for (const auto &vertex : voronoi.vertices) {
-		std::vector<struct junction*> adjacent;
+		std::vector<junction*> adjacent;
 		for (const auto &neighbor : vertex.adjacent) {
 			adjacent.push_back(&junctions[neighbor->index]);
 		}
-		std::vector<struct district*> touches;
+		std::vector<district*> touches;
 		for (const auto &cell : vertex.cells) {
 			touches.push_back(&districts[cell->index]);
 		}
 
-		struct junction c;
+		junction c;
 		c.index = vertex.index;
 		c.position = vertex.position;
 		c.adjacent = adjacent;
@@ -291,11 +291,11 @@ void Sitegen::mark_districts(void)
 	}
 
 	// distance to center tile in graph
-	std::queue<const struct district*> queue;
+	std::queue<const district*> queue;
 	queue.push(core);
 	visited[core->index] = true;
 	while (!queue.empty()) {
-		const struct district *node = queue.front();
+		const district *node = queue.front();
 		queue.pop();
 		int depth = node->radius + 1;
 		for (auto neighbor : node->neighbors) {
@@ -321,10 +321,10 @@ void Sitegen::mark_junctions(void)
 
 	// town center
 	for (const auto &root : core->junctions) {
-		std::queue<const struct junction*> queue;
+		std::queue<const junction*> queue;
 		queue.push(root);
 		while (!queue.empty()) {
-			const struct junction *node = queue.front();
+			const junction *node = queue.front();
 			queue.pop();
 			int layer = node->radius + 1;
 			for (auto neighbor : node->adjacent) {
@@ -341,9 +341,9 @@ void Sitegen::mark_junctions(void)
 	}
 }
 
-static struct hamnode *insert(struct hamnode *parent, int index)
+static ham_node_t *insert(ham_node_t *parent, int index)
 {
-	struct hamnode *node = new struct hamnode;
+	ham_node_t *node = new ham_node_t;
 	node->parent =  parent;
 	node->index = index;
 
@@ -359,21 +359,21 @@ void Sitegen::outline_walls(size_t radius)
 	}
 
 	size_t maxnodes = 0;
-	std::vector<struct hamnode*> nodes;
-	struct hamnode *start = nullptr;
-	struct hamnode *end = nullptr;
+	std::vector<ham_node_t*> nodes;
+	ham_node_t *start = nullptr;
+	ham_node_t *end = nullptr;
 	for (auto &d : districts) {
 		if (d.radius == radius) {
 			start = insert(nullptr, d.index);
 			nodes.push_back(start);
 			start->parent = start;
-			std::queue<struct hamnode*> queue;
+			std::queue<ham_node_t*> queue;
 			queue.push(start);
 			while (!queue.empty()) {
-				struct hamnode *node = queue.front();
+				ham_node_t *node = queue.front();
 				queue.pop();
-				const struct district *dist = &districts[node->index];
-				struct hamnode *finish = nullptr;
+				const district *dist = &districts[node->index];
+				ham_node_t *finish = nullptr;
 				for (const auto neighbor : dist->neighbors) {
 					if (neighbor->index == start->index) {
 						// found a cyclic path
@@ -381,7 +381,7 @@ void Sitegen::outline_walls(size_t radius)
 					} else if (neighbor->radius == radius) {
 						// backtrack through the nodes and check if it has already been visited
 						bool visited = false;
-						struct hamnode *prev = node;
+						ham_node_t *prev = node;
 						while (prev != start) {
 							if (prev->index == neighbor->index) {
 								visited = true;
@@ -391,7 +391,7 @@ void Sitegen::outline_walls(size_t radius)
 						}
 						// if the node hasn't been visited add is at a child
 						if (visited == false) {
-							struct hamnode *child = insert(node, neighbor->index);
+							ham_node_t *child = insert(node, neighbor->index);
 							nodes.push_back(child);
 							node->children.push_back(child);
 							queue.push(child);
@@ -400,7 +400,7 @@ void Sitegen::outline_walls(size_t radius)
 				}
 				if (finish != nullptr) { // found a valid cyclic path
 					size_t nnodes = 0;
-					struct hamnode *node = finish;
+					ham_node_t *node = finish;
 					while (node != start) {
 						node = node->parent;
 						nnodes++;
@@ -416,15 +416,15 @@ void Sitegen::outline_walls(size_t radius)
 		}
 	}
 	if (start != nullptr && end != nullptr) {
-		struct hamnode *node = end;
+		ham_node_t *node = end;
 		while (node != start) {
-			struct hamnode *parent = node->parent;
-			struct wallsegment wall = make_wallsegment(&districts[node->index], &districts[parent->index]);
+			ham_node_t *parent = node->parent;
+			wallsegment wall = make_wallsegment(&districts[node->index], &districts[parent->index]);
 			walls.push_back(wall);
 			link[std::minmax(node->index, parent->index)] = true;
 			node = parent;
 		}
-		struct wallsegment wall = make_wallsegment(&districts[start->index], &districts[end->index]);
+		wallsegment wall = make_wallsegment(&districts[start->index], &districts[end->index]);
 		walls.push_back(wall);
 		link[std::minmax(start->index, end->index)] = true;
 	}
@@ -452,7 +452,7 @@ void Sitegen::outline_walls(size_t radius)
 
 void Sitegen::make_gateways(void)
 {
-	std::vector<struct section*> candidates;
+	std::vector<section*> candidates;
 	for (auto &sect : sections) {
 		if (sect.wall) {
 			candidates.push_back(&sect);
@@ -470,11 +470,11 @@ void Sitegen::make_gateways(void)
 	for (auto sect : candidates) {
 		if (reserved[sect->d0->index] == false && reserved[sect->d1->index] == false) {
 			sect->gateway = true;
-			std::queue<struct district*> queue;
+			std::queue<district*> queue;
 			queue.push(sect->d0);
 			queue.push(sect->d1);
 			while (!queue.empty()) {
-				struct district *node = queue.front();
+				district *node = queue.front();
 				queue.pop();
 				int layer = depth[node->index] + 1;
 				reserved[node->index] = true;
@@ -516,11 +516,11 @@ void Sitegen::make_highways(void)
 		if (sect.gateway) {
 			geom::segment_t S = { sect.j0->position, sect.j1->position };
 			highways.push_back(S);
-			struct junction *start = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
-			std::queue<struct junction*> queue;
+			junction *start = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
+			std::queue<junction*> queue;
 			queue.push(start);
 			while (!queue.empty()) {
-				struct junction *node = queue.front();
+				junction *node = queue.front();
 				queue.pop();
 				for (auto neighbor : node->adjacent) {
 					if (neighbor->radius < node->radius) {
@@ -544,10 +544,10 @@ void Sitegen::make_highways(void)
 
 	for (const auto &root : junctions) {
 		if (root.border == true) {
-			std::queue<const struct junction*> queue;
+			std::queue<const junction*> queue;
 			queue.push(&root);
 			while (!queue.empty()) {
-				const struct junction *node = queue.front();
+				const junction *node = queue.front();
 				queue.pop();
 				int layer = depth[node->index] + 1;
 				for (auto neighbor : node->adjacent) {
@@ -565,15 +565,15 @@ void Sitegen::make_highways(void)
 	}
 	for (auto &sect : sections) {
 		if (sect.gateway) {
-			struct junction *outward = sect.j0->radius > sect.j1->radius ? sect.j0 : sect.j1;
-			struct junction *inward = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
-			std::queue<struct junction*> queue;
+			junction *outward = sect.j0->radius > sect.j1->radius ? sect.j0 : sect.j1;
+			junction *inward = sect.j0->radius < sect.j1->radius ? sect.j0 : sect.j1;
+			std::queue<junction*> queue;
 			queue.push(outward);
 			glm::vec2 dir = glm::normalize(outward->position - inward->position);
 			while (!queue.empty()) {
-				struct junction *node = queue.front();
+				junction *node = queue.front();
 				queue.pop();
-				struct junction *next = nullptr;
+				junction *next = nullptr;
 				float maxdot = -1.f;
 				for (auto neighbor : node->adjacent) {
 					if (depth[neighbor->index] < depth[node->index]) {
@@ -630,9 +630,9 @@ void Sitegen::divide_parcels(size_t radius)
 	}
 }
 
-static struct parcel make_parcel(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d)
+static parcel make_parcel(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec2 d)
 {
-	struct parcel parc;
+	parcel parc;
 	parc.quad = {a, b, c, d};
 
 	parc.centroid = geom::quadrilateral_centroid(parc.quad);
@@ -641,12 +641,12 @@ static struct parcel make_parcel(glm::vec2 a, glm::vec2 b, glm::vec2 c, glm::vec
 	return parc;
 }
 
-static bool longest_segment(struct chainsegment &a, struct chainsegment &b)
+static bool longest_segment(chain_segment_t &a, chain_segment_t &b)
 {
 	return a.distance > b.distance;
 }
 
-static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
+static void divide_polygon(std::list<glm::vec2> start, district *cell)
 {
 	std::queue<std::list<glm::vec2>> queue; // queue of polygons to split
 	queue.push(start);
@@ -659,7 +659,7 @@ static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
 			glm::vec2 b = polygon.front(); polygon.pop_front();
 			glm::vec2 c= polygon.front(); polygon.pop_front();
 			glm::vec2 d = polygon.front(); polygon.pop_front();
-			struct parcel parc = make_parcel(c, d, a, b);
+			parcel parc = make_parcel(c, d, a, b);
 			if (geom::convex_quadrilateral(parc.quad)) {
 				cell->parcels.push_back(parc);
 			}
@@ -678,17 +678,17 @@ static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
 			}
 			// of all the polygon segments find a point that lies on a perpendicular line to the segment that divides the polygon in two "almost equal" areas
 			// sort from longest to shortest segment
-			std::vector<struct chainsegment> chainseg;
+			std::vector<chain_segment_t> chainseg;
 			for (std::list<glm::vec2>::iterator it = polygon.begin(); it != polygon.end(); ++it) {
 				std::list<glm::vec2>::iterator next = std::next(it);
 				if (next == polygon.end()) { next = polygon.begin(); }
-				struct chainsegment seg = { it, next, glm::distance(*it, *next) };
+				chain_segment_t seg = { it, next, glm::distance(*it, *next) };
 				chainseg.push_back(seg);
 			}
 			std::sort(chainseg.begin(), chainseg.end(), longest_segment);
 
 			for (auto &splitter : chainseg) {
-				struct chainsplit split = find_chainsplit(polygon, splitter.left, splitter.right);
+				chain_split_t split = find_chainsplit(polygon, splitter.left, splitter.right);
 				// divide the polygon in two
 				const std::list<glm::vec2>::iterator splitstart = polygon.insert(split.b, split.point);
 				// first half
@@ -739,9 +739,9 @@ static void divide_polygon(std::list<glm::vec2> start, struct district *cell)
 }
 
 // ugly
-static struct chainsplit find_chainsplit(std::list<glm::vec2> &polygon, std::list<glm::vec2>::iterator &longesta, std::list<glm::vec2>::iterator &longestb)
+static chain_split_t find_chainsplit(std::list<glm::vec2> &polygon, std::list<glm::vec2>::iterator &longesta, std::list<glm::vec2>::iterator &longestb)
 {
-	struct chainsplit split;
+	chain_split_t split;
 
 	split.a = longesta;
 	split.b = longestb;

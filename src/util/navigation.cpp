@@ -26,15 +26,15 @@
 #define MAX_PATHPOLY 256 // max number of polygons in a path
 #define MAX_PATHVERT 512 // most verts in a path
 
-namespace UTIL {
+namespace util {
 
 class Navbuilder {
 public:
-	Navbuilder(void)
+	Navbuilder()
 	{
 		context = new rcContext { false };
 	}
-	~Navbuilder(void)
+	~Navbuilder()
 	{
 		if (triareas) { delete [] triareas; }
 		rcFreeHeightField(solid);
@@ -107,7 +107,7 @@ static inline uint32_t ilog2(uint32_t v)
 	return r;
 }
 
-Navigation::Navigation(void)
+Navigation::Navigation()
 {
 	max_tiles = 0;
 	max_polys_per_tile = 0;
@@ -147,7 +147,7 @@ Navigation::~Navigation()
 	}
 }
 
-void Navigation::cleanup(void)
+void Navigation::cleanup()
 {
 	if (navmesh) {
 		dtFreeNavMesh(navmesh);
@@ -279,7 +279,7 @@ void Navigation::load_tilemesh(int x, int y, const std::vector<uint8_t> &data)
 	if (dtStatusFailed(status)) { dtFree(cpy); }
 }
 	
-void Navigation::build_all_tiles(void)
+void Navigation::build_all_tiles()
 {
 	const float *bmin = BOUNDS_MIN;
 	const float *bmax = BOUNDS_MAX;
@@ -302,7 +302,7 @@ void Navigation::build_all_tiles(void)
 	}
 }
 
-void Navigation::remove_all_tiles(void)
+void Navigation::remove_all_tiles()
 {
 	const float *bmin = BOUNDS_MIN;
 	const float *bmax = BOUNDS_MAX;
@@ -425,9 +425,9 @@ void Navigation::find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos
 	}
 }
 
-struct polyresult Navigation::point_on_navmesh(const glm::vec3 &point) const
+poly_result_t Navigation::point_on_navmesh(const glm::vec3 &point) const
 {
-	struct polyresult result;
+	poly_result_t result;
 	result.found = false;
 
 	dtQueryFilter filter;

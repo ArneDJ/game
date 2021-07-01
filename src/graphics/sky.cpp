@@ -83,14 +83,14 @@ void Skybox::colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::
 	m_ambiance = ambiance;
 }
 
-void Skybox::update(const UTIL::Camera *camera, float time)
+void Skybox::update(const util::Camera *camera, float time)
 {
 	if (clouds_enabled && clouded) {
 		clouds.update(camera, sunposition, time);
 	}
 }
 	
-void Skybox::display(const UTIL::Camera *camera) const
+void Skybox::display(const util::Camera *camera) const
 {
 	shader.use();
 	shader.uniform_vec3("ZENITH_COLOR", zenith);

@@ -1,7 +1,7 @@
 #pragma once
 #include "../util/serialize.h"
 
-namespace MODULE {
+namespace module {
 
 struct height_parameters_t {
 	float frequency = 0.001f;
@@ -298,15 +298,15 @@ struct ragdoll_armature_import_t {
 class Module {
 public:
 	// the world generation settings
-	struct worldgen_parameters_t params;
-	struct ragdoll_armature_import_t test_armature;
+	worldgen_parameters_t params;
+	ragdoll_armature_import_t test_armature;
 	std::string path;
 	std::string name;
 public:
-	struct vegetation_t vegetation;
-	struct atmosphere_t atmosphere;
+	vegetation_t vegetation;
+	atmosphere_t atmosphere;
 	palette_t palette;
-	std::vector<struct building_t> houses;
+	std::vector<building_t> houses;
 public:
 	void load(const std::string &modname);
 private:

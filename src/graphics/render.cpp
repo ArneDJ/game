@@ -39,7 +39,7 @@ RenderGroup::~RenderGroup(void)
 
 void RenderGroup::add_object(const Model *mod, const std::vector<const Entity*> &ents)
 {
-	struct RenderObject *object = new RenderObject;
+	render_object_t *object = new render_object_t;
 	object->model = mod;
 	object->entities.insert(object->entities.begin(), ents.begin(), ents.end());
 
@@ -59,7 +59,7 @@ void RenderGroup::add_object(const Model *mod, const std::vector<const Entity*> 
 	objects.push_back(object);
 }
 
-void RenderGroup::display(const UTIL::Camera *camera) const
+void RenderGroup::display(const util::Camera *camera) const
 {
 	shader->use();
 	shader->uniform_mat4("VP", camera->VP);

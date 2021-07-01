@@ -21,7 +21,7 @@
 
 #include "animation.h"
 
-namespace UTIL {
+namespace util {
 	
 glm::mat4 ozz_to_mat4(const ozz::math::Float4x4 &matrix)
 {

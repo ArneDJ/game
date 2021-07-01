@@ -9,18 +9,18 @@ struct parcel {
 };
 
 struct wallsegment {
-	const struct district *left = nullptr;
-	const struct district *right = nullptr;
+	const district *left = nullptr;
+	const district *right = nullptr;
 	geom::segment_t S;
 	bool gate;
 };
 
 struct section {
 	uint32_t index;
-	struct junction *j0 = nullptr;
-	struct junction *j1 = nullptr;
-	struct district *d0 = nullptr;
-	struct district *d1 = nullptr;
+	junction *j0 = nullptr;
+	junction *j1 = nullptr;
+	district *d0 = nullptr;
+	district *d1 = nullptr;
 	bool border;
 	bool wall; // a wall goes through here
 	float area;
@@ -30,8 +30,8 @@ struct section {
 struct junction {
 	uint32_t index;
 	glm::vec2 position;
-	std::vector<struct junction*> adjacent;
-	std::vector<struct district*> districts;
+	std::vector<junction*> adjacent;
+	std::vector<district*> districts;
 	bool border;
 	int radius;
 	bool street;
@@ -40,27 +40,27 @@ struct junction {
 struct district {
 	uint32_t index;
 	glm::vec2 center;
-	std::vector<struct district*> neighbors;
-	std::vector<struct junction*> junctions;
-	std::vector<struct section*> sections;
+	std::vector<district*> neighbors;
+	std::vector<junction*> junctions;
+	std::vector<section*> sections;
 	bool border;
 	int radius; // distance to center in graph structure
 	float area;
 	bool tower;
 	glm::vec2 centroid;
-	std::vector<struct parcel> parcels;
+	std::vector<parcel> parcels;
 };
 
 class Sitegen {
 public:
-	struct district *core;
+	district *core;
 	long seed;
-	std::vector<struct wallsegment> walls;
+	std::vector<wallsegment> walls;
 	std::vector<geom::segment_t> highways;
 	// graph structures
-	std::vector<struct district> districts;
-	std::vector<struct junction> junctions;
-	std::vector<struct section> sections;
+	std::vector<district> districts;
+	std::vector<junction> junctions;
+	std::vector<section> sections;
 public:
 	void generate(long seedling, uint32_t tileref, geom::rectangle_t bounds, size_t wall_radius);
 private:

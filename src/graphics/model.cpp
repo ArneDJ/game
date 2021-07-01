@@ -24,18 +24,18 @@
 
 namespace gfx {
 
-struct linkage {
-	std::map<const cgltf_node*, struct node_t*> nodes;
+struct linkage_t {
+	std::map<const cgltf_node*, node_t*> nodes;
 	std::map<const cgltf_texture*, GLuint> textures;
 };
 
 static void print_gltf_error(cgltf_result error);
 static void append_buffer(const cgltf_accessor *accessor,  std::vector<uint8_t> &buffer);
-static struct node_t load_node(const cgltf_node *gltfnode);
-static struct skin_t load_skin(const cgltf_skin *gltfskin);
-static glm::mat4 local_node_transform(const struct node_t *n);
-static struct collision_trimesh_t load_collision_trimesh(const cgltf_mesh *mesh);
-static struct collision_hull_t load_collision_hull(const cgltf_mesh *mesh);
+static node_t load_node(const cgltf_node *gltfnode);
+static skin_t load_skin(const cgltf_skin *gltfskin);
+static glm::mat4 local_node_transform(const node_t *n);
+static collision_trimesh_t load_collision_trimesh(const cgltf_mesh *mesh);
+static collision_hull_t load_collision_hull(const cgltf_mesh *mesh);
 
 Model::Model(const std::string &filepath)
 {
@@ -79,7 +79,7 @@ void Model::load_materials(const std::vector<const Texture*> textures)
 
 void Model::load_data(const std::string &fpath, const cgltf_data *data)
 {
-	struct linkage link;
+	linkage_t link;
 
 	// load node data
 	nodes.resize(data->nodes_count);
@@ -120,7 +120,7 @@ void Model::load_data(const std::string &fpath, const cgltf_data *data)
 	for (int i = 0; i < data->skins_count; i++) {
 		skins[i].root = link.nodes[data->skins[i].skeleton];
 		for (int j = 0; j < data->skins[i].joints_count; j++) {
-			struct node_t *n = link.nodes[data->skins[i].joints[j]];
+			node_t *n = link.nodes[data->skins[i].joints[j]];
 			skins[i].joints.push_back(n);
 		}
 	}
@@ -181,9 +181,9 @@ void Model::display_instanced(GLsizei count) const
 	}
 }
 
-static struct node_t load_node(const cgltf_node *gltfnode)
+static node_t load_node(const cgltf_node *gltfnode)
 {
-	struct node_t n;
+	node_t n;
 	n.transform = glm::mat4{1.f};
 	n.translation = glm::vec3{};
 	n.scale = glm::vec3{1.f};
@@ -227,9 +227,9 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 	 // index buffer
 	std::vector<uint8_t> indices;
 	// vertex buffer
-	struct vertex_data_t vertices;
+	vertex_data_t vertices;
 
-	std::vector<struct primitive_t> primitives;
+	std::vector<primitive_t> primitives;
 
 	uint32_t vertexstart = 0;
 	uint32_t indexstart = 0;
@@ -268,7 +268,7 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 			}
 		}
 
-		struct primitive_t prim;
+		primitive_t prim;
 		prim.firstindex = indexstart;
 		prim.indexcount = indexcount;
 		prim.firstvertex = vertexstart;
@@ -286,9 +286,9 @@ void Model::load_mesh(const cgltf_mesh *gltfmesh)
 	meshes.push_back(mesh);
 }
 
-static struct skin_t load_skin(const cgltf_skin *gltfskin)
+static skin_t load_skin(const cgltf_skin *gltfskin)
 {
-	struct skin_t skinny;
+	skin_t skinny;
 
 	skinny.name = gltfskin->name ? gltfskin->name : "unnamed";
 
@@ -325,15 +325,15 @@ static void append_buffer(const cgltf_accessor *accessor,  std::vector<uint8_t> 
 	}
 }
 
-static glm::mat4 local_node_transform(const struct node_t *n)
+static glm::mat4 local_node_transform(const node_t *n)
 {
 	return glm::translate(glm::mat4(1.f), n->translation) * glm::mat4(n->rotation) * glm::scale(glm::mat4(1.f), n->scale) * n->transform;
 }
 
-glm::mat4 global_node_transform(const struct node_t *n)
+glm::mat4 global_node_transform(const node_t *n)
 {
 	glm::mat4 m = local_node_transform(n);
-	struct node_t *p = n->parent;
+	node_t *p = n->parent;
 	while (p) {
 		m = local_node_transform(p) * m;
 		p = p->parent;
@@ -342,9 +342,9 @@ glm::mat4 global_node_transform(const struct node_t *n)
 	return m;
 }
 
-static struct collision_trimesh_t load_collision_trimesh(const cgltf_mesh *gltfmesh)
+static collision_trimesh_t load_collision_trimesh(const cgltf_mesh *gltfmesh)
 {
-	struct collision_trimesh_t meshie;
+	collision_trimesh_t meshie;
 
 	meshie.name = gltfmesh->name;
 
@@ -384,9 +384,9 @@ static struct collision_trimesh_t load_collision_trimesh(const cgltf_mesh *gltfm
 	return meshie;
 }
 
-static struct collision_hull_t load_collision_hull(const cgltf_mesh *gltfmesh)
+static collision_hull_t load_collision_hull(const cgltf_mesh *gltfmesh)
 {
-	struct collision_hull_t hull;
+	collision_hull_t hull;
 	
 	hull.name = gltfmesh->name;
 

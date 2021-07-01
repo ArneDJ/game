@@ -145,7 +145,7 @@ btCollisionShape* PhysicsManager::add_hull(const std::vector<glm::vec3> &points)
 	return shape;
 }
 	
-void PhysicsManager::add_heightfield(const UTIL::Image<float> *image, const glm::vec3 &scale, int  group, int masks)
+void PhysicsManager::add_heightfield(const util::Image<float> *image, const glm::vec3 &scale, int  group, int masks)
 {
 	auto heightfield = std::make_unique<HeightField>(image, scale);
 
@@ -154,7 +154,7 @@ void PhysicsManager::add_heightfield(const UTIL::Image<float> *image, const glm:
 	m_heightfields.push_back(std::move(heightfield));
 }
 
-void PhysicsManager::add_heightfield(const UTIL::Image<uint8_t> *image, const glm::vec3 &scale, int  group, int masks)
+void PhysicsManager::add_heightfield(const util::Image<uint8_t> *image, const glm::vec3 &scale, int  group, int masks)
 {
 	auto heightfield = std::make_unique<HeightField>(image, scale);
 
@@ -193,9 +193,9 @@ void PhysicsManager::remove_body(btRigidBody *body)
 	m_world->removeCollisionObject(body);
 }
 	
-struct ray_result_t PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks)
+ray_result_t PhysicsManager::cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks)
 {
-	struct ray_result_t result = { false, end, nullptr };
+	ray_result_t result = { false, end, nullptr };
 
 	btVector3 from = vec3_to_bt(origin);
 	btVector3 to = vec3_to_bt(end);

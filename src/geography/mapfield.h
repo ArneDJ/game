@@ -10,23 +10,23 @@ struct mosaicregion {
 };
 
 struct mapfield_result {
-	bool found;
+	bool found = false;
 	uint32_t index;
 };
 
 class Mapfield {
 public:
-	void generate(const std::vector<glm::vec2> &vertdata, const std::vector<struct mosaictriangle> &mosaictriangles, geom::rectangle_t anchors);
-	struct mapfield_result index_in_field(const glm::vec2 &position) const;
+	void generate(const std::vector<glm::vec2> &vertdata, const std::vector<mosaictriangle> &mosaictriangles, geom::rectangle_t anchors);
+	mapfield_result index_in_field(const glm::vec2 &position) const;
 private:
 	const size_t REGION_RES = 128;
 	int regionscale;
 	geom::rectangle_t area;
-	std::vector<struct mosaicregion> regions;
-	std::vector<struct mosaictriangle> triangles;
+	std::vector<mosaicregion> regions;
+	std::vector<mosaictriangle> triangles;
 	std::vector<glm::vec2> vertices;
 private:
 	bool triangle_in_area(glm::vec2 a, glm::vec2 b, glm::vec2 c, const geom::rectangle_t *area);
-	void triangle_in_regions(const struct mosaictriangle *tess, uint32_t id);
+	void triangle_in_regions(const mosaictriangle *tess, uint32_t id);
 };
 

@@ -27,7 +27,7 @@
 #include "../geometry/geom.h"
 #include "image.h"
 
-namespace UTIL {
+namespace util {
 
 static glm::vec3 filter_normal(int x, int y, float strength, const Image<float> *image);
 

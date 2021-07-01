@@ -13,7 +13,7 @@ static const float MAX_CAMERA_ANGLE = 1.55F;
 static const float MIN_CAMERA_ANGLE = -1.55F;
 static const float CAMERA_MOUSE_MODIFIER = 0.001F;
 
-namespace UTIL {
+namespace util {
 
 void Camera::configure(float near, float far, uint16_t w, uint16_t h, float fovangle)
 {

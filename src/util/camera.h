@@ -1,5 +1,5 @@
 
-namespace UTIL {
+namespace util {
 
 class Camera {
 public:

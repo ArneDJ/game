@@ -48,7 +48,7 @@ static inline glm::quat direction_to_quat(glm::vec2 direction)
 	return rotation;
 }
 
-Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const struct MODULE::ragdoll_armature_import_t &armature)
+Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const module::ragdoll_armature_import_t &armature)
 {
 	position = pos;
 	rotation = rot;
@@ -75,7 +75,7 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model 
 		std::make_pair(CA_RIGHT_STRAFE, "modules/native/media/animations/human/right_strafe.ozz"),
 		std::make_pair(CA_FALLING, "modules/native/media/animations/human/falling.ozz")
 	};
-	m_animator = std::make_unique<UTIL::Animator>("modules/native/media/skeletons/human.ozz", animations);
+	m_animator = std::make_unique<util::Animator>("modules/native/media/skeletons/human.ozz", animations);
 	m_joint_transforms.matrices.resize(m_animator->models.size());
 	m_joint_transforms.alloc(GL_DYNAMIC_DRAW);
 
@@ -207,7 +207,7 @@ void Creature::sync(float delta)
 			}
 		} else {
 			for (int i = 0; i < m_animator->models.size(); i++) {
-				m_joint_transforms.matrices[i] = UTIL::ozz_to_mat4(m_animator->models[i]) * skin.inversebinds[i];
+				m_joint_transforms.matrices[i] = util::ozz_to_mat4(m_animator->models[i]) * skin.inversebinds[i];
 			}
 		}
 	}

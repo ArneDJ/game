@@ -20,7 +20,7 @@ public:
 	float m_animation_mix = 0.f;
 	bool m_ragdoll_mode = false;
 public:
-	Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const struct MODULE::ragdoll_armature_import_t &armature);
+	Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const module::ragdoll_armature_import_t &armature);
 	btRigidBody* get_body() const;
 	void move(const glm::vec3 &view, bool forward, bool backward, bool right, bool left);
 	void jump();
@@ -34,7 +34,7 @@ private:
 	std::unique_ptr<physics::Bumper> m_bumper;
 	std::vector<std::pair<uint32_t, uint32_t>> m_targets;
 	physics::Ragdoll m_ragdoll;
-	std::unique_ptr<UTIL::Animator> m_animator;
+	std::unique_ptr<util::Animator> m_animator;
 	gfx::TransformBuffer m_joint_transforms;
 	glm::vec3 m_velocity;
 	glm::vec2 m_direction;

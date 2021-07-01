@@ -1,7 +1,7 @@
 #pragma once
 #include "../extern/fastnoise/FastNoise.h"
 
-namespace UTIL {
+namespace util {
 
 enum : uint8_t {
 	CHANNEL_RED = 0,

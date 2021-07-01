@@ -40,11 +40,9 @@ void Saver::change_directory(const std::string &dir)
 	directory = dir; 
 }
 
-void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Navigation *landnav, const UTIL::Navigation *seanav, const long seed)
+void Saver::save(const std::string &filename, const Atlas &atlas, const util::Navigation *landnav, const util::Navigation *seanav, const long seed)
 {
 	const std::string filepath = directory + filename;
-
-	const auto worldgraph = atlas->get_worldgraph();
 
 	// save the campaign navigation data
 	{
@@ -101,49 +99,23 @@ void Saver::save(const std::string &filename, const Atlas *atlas, const UTIL::Na
 
 	if (stream.is_open()) {
 		cereal::BinaryOutputArchive archive(stream);
-		archive(
-			cereal::make_nvp("topology", atlas->terragen->heightmap), 
-			cereal::make_nvp("rain", atlas->terragen->rainmap), 
-			cereal::make_nvp("temperature", atlas->terragen->tempmap),
-			cereal::make_nvp("forestation", atlas->terragen->forestation),
-			cereal::make_nvp("watermap", atlas->watermap),
-			cereal::make_nvp("seed", seed),
-			cereal::make_nvp("tiles", worldgraph->tiles),
-			cereal::make_nvp("corners", worldgraph->corners),
-			cereal::make_nvp("borders", worldgraph->borders),
-			cereal::make_nvp("landnav", navmesh_land),
-			cereal::make_nvp("seanav", navmesh_sea),
-			cereal::make_nvp("holdings", atlas->holdings)
-		);
+		archive(atlas, seed, navmesh_land, navmesh_sea);
 	} else {
 		LOG(ERROR, "Save") << "save file " + filepath + "could not be saved";
 	}
 }
 
-void Saver::load(const std::string &filename, Atlas *atlas, UTIL::Navigation *landnav, UTIL::Navigation *seanav, long &seed)
+void Saver::load(const std::string &filename, Atlas &atlas, util::Navigation *landnav, util::Navigation *seanav, long &seed)
 {
 	const std::string filepath = directory + filename;
 
-	Worldgraph *worldgraph = atlas->worldgraph.get();
+	Worldgraph *worldgraph = atlas.worldgraph.get();
 
 	std::ifstream stream(filepath, std::ios::binary);
 
 	if (stream.is_open()) {
 		cereal::BinaryInputArchive archive(stream);
-		archive(
-			cereal::make_nvp("topology", atlas->terragen->heightmap), 
-			cereal::make_nvp("rain", atlas->terragen->rainmap), 
-			cereal::make_nvp("temperature", atlas->terragen->tempmap),
-			cereal::make_nvp("forestation", atlas->terragen->forestation),
-			cereal::make_nvp("watermap", atlas->watermap),
-			cereal::make_nvp("seed", seed),
-			cereal::make_nvp("tiles", worldgraph->tiles),
-			cereal::make_nvp("corners", worldgraph->corners),
-			cereal::make_nvp("borders", worldgraph->borders),
-			cereal::make_nvp("landnav", navmesh_land),
-			cereal::make_nvp("seanav", navmesh_sea),
-			cereal::make_nvp("holdings", atlas->holdings)
-		);
+		archive(atlas, seed, navmesh_land, navmesh_sea);
 	} else {
 		LOG(ERROR, "Save") << "save file " + filepath + " could not be loaded";
 		return;

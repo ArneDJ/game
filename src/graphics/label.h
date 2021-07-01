@@ -22,14 +22,14 @@ public:
 	~LabelManager(void);
 	void add(const std::string &text, const glm::vec3 &color, const glm::vec3 &position);
 	void clear(void);
-	void display(const UTIL::Camera *camera) const;
+	void display(const util::Camera *camera) const;
 	void set_scale(float scalefactor) { scale = scalefactor; }
 	void set_depth(bool depth) { depthless = depth; }
 private:
 	texture_atlas_t *atlas;
 	texture_font_t *font;
-	struct label_buffer_t glyph_buffer;
-	struct label_batch_t glyph_batch;
+	label_buffer_t glyph_buffer;
+	label_batch_t glyph_batch;
 	Shader shader;
 	float scale = 1.f;
 	bool depthless = false;

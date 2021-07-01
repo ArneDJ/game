@@ -16,7 +16,7 @@
 
 namespace physics {
 
-HeightField::HeightField(const UTIL::Image<float> *image, const glm::vec3 &scale)
+HeightField::HeightField(const util::Image<float> *image, const glm::vec3 &scale)
 {
 	m_shape = std::make_unique<btHeightfieldTerrainShape>(image->width(), image->height(), image->raster().data(), 1.f, 0.f, 1.f, 1, PHY_FLOAT, false);
 
@@ -39,7 +39,7 @@ HeightField::HeightField(const UTIL::Image<float> *image, const glm::vec3 &scale
 	m_object->setWorldTransform(transform);
 }
 
-HeightField::HeightField(const UTIL::Image<uint8_t> *image, const glm::vec3 &scale)
+HeightField::HeightField(const util::Image<uint8_t> *image, const glm::vec3 &scale)
 {
 	float yscale = scale.y / 255.f; // adjust scale
 

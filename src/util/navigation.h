@@ -1,4 +1,4 @@
-namespace UTIL {
+namespace util {
 
 enum sample_poly_areas {
 	SAMPLE_POLYAREA_GROUND,
@@ -10,34 +10,34 @@ enum sample_poly_areas {
 };
 
 enum sample_poly_flags {
-	SAMPLE_POLYFLAGS_WALK  = 0x01,  // Ability to walk (ground, grass, road)
-	SAMPLE_POLYFLAGS_SWIM  = 0x02,  // Ability to swim (water).
-	SAMPLE_POLYFLAGS_DOOR  = 0x04,  // Ability to move through doors.
-	SAMPLE_POLYFLAGS_JUMP  = 0x08,  // Ability to jump.
+	SAMPLE_POLYFLAGS_WALK = 0x01,  // Ability to walk (ground, grass, road)
+	SAMPLE_POLYFLAGS_SWIM = 0x02,  // Ability to swim (water).
+	SAMPLE_POLYFLAGS_DOOR = 0x04,  // Ability to move through doors.
+	SAMPLE_POLYFLAGS_JUMP = 0x08,  // Ability to jump.
 	SAMPLE_POLYFLAGS_DISABLED = 0x10,  // Disabled polygon
-	SAMPLE_POLYFLAGS_ALL  = 0xffff // All abilities.
+	SAMPLE_POLYFLAGS_ALL = 0xffff // All abilities.
 };
 
-struct polyresult {
-	bool found;
-	glm::vec3 position;
+struct poly_result_t {
+	bool found = false;
+	glm::vec3 position = {};
 	dtPolyRef poly;
 };
 
 class Navigation
 {
 public:
-	Navigation(void);
-	~Navigation(void);
-	const dtNavMesh* get_navmesh(void) const { return navmesh; };	
+	Navigation();
+	~Navigation();
+	const dtNavMesh* get_navmesh() const { return navmesh; };	
 	bool alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys);
-	void cleanup(void);
+	void cleanup();
 	bool build(const std::vector<float> &vertices, const std::vector<int> &indices);
 	void load_tilemesh(int x, int y, const std::vector<uint8_t> &data);
 	
 	void find_2D_path(const glm::vec2 &startpos, const glm::vec2 &endpos, std::list<glm::vec2> &pathways) const;
 	void find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos, std::vector<glm::vec3> &pathways) const;
-	struct polyresult point_on_navmesh(const glm::vec3 &point) const;
+	poly_result_t point_on_navmesh(const glm::vec3 &point) const;
 private:
 	dtNavMesh *navmesh = nullptr;
  	dtNavMeshQuery *navquery = nullptr;
@@ -55,8 +55,8 @@ private:
 	
 	rcChunkyTriMesh *chunky_mesh = nullptr;
 private:
-	void build_all_tiles(void);
-	void remove_all_tiles(void);
+	void build_all_tiles();
+	void remove_all_tiles();
 };
 
 };

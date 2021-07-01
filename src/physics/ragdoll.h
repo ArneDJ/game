@@ -24,7 +24,7 @@ public:
 
 class Ragdoll {
 public:
-	void create(const struct MODULE::ragdoll_armature_import_t &armature);
+	void create(const module::ragdoll_armature_import_t &armature);
 	void update();
 	void clean();
 	void add_to_world(btDynamicsWorld *world, const glm::vec3 &pos, const glm::vec3 &velocity);

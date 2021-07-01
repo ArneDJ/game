@@ -92,7 +92,7 @@ Texture::Texture(const std::string &filepath)
 	load_DDS(filepath);
 }
 	
-Texture::Texture(const UTIL::Image<uint8_t> *image)
+Texture::Texture(const util::Image<uint8_t> *image)
 {
 	target = GL_TEXTURE_2D;
 	handle = 0;
@@ -123,7 +123,7 @@ Texture::Texture(const UTIL::Image<uint8_t> *image)
 	handle = generate_2D_texture(image->raster().data(), image->width(), image->height(), internalformat, format, type);
 }
 
-Texture::Texture(const UTIL::Image<float> *image)
+Texture::Texture(const util::Image<float> *image)
 {
 	target = GL_TEXTURE_2D;
 	handle = 0;
@@ -192,19 +192,19 @@ void Texture::bind(GLenum unit) const
 	glBindTexture(target, handle);
 }
 	
-void Texture::reload(const UTIL::Image<float> *image)
+void Texture::reload(const util::Image<float> *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width(), image->height(), format, GL_FLOAT, image->raster().data());
 }
 
-void Texture::reload(const UTIL::Image<uint8_t> *image)
+void Texture::reload(const util::Image<uint8_t> *image)
 {
 	glBindTexture(GL_TEXTURE_2D, handle);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, image->width(), image->height(), format, GL_UNSIGNED_BYTE, image->raster().data());
 }
 
-void Texture::unload(UTIL::Image<float> *image)
+void Texture::unload(util::Image<float> *image)
 {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, handle);

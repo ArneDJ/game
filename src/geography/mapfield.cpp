@@ -44,7 +44,7 @@ bool Mapfield::triangle_in_area(glm::vec2 a, glm::vec2 b, glm::vec2 c, const geo
 	return false;
 }
 
-void Mapfield::triangle_in_regions(const struct mosaictriangle *tess, uint32_t id)
+void Mapfield::triangle_in_regions(const mosaictriangle *tess, uint32_t id)
 {
 	glm::vec2 a = vertices[tess->a];
 	glm::vec2 b = vertices[tess->b];
@@ -87,12 +87,11 @@ void Mapfield::triangle_in_regions(const struct mosaictriangle *tess, uint32_t i
 	}
 }
 
-void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vector<struct mosaictriangle> &mosaictriangles, geom::rectangle_t anchors)
+void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vector<mosaictriangle> &mosaictriangles, geom::rectangle_t anchors)
 {
 	regions.clear();
 	triangles.clear();
 	vertices.clear();
-	//regions = new struct mosaicregion[REGION_RES*REGION_RES];
 	regions.resize(REGION_RES*REGION_RES);
 	area = anchors;
 	regionscale = area.max.x / REGION_RES;
@@ -104,7 +103,7 @@ void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vecto
 	for (float x = 0.f; x < area.max.x; x += offset) {
 		int index_y = 0;
 		for (float y = 0.f; y < area.max.y; y += offset) {
-			struct mosaicregion region;
+			mosaicregion region;
 			region.area = {
 				{x, y},
 				{x+offset, y+offset}
@@ -131,9 +130,9 @@ void Mapfield::generate(const std::vector<glm::vec2> &vertdata, const std::vecto
 	}
 }
 
-struct mapfield_result Mapfield::index_in_field(const glm::vec2 &position) const
+mapfield_result Mapfield::index_in_field(const glm::vec2 &position) const
 {
-	struct mapfield_result result = { false, 0 };
+	mapfield_result result = { false, 0 };
 
 	int x = floor(position.x / regionscale);
 	int y = floor(position.y / regionscale);
@@ -142,9 +141,9 @@ struct mapfield_result Mapfield::index_in_field(const glm::vec2 &position) const
 		return result;
 	}
 
-	const struct mosaicregion *region = &regions[y * REGION_RES + x];
+	const mosaicregion *region = &regions[y * REGION_RES + x];
 	for (const uint32_t index : region->triangles) {
-		const struct mosaictriangle *tri = &triangles[index];
+		const mosaictriangle *tri = &triangles[index];
 		if (geom::triangle_overlaps_point(vertices[tri->a], vertices[tri->b], vertices[tri->c], position)) {
 			result.found = true;
 			result.index = tri->index;

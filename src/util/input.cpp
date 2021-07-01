@@ -4,7 +4,7 @@
 
 #include "input.h"
 	
-namespace UTIL {
+namespace util {
 
 Input::Input()
 {

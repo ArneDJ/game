@@ -66,27 +66,27 @@ static const uint16_t SITEMASK_RES = 2048;
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
 
-static struct landgen_parameters random_landgen_parameters(int32_t seed);
+static landgen_parameters random_landgen_parameters(int32_t seed);
 
 static bool larger_building(const GEOGRAPHY::building_t &a, const GEOGRAPHY::building_t &b);
 
 static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
 
-static bool within_bounds(uint8_t value, const MODULE::bounds_t<uint8_t> &bounds);
+static bool within_bounds(uint8_t value, const module::bounds_t<uint8_t> &bounds);
 
-Landscape::Landscape(const MODULE::Module *mod, uint16_t heightres)
+Landscape::Landscape(const module::Module *mod, uint16_t heightres)
 {
 	m_module = mod;
 
-	heightmap.resize(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
-	normalmap.resize(heightres, heightres, UTIL::COLORSPACE_RGB);
-	valleymap.resize(heightres, heightres, UTIL::COLORSPACE_RGB);
+	heightmap.resize(heightres, heightres, util::COLORSPACE_GRAYSCALE);
+	normalmap.resize(heightres, heightres, util::COLORSPACE_RGB);
+	valleymap.resize(heightres, heightres, util::COLORSPACE_RGB);
 
-	container.resize(heightres, heightres, UTIL::COLORSPACE_GRAYSCALE);
+	container.resize(heightres, heightres, util::COLORSPACE_GRAYSCALE);
 	
-	density.resize(DENSITY_MAP_RES, DENSITY_MAP_RES, UTIL::COLORSPACE_GRAYSCALE);
+	density.resize(DENSITY_MAP_RES, DENSITY_MAP_RES, util::COLORSPACE_GRAYSCALE);
 
-	sitemasks.resize(SITEMASK_RES, SITEMASK_RES, UTIL::COLORSPACE_GRAYSCALE);
+	sitemasks.resize(SITEMASK_RES, SITEMASK_RES, util::COLORSPACE_GRAYSCALE);
 }
 
 void Landscape::load_buildings()
@@ -150,7 +150,7 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	}
 }
 
-const UTIL::Image<float>* Landscape::get_heightmap(void) const
+const util::Image<float>* Landscape::get_heightmap(void) const
 {
 	return &heightmap;
 }
@@ -165,12 +165,12 @@ const std::vector<GEOGRAPHY::building_t>& Landscape::get_houses(void) const
 	return houses;
 }
 
-const UTIL::Image<uint8_t>* Landscape::get_normalmap(void) const
+const util::Image<uint8_t>* Landscape::get_normalmap(void) const
 {
 	return &normalmap;
 }
 
-const UTIL::Image<uint8_t>* Landscape::get_sitemasks(void) const
+const util::Image<uint8_t>* Landscape::get_sitemasks(void) const
 {
 	return &sitemasks;
 }
@@ -203,7 +203,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 	fastnoise.SetFractalType(FastNoise::FBM);
 	fastnoise.SetFrequency(0.01f);
 
-	density.noise(&fastnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+	density.noise(&fastnoise, glm::vec2(1.f, 1.f), util::CHANNEL_RED);
 
 	// spawn the forest
 	glm::vec2 hmapscale = {
@@ -236,11 +236,11 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 			if (geom::point_in_rectangle(glm::vec2(position.x, position.z), SITE_BOUNDS)) {
 				glm::vec2 site_pos = { position.x - SITE_BOUNDS.min.x, position.z - SITE_BOUNDS.min.y };
 				site_pos /= (SITE_BOUNDS.max - SITE_BOUNDS.min);
-				if (sitemasks.sample(site_pos.x * sitemasks.width(), site_pos.y * sitemasks.height(), UTIL::CHANNEL_RED) > 0) {
+				if (sitemasks.sample(site_pos.x * sitemasks.width(), site_pos.y * sitemasks.height(), util::CHANNEL_RED) > 0) {
 					continue;
 				}
 			}
-			float P = density.sample(point.x * density.width(), point.y * density.height(), UTIL::CHANNEL_RED) / 255.f;
+			float P = density.sample(point.x * density.width(), point.y * density.height(), util::CHANNEL_RED) / 255.f;
 			if (P > 0.8f) { P = 1.f; }
 			// limit density
 			P = glm::clamp(P, 0.f, tree_density / 255.f);
@@ -249,7 +249,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 				P *= P * P;
 			}
 			if ( R > P ) { continue; }
-			float slope = 1.f - (normalmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, UTIL::CHANNEL_GREEN) / 255.f);
+			float slope = 1.f - (normalmap.sample(hmapscale.x*position.x, hmapscale.y*position.z, util::CHANNEL_GREEN) / 255.f);
 			if (slope > 0.15f) {
 				continue;
 			}
@@ -289,7 +289,7 @@ void Landscape::create_valleymap(void)
 		for (const auto &section : district.sections) {
 			glm::vec2 b = section->j0->position / scale;
 			glm::vec2 c = section->j1->position / scale;
-			valleymap.draw_triangle(imagescale * a, imagescale * b, imagescale * c, UTIL::CHANNEL_RED, amp);
+			valleymap.draw_triangle(imagescale * a, imagescale * b, imagescale * c, util::CHANNEL_RED, amp);
 		}
 	}
 	
@@ -301,7 +301,7 @@ void Landscape::create_valleymap(void)
 			for (const auto &section : district.sections) {
 				glm::vec2 b = (section->j0->position + SITE_BOUNDS.min) / realscale;
 				glm::vec2 c = (section->j1->position + SITE_BOUNDS.min) / realscale;
-				valleymap.draw_triangle(imagescale * a, imagescale * b, imagescale * c, UTIL::CHANNEL_RED, 128);
+				valleymap.draw_triangle(imagescale * a, imagescale * b, imagescale * c, util::CHANNEL_RED, 128);
 			}
 		}
 	}
@@ -314,7 +314,7 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	amplitude = glm::clamp(amplitude, MIN_AMPLITUDE, MAX_AMPLITUDE);
 
 	// random noise config
-	struct landgen_parameters params = random_landgen_parameters(seed);
+	landgen_parameters params = random_landgen_parameters(seed);
 
 	// first we mix two noise maps for the heightmap
 	// the first noise is cellular noise to add mountain ridges
@@ -337,9 +337,9 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	fractalnoise.SetFractalLacunarity(params.detail_lacunarity);
 	fractalnoise.SetGradientPerturbAmp(params.detail_perturb);
 
-	heightmap.noise(&fractalnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
-	heightmap.normalize(UTIL::CHANNEL_RED);
-	container.cellnoise(&cellnoise, glm::vec2(1.f, 1.f), UTIL::CHANNEL_RED);
+	heightmap.noise(&fractalnoise, glm::vec2(1.f, 1.f), util::CHANNEL_RED);
+	heightmap.normalize(util::CHANNEL_RED);
+	container.cellnoise(&cellnoise, glm::vec2(1.f, 1.f), util::CHANNEL_RED);
 
 	// mix two noise images based on height
 	for (int i = 0; i < heightmap.raster().size(); i++) {
@@ -356,11 +356,11 @@ void Landscape::gen_heightmap(int32_t seed, float amplitude)
 	if (amplitude > 0.5f) {
 		for (int x = 0; x < heightmap.width(); x++) {
 			for (int y = 0; y < heightmap.height(); y++) {
-				uint8_t valley = valleymap.sample(x, y, UTIL::CHANNEL_RED);
-				float height = heightmap.sample(x, y, UTIL::CHANNEL_RED);
+				uint8_t valley = valleymap.sample(x, y, util::CHANNEL_RED);
+				float height = heightmap.sample(x, y, util::CHANNEL_RED);
 				height = (valley / 255.f) * height;
 				//height = glm::mix(height, 0.5f*height, masker / 255.f);
-				heightmap.plot(x, y, UTIL::CHANNEL_RED, height);
+				heightmap.plot(x, y, util::CHANNEL_RED, height);
 			}
 		}
 	}
@@ -489,7 +489,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 			}
 			glm::vec2 a = parcel.centroid / scale;
 			glm::vec2 b = street / scale;
-			sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 6, UTIL::CHANNEL_RED, 200);
+			sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 6, util::CHANNEL_RED, 200);
 		}
 	}
 	sitemasks.blur(5.f);
@@ -498,7 +498,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 	for (const auto &road : sitegen.highways) {
 		glm::vec2 a = road.P0 / scale;
 		glm::vec2 b = road.P1 / scale;
-		sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 3, UTIL::CHANNEL_RED, 255);
+		sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 3, util::CHANNEL_RED, 255);
 	}
 
 	for (const auto &sect : sitegen.sections) {
@@ -506,7 +506,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 			if (sect.j0->border == false && sect.j1->border == false) {
 				glm::vec2 a = sect.j0->position / scale;
 				glm::vec2 b = sect.j1->position / scale;
-				sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 3, UTIL::CHANNEL_RED, 210);
+				sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 3, util::CHANNEL_RED, 210);
 			}
 		}
 	}
@@ -515,7 +515,7 @@ void Landscape::create_sitemasks(uint8_t radius)
 	for (const auto &wall : sitegen.walls) {
 		glm::vec2 a = wall.S.P0 / scale;
 		glm::vec2 b = wall.S.P1 / scale;
-		sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 10, UTIL::CHANNEL_RED, 210);
+		sitemasks.draw_thick_line(a.x * sitemasks.width(), a.y * sitemasks.height(), b.x * sitemasks.width(), b.y * sitemasks.height(), 10, util::CHANNEL_RED, 210);
 	}
 
 	sitemasks.blur(1.f);
@@ -527,10 +527,10 @@ float Landscape::sample_heightmap(const glm::vec2 &real) const
 		heightmap.width() * (real.x / SCALE.x),
 		heightmap.height() * (real.y / SCALE.z)
 	};
-	return SCALE.y * heightmap.sample(roundf(imagespace.x), roundf(imagespace.y), UTIL::CHANNEL_RED);
+	return SCALE.y * heightmap.sample(roundf(imagespace.x), roundf(imagespace.y), util::CHANNEL_RED);
 }
 	
-static struct landgen_parameters random_landgen_parameters(int32_t seed)
+static landgen_parameters random_landgen_parameters(int32_t seed)
 {
 	std::mt19937 gen(seed);
 
@@ -543,7 +543,7 @@ static struct landgen_parameters random_landgen_parameters(int32_t seed)
 
 	std::uniform_real_distribution<float> sediment_blur_distrib(MIN_SEDIMENT_BLUR, MAX_SEDIMENT_BLUR);
 
-	struct landgen_parameters params;
+	landgen_parameters params;
 
 	//params.seed = noise_seed_distrib(gen);
 
@@ -590,7 +590,7 @@ static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths
 	return quad;
 }
 
-static bool within_bounds(uint8_t value, const MODULE::bounds_t<uint8_t> &bounds)
+static bool within_bounds(uint8_t value, const module::bounds_t<uint8_t> &bounds)
 {
 	return (value >= bounds.min && value <= bounds.max);
 }

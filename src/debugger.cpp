@@ -36,13 +36,13 @@ void Debugger::init(const gfx::Shader *shady)
 	shader = shady;
 }
 
-void Debugger::teardown(void)
+void Debugger::teardown()
 {
 	delete_navmeshes();
-	delete_bboxes();
+	delete_boxes();
 }
 
-void Debugger::render_navmeshes(void)
+void Debugger::render_navmeshes()
 {
 	for (const auto &mesh : navmeshes) {
 		mesh->draw();
@@ -97,7 +97,7 @@ void Debugger::add_navmesh(const dtNavMesh *mesh)
 	navmeshes.push_back(navmesh);
 }
 
-void Debugger::delete_navmeshes(void)
+void Debugger::delete_navmeshes()
 {
 	for (int i = 0; i < navmeshes.size(); i++) {
 		delete navmeshes[i];
@@ -105,16 +105,6 @@ void Debugger::delete_navmeshes(void)
 	navmeshes.clear();
 }
 	
-void Debugger::add_bbox(const glm::vec3 &min, const glm::vec3 &max, const std::vector<const Entity*> &entities)
-{
-	struct debug_box box;
-	box.mesh = new gfx::CubeMesh { min, max };
-	for (const auto &ent : entities) {
-		box.entities.push_back(ent);
-	}
-	bboxes.push_back(box);
-}
-
 void Debugger::add_cube_mesh(const glm::vec3 &min, const glm::vec3 &max, const glm::vec3 &color)
 {
 	auto cube = std::make_unique<debug_AABB_t>();
@@ -124,43 +114,7 @@ void Debugger::add_cube_mesh(const glm::vec3 &min, const glm::vec3 &max, const g
 	cube_meshes.push_back(std::move(cube));
 }
 
-void Debugger::render_bboxes(const UTIL::Camera *camera)
+void Debugger::delete_boxes()
 {
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	shader->use();
-	shader->uniform_bool("INSTANCED", false);
-	shader->uniform_mat4("VP", camera->VP);
-
-	for (const auto &box : bboxes) {
-		for (const auto &ent : box.entities) {
-			glm::mat4 T = glm::translate(glm::mat4(1.f), ent->position);
-			glm::mat4 R = glm::mat4(ent->rotation);
-			glm::mat4 M = T * R;
-			glm::mat4 MVP = camera->VP * M;
-			shader->uniform_mat4("MVP", MVP);
-			shader->uniform_mat4("MODEL", M);
-			box.mesh->draw();
-		}
-	}
-	
-	shader->uniform_mat4("MVP", camera->VP);
-	shader->uniform_mat4("MODEL", glm::mat4(1.f));
-	for (const auto &cube : cube_meshes) {
-		shader->uniform_vec3("COLOR", cube->color);
-		cube->mesh->draw();
-	}
-
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-}
-
-void Debugger::delete_bboxes(void)
-{
-	for (auto &box : bboxes) {
-		delete box.mesh;
-		box.entities.clear();
-	}
-	bboxes.clear();
-
 	cube_meshes.clear();
 }

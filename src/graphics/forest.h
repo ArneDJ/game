@@ -1,6 +1,6 @@
 namespace gfx {
 
-enum BVH_axis_t : uint8_t {
+enum BVH_axis : uint8_t {
 	BVH_AXIS_X = 0,
 	BVH_AXIS_Y,
 	BVH_AXIS_Z
@@ -29,7 +29,7 @@ struct BVH_node_t {
 	BVH_node_t *left = nullptr;
 	BVH_node_t *right = nullptr;
 	std::vector<tree_instance_t> objects;
-	BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_axis_t parent_axis);
+	BVH_node_t(const std::vector<tree_instance_t> &instances, enum BVH_axis parent_axis);
 };
 
 // bounding volume hierarchy
@@ -51,7 +51,7 @@ public:
 	void add_model(const Model *trunk, const Model *leaves, const Model *billboard, const std::vector<const geom::transformation_t*> &transforms);
 	void build_hierarchy();
 	void set_atmosphere(const glm::vec3 &sun_position, const glm::vec3 &fog_color, float fog_factor, const glm::vec3 &ambiance);
-	void display(const UTIL::Camera *camera) const;
+	void display(const util::Camera *camera) const;
 	void clear();
 private:
 	const Shader *m_detailed;

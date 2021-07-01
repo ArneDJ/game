@@ -37,7 +37,7 @@ private:
 	Shader copy;
 };
 
-struct RenderObject {
+struct render_object_t {
 	const Model *model;
 	std::vector<const Entity*> entities;
 	bool instanced = false;
@@ -49,11 +49,11 @@ public:
 	RenderGroup(const Shader *shady);
 	~RenderGroup(void);
 	void add_object(const Model *mod, const std::vector<const Entity*> &ents);
-	void display(const UTIL::Camera *camera) const;
+	void display(const util::Camera *camera) const;
 	void clear(void);
 private:
 	const Shader *shader;
-	std::vector<RenderObject*> objects;
+	std::vector<render_object_t*> objects;
 };
 
 class RenderManager {

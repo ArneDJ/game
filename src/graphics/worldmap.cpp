@@ -25,7 +25,7 @@ namespace gfx {
 
 static const uint32_t WORLDMAP_PATCH_RES = 85;
 
-Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *watermap, const UTIL::Image<uint8_t> *rainmap, const UTIL::Image<uint8_t> *materialmasks, const UTIL::Image<uint8_t> *factionsmap)
+Worldmap::Worldmap(const glm::vec3 &mapscale, const util::Image<float> *heightmap, const util::Image<uint8_t> *watermap, const util::Image<uint8_t> *rainmap, const util::Image<uint8_t> *materialmasks, const util::Image<uint8_t> *factionsmap)
 {
 	scale = mapscale;
 	faction_factor = 0.f;
@@ -47,7 +47,7 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightma
 	m_temperature = std::make_unique<Texture>(rainmap);
 	m_temperature->change_wrapping(GL_CLAMP_TO_EDGE);
 
-	normalmap.resize(heightmap->width(), heightmap->height(), UTIL::COLORSPACE_RGB);
+	normalmap.resize(heightmap->width(), heightmap->height(), util::COLORSPACE_RGB);
 	normals = std::make_unique<Texture>(&normalmap);
 	normals->change_wrapping(GL_CLAMP_TO_EDGE);
 
@@ -80,7 +80,7 @@ Worldmap::Worldmap(const glm::vec3 &mapscale, const UTIL::Image<float> *heightma
 	
 void Worldmap::add_material(const std::string &name, const Texture *texture)
 {
-	struct texture_binding_t texture_binding = {
+	texture_binding_t texture_binding = {
 		name,
 		texture
 	};
@@ -88,7 +88,7 @@ void Worldmap::add_material(const std::string &name, const Texture *texture)
 	materials.push_back(texture_binding);
 }
 
-void Worldmap::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uint8_t> *watermap, const UTIL::Image<uint8_t> *rainmap, const UTIL::Image<uint8_t> *materialmasks, const UTIL::Image<uint8_t> *factionsmap)
+void Worldmap::reload(const util::Image<float> *heightmap, const util::Image<uint8_t> *watermap, const util::Image<uint8_t> *rainmap, const util::Image<uint8_t> *materialmasks, const util::Image<uint8_t> *factionsmap)
 {
 	topology->reload(heightmap);
 	nautical->reload(watermap);
@@ -102,17 +102,17 @@ void Worldmap::reload(const UTIL::Image<float> *heightmap, const UTIL::Image<uin
 	factions->reload(factionsmap);
 }
 	
-void Worldmap::reload_temperature(const UTIL::Image<uint8_t> *temperature)
+void Worldmap::reload_temperature(const util::Image<uint8_t> *temperature)
 {
 	m_temperature->reload(temperature);
 }
 
-void Worldmap::reload_factionsmap(const UTIL::Image<uint8_t> *factionsmap)
+void Worldmap::reload_factionsmap(const util::Image<uint8_t> *factionsmap)
 {
 	factions->reload(factionsmap);
 }
 	
-void Worldmap::reload_masks(const UTIL::Image<uint8_t> *mask_image)
+void Worldmap::reload_masks(const util::Image<uint8_t> *mask_image)
 {
 	masks->reload(mask_image);
 }
@@ -124,7 +124,7 @@ void Worldmap::change_atmosphere(const glm::vec3 &fogclr, float fogfctr, const g
 	sunpos = sunposition;
 }
 
-void Worldmap::display_land(const UTIL::Camera *camera) const
+void Worldmap::display_land(const util::Camera *camera) const
 {
 	land.use();
 	land.uniform_mat4("VP", camera->VP);
@@ -148,7 +148,7 @@ void Worldmap::display_land(const UTIL::Camera *camera) const
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void Worldmap::display_water(const UTIL::Camera *camera, float time) const
+void Worldmap::display_water(const util::Camera *camera, float time) const
 {
 	water.use();
 	water.uniform_mat4("VP", camera->VP);

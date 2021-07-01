@@ -3,7 +3,7 @@
 
 namespace gfx {
 
-struct depthmap {
+struct depthmap_t {
 	GLuint FBO;
 	GLuint texture;
 	GLsizei height;
@@ -14,7 +14,7 @@ class Shadow {
 public:
 	Shadow(size_t texture_size);
 	~Shadow(void);
-	void update(const UTIL::Camera *camera, const glm::vec3 &lightpos);
+	void update(const util::Camera *camera, const glm::vec3 &lightpos);
 	void enable(void);
 	void bind_depthmap(uint8_t section);
 	void disable(void);
@@ -35,7 +35,7 @@ private:
 	std::array<glm::mat4, 4> shadowspaces;
 	std::vector<glm::mat4> biased_shadowspaces;
 	glm::vec4 splitdepth;
-	struct depthmap depth;
+	depthmap_t depth;
 };
 
 };

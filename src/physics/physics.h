@@ -25,8 +25,8 @@ public:
 	const btDynamicsWorld* get_world() const;
 	btDynamicsWorld* get_world();
 	void update(float timestep);
-	void add_heightfield(const UTIL::Image<float> *image, const glm::vec3 &scale, int group, int masks);
-	void add_heightfield(const UTIL::Image<uint8_t> *image, const glm::vec3 &scale, int group, int masks);
+	void add_heightfield(const util::Image<float> *image, const glm::vec3 &scale, int group, int masks);
+	void add_heightfield(const util::Image<uint8_t> *image, const glm::vec3 &scale, int group, int masks);
 	void add_shape(btCollisionShape *shape);
 	btCollisionShape* add_mesh(const std::vector<glm::vec3> &positions, const std::vector<uint16_t> &indices);
 	btCollisionShape* add_hull(const std::vector<glm::vec3> &points);
@@ -38,7 +38,7 @@ public:
 	void insert_ghost_object(btGhostObject *ghost_object);
 	void clear();
 	//
-	struct ray_result_t cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks = 0);
+	ray_result_t cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks = 0);
 private:
 	std::unique_ptr<btCollisionConfiguration> m_config;
 	std::unique_ptr<btCollisionDispatcher> m_dispatcher;

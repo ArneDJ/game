@@ -129,11 +129,11 @@ struct shader_group_t {
 class Campaign {
 public:
 	long seed;
-	UTIL::Navigation landnav;
-	UTIL::Navigation seanav;
-	UTIL::Camera camera;
+	util::Navigation landnav;
+	util::Navigation seanav;
+	util::Camera camera;
 	physics::PhysicsManager collisionman;
-	std::unique_ptr<Atlas> atlas;
+	Atlas atlas;
 	// graphics
 	std::unique_ptr<gfx::Worldmap> worldmap;
 	std::unique_ptr<gfx::LabelManager> labelman;
@@ -147,7 +147,7 @@ public:
 	std::vector<Entity*> entities;
 	bool show_factions = false;
 public:
-	void init(const UTIL::Window *window, const struct shader_group_t *shaders);
+	void init(const util::Window *window, const shader_group_t *shaders);
 	void load_assets();
 	void add_armies();
 	void add_trees();
@@ -155,7 +155,7 @@ public:
 	void cleanup();
 	void teardown();
 public:
-	void update_camera(const UTIL::Input *input, float sensitivity, float delta);
+	void update_camera(const util::Input *input, float sensitivity, float delta);
 	void update_labels();
 	void update_faction_map();
 	void offset_entities();
@@ -164,12 +164,12 @@ private:
 	void collide_camera();
 };
 	
-void Campaign::init(const UTIL::Window *window, const struct shader_group_t *shaders)
+void Campaign::init(const util::Window *window, const shader_group_t *shaders)
 {
-	atlas = std::make_unique<Atlas>();
+	//atlas = std::make_unique<Atlas>();
 
-	const auto terragen = atlas->get_terragen();
-	worldmap = std::make_unique<gfx::Worldmap>(atlas->SCALE, &terragen->heightmap, atlas->get_watermap(), &terragen->rainmap, atlas->get_materialmasks(), atlas->get_factions());
+	const auto terragen = atlas.get_terragen();
+	worldmap = std::make_unique<gfx::Worldmap>(atlas.SCALE, &terragen->heightmap, atlas.get_watermap(), &terragen->rainmap, atlas.get_materialmasks(), atlas.get_factions());
 
 	ordinary = std::make_unique<gfx::RenderGroup>(&shaders->debug);
 	creatures = std::make_unique<gfx::RenderGroup>(&shaders->object);
@@ -205,7 +205,7 @@ void Campaign::add_armies()
 
 void Campaign::add_trees()
 {
-	auto trees = atlas->get_trees();
+	auto trees = atlas.get_trees();
 
 	std::vector<const Entity*> ents;
 
@@ -224,10 +224,10 @@ void Campaign::add_settlements()
 	btCollisionShape *shape = new btSphereShape(5.f);
 	collisionman.add_shape(shape);
 
-	for (const auto &tile : atlas->get_worldgraph()->tiles) {
+	for (const auto &tile : atlas.get_worldgraph()->tiles) {
 		if (tile.site == CASTLE || tile.site == TOWN) {
 			glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
-			glm::vec3 origin = { tile.center.x, atlas->SCALE.y, tile.center.y };
+			glm::vec3 origin = { tile.center.x, atlas.SCALE.y, tile.center.y };
 			auto result = collisionman.cast_ray(origin, position, physics::COLLISION_GROUP_HEIGHTMAP);
 			position.y = result.point.y;
 			SettlementNode *node = new SettlementNode { position, glm::quat(1.f, 0.f, 0.f, 0.f), shape, tile.index };
@@ -293,7 +293,7 @@ void Campaign::teardown()
 	
 void Campaign::collide_camera()
 {
-	auto camresult = collisionman.cast_ray(glm::vec3(camera.position.x, atlas->SCALE.y, camera.position.z), glm::vec3(camera.position.x, 0.f, camera.position.z), physics::COLLISION_GROUP_HEIGHTMAP);
+	auto camresult = collisionman.cast_ray(glm::vec3(camera.position.x, atlas.SCALE.y, camera.position.z), glm::vec3(camera.position.x, 0.f, camera.position.z), physics::COLLISION_GROUP_HEIGHTMAP);
 
 	if (camresult.hit) {
 		float yoffset = camresult.point.y + 10.f;
@@ -303,12 +303,12 @@ void Campaign::collide_camera()
 	}
 }
 	
-void Campaign::update_camera(const UTIL::Input *input, float sensitivity, float delta)
+void Campaign::update_camera(const util::Input *input, float sensitivity, float delta)
 {
 	glm::vec2 rel_mousecoords = sensitivity * input->rel_mousecoords();
 	camera.target(rel_mousecoords);
 
-	float zoomlevel = camera.position.y / atlas->SCALE.y;
+	float zoomlevel = camera.position.y / atlas.SCALE.y;
 	zoomlevel = glm::clamp(zoomlevel, 0.f, 2.f);
 	float modifier = 200.f * delta * (zoomlevel*zoomlevel);
 
@@ -339,7 +339,7 @@ void Campaign::update_camera(const UTIL::Input *input, float sensitivity, float 
 void Campaign::update_labels()
 {
 	// scale between 1 and 10
-	float label_scale = camera.position.y / atlas->SCALE.y;
+	float label_scale = camera.position.y / atlas.SCALE.y;
 	label_scale = glm::smoothstep(0.5f, 2.f, label_scale);
 	label_scale = glm::clamp(10.f*label_scale, 1.f, 10.f);
 
@@ -350,7 +350,7 @@ void Campaign::update_labels()
 void Campaign::offset_entities()
 {
 	// movable entities vertical offset
-	glm::vec3 origin = { player->position.x, atlas->SCALE.y, player->position.z };
+	glm::vec3 origin = { player->position.x, atlas.SCALE.y, player->position.z };
 	glm::vec3 end = { player->position.x, 0.f, player->position.z };
 	auto result = collisionman.cast_ray(origin, end, physics::COLLISION_GROUP_HEIGHTMAP);
 	player->set_y_offset(result.point.y);
@@ -361,7 +361,7 @@ void Campaign::update_faction_map()
 	// map faction mode
 	float colormix = 0.f;
 	if (show_factions) {
-		colormix = camera.position.y / atlas->SCALE.y;
+		colormix = camera.position.y / atlas.SCALE.y;
 		colormix = glm::smoothstep(0.5f, 2.f, colormix);
 		if (colormix < 0.25f) {
 			colormix = 0.f;
@@ -385,7 +385,7 @@ void Campaign::change_player_target(const glm::vec3 &ray)
 		}
 		// get tile
 		glm::vec2 position = geom::translate_3D_to_2D(result.point);
-		const struct tile *tily = atlas->tile_at_position(position);
+		const auto tily = atlas.tile_at_position(position);
 		if (tily != nullptr && glm::distance(position, geom::translate_3D_to_2D(player->position)) < 10.f) {
 			// embark or disembark
 			if (player->get_movement_mode() == MOVEMENT_LAND && tily->land == false) {
@@ -411,7 +411,7 @@ void Campaign::change_player_target(const glm::vec3 &ray)
 class Battle {
 public:
 	bool naval = false;
-	UTIL::Camera camera;
+	util::Camera camera;
 	physics::PhysicsManager physicsman;
 	std::unique_ptr<Landscape> landscape;
 	// graphics
@@ -427,16 +427,16 @@ public:
 	std::vector<Entity> entities;
 
 public:
-	void init(const MODULE::Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders);
-	void load_assets(const MODULE::Module *mod);
-	void add_creatures(const MODULE::Module *mod);
+	void init(const module::Module *mod, const util::Window *window, const shader_group_t *shaders);
+	void load_assets(const module::Module *mod);
+	void add_creatures(const module::Module *mod);
 	void add_buildings();
 	void add_trees();
 	void cleanup();
 	void teardown();
 };
 	
-void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const struct shader_group_t *shaders)
+void Battle::init(const module::Module *mod, const util::Window *window, const shader_group_t *shaders)
 {
 	landscape = std::make_unique<Landscape>(mod, 2048);
 
@@ -452,7 +452,7 @@ void Battle::init(const MODULE::Module *mod, const UTIL::Window *window, const s
 	forest = std::make_unique<gfx::Forest>(&shaders->tree, &shaders->billboard);
 }
 
-void Battle::load_assets(const MODULE::Module *mod)
+void Battle::load_assets(const module::Module *mod)
 {
 	landscape->load_buildings();
 	
@@ -463,7 +463,7 @@ void Battle::load_assets(const MODULE::Module *mod)
 	terrain->insert_material("WAVE_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 }
 	
-void Battle::add_creatures(const MODULE::Module *mod)
+void Battle::add_creatures(const module::Module *mod)
 {
 	glm::vec3 end = glm::vec3(3072.f, 0.f, 3072.f);
 	glm::vec3 origin = { end.x, landscape->SCALE.y, end.z };
@@ -610,20 +610,20 @@ public:
 private:
 	bool running;
 	bool debugmode;
-	MODULE::Module modular;
+	module::Module modular;
 	enum game_state state;
-	struct game_settings_t settings;
+	game_settings_t settings;
 	Saver saver;
-	UTIL::Window window;
-	UTIL::Input input;
-	UTIL::Timer timer;
+	util::Window window;
+	util::Input input;
+	util::Timer timer;
 	gfx::TextManager *textman;
 	Debugger debugger;
 	Campaign campaign;
 	Battle battle;
 	// graphics
 	gfx::RenderManager renderman;
-	struct shader_group_t shaders;
+	shader_group_t shaders;
 	float fog_factor = 0.0005f; // TODO atmosphere
 	glm::vec3 ambiance_color = { 1.f, 1.f, 1.f };
 private:
@@ -871,7 +871,7 @@ void Game::prepare_battle()
 
 	// find the campaign tile the player is on and prepare local scene properties based on it
 	glm::vec2 position = geom::translate_3D_to_2D(campaign.player->position);
-	const struct tile *tily = campaign.atlas->tile_at_position(position);
+	const auto tily = campaign.atlas.tile_at_position(position);
 	uint32_t tileref = 0;
 	float amp = 0.f;
 	uint8_t precipitation = 0;
@@ -941,19 +941,6 @@ void Game::prepare_battle()
 	battle.add_buildings();
 	battle.add_creatures(&modular);
 
-	// visualize BVH leaves
-	//int next = 0;
-	std::mt19937 gen(1337);
-	std::uniform_real_distribution<float> color_dist(0.f, 1.f);
-
-	/*
-	for (const auto &leaf : battle.forest->m_bvh.leafs) {
-		glm::vec3 color = { color_dist(gen), color_dist(gen), color_dist(gen) };
-		debugger.add_cube_mesh(leaf->bounds.min, leaf->bounds.max, color);
-		//battle.camera.position = leaf->bounds.max;
-	}
-	*/
-
 	battle.skybox.prepare();
 
 	battle.forest->set_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
@@ -984,10 +971,6 @@ void Game::run_battle()
 		shaders.creature.uniform_bool("RAGDOLL", battle.player->m_ragdoll_mode);
 		battle.creatures->display(&battle.camera);
 
-		if (debugmode) {
-			debugger.render_bboxes(&battle.camera);
-		}
-
 		battle.forest->display(&battle.camera);
 
 		battle.terrain->display_land(&battle.camera);
@@ -1013,7 +996,7 @@ void Game::run_battle()
 	}
 	
 	if (debugmode) {
-		debugger.delete_bboxes();
+		debugger.delete_boxes();
 	}
 
 	battle.cleanup();
@@ -1083,17 +1066,17 @@ void Game::new_campaign()
 	//campaign.seed = 8038877013446859113;
 	//campaign.seed = 6900807170427947938;
 
-	campaign.atlas->generate(campaign.seed, &modular.params);
+	campaign.atlas.generate(campaign.seed, &modular.params);
 
-	campaign.atlas->create_land_navigation();
-	const auto land_navsoup = campaign.atlas->get_navsoup();
+	campaign.atlas.create_land_navigation();
+	const auto land_navsoup = campaign.atlas.get_navsoup();
 	campaign.landnav.build(land_navsoup.vertices, land_navsoup.indices);
 
-	campaign.atlas->create_sea_navigation();
-	const auto sea_navsoup = campaign.atlas->get_navsoup();
+	campaign.atlas.create_sea_navigation();
+	const auto sea_navsoup = campaign.atlas.get_navsoup();
 	campaign.seanav.build(sea_navsoup.vertices, sea_navsoup.indices);
 	
-	saver.save("game.save", campaign.atlas.get(), &campaign.landnav, &campaign.seanav, campaign.seed);
+	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 	
 	prepare_campaign();
 	run_campaign();
@@ -1101,7 +1084,7 @@ void Game::new_campaign()
 	
 void Game::load_campaign()
 {
-	saver.load("game.save", campaign.atlas.get(), &campaign.landnav, &campaign.seanav, campaign.seed);
+	saver.load("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
 
 	prepare_campaign();
 	run_campaign();
@@ -1113,16 +1096,16 @@ void Game::prepare_campaign()
 	campaign.camera.project();
 
 	// campaign world map data
-	campaign.atlas->create_mapdata(campaign.seed);
+	campaign.atlas.create_mapdata(campaign.seed);
 
-	const auto terragen = campaign.atlas->get_terragen();
-	campaign.worldmap->reload(&terragen->heightmap, campaign.atlas->get_watermap(), &terragen->rainmap, campaign.atlas->get_materialmasks(), campaign.atlas->get_factions());
+	const auto terragen = campaign.atlas.get_terragen();
+	campaign.worldmap->reload(&terragen->heightmap, campaign.atlas.get_watermap(), &terragen->rainmap, campaign.atlas.get_materialmasks(), campaign.atlas.get_factions());
 	campaign.worldmap->reload_temperature(&terragen->tempmap);
 	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0002f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.palette.grass.min, modular.palette.grass.max, modular.palette.rock_base.min, modular.palette.rock_base.max, modular.palette.rock_desert.min, modular.palette.rock_desert.max);
 
-	campaign.collisionman.add_heightfield(&terragen->heightmap, campaign.atlas->SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY);
-	campaign.collisionman.add_heightfield(campaign.atlas->get_watermap(), campaign.atlas->SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY);
+	campaign.collisionman.add_heightfield(&terragen->heightmap, campaign.atlas.SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY);
+	campaign.collisionman.add_heightfield(campaign.atlas.get_watermap(), campaign.atlas.SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));

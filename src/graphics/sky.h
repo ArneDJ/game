@@ -6,8 +6,8 @@ public:
 	void teardown(void);
 	void prepare(void);
 	void colorize(const glm::vec3 &top, const glm::vec3 &bottom, const glm::vec3 &sunpos, const glm::vec3 &ambiance, bool cloudsenabled);
-	void update(const UTIL::Camera *camera, float time);
-	void display(const UTIL::Camera *camera) const;
+	void update(const util::Camera *camera, float time);
+	void display(const util::Camera *camera) const;
 private:
 	glm::vec3 zenith, horizon;
 	glm::vec3 sunposition;

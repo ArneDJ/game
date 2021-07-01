@@ -6,7 +6,7 @@
 #include "../extern/aixlog/aixlog.h"
 #include "window.h"
 
-namespace UTIL {
+namespace util {
 	
 bool Window::open(uint16_t w, uint16_t h)
 {
@@ -41,7 +41,7 @@ bool Window::open(uint16_t w, uint16_t h)
 	return true;
 }
 
-void Window::close(void)
+void Window::close()
 {
 	SDL_GL_DeleteContext(glcontext);
 	SDL_DestroyWindow(window);
@@ -49,12 +49,12 @@ void Window::close(void)
 	SDL_Quit();
 }
 
-void Window::swap(void) 
+void Window::swap() 
 { 
 	SDL_GL_SwapWindow(window); 
 };
 	
-void Window::set_fullscreen(void)
+void Window::set_fullscreen()
 {
 	SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 }

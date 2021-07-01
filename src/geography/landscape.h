@@ -4,7 +4,7 @@ namespace GEOGRAPHY {
 struct building_t {
 	const gfx::Model *model;
 	glm::vec3 bounds;
-	MODULE::bounds_t<uint8_t> temperature;
+	module::bounds_t<uint8_t> temperature;
 	std::vector<geom::transformation_t> transforms;
 };
 
@@ -25,29 +25,29 @@ public:
 		{ 4096.F, 4096.F }
 	};
 public:
-	Landscape(const MODULE::Module *mod, uint16_t heightres);
+	Landscape(const module::Module *mod, uint16_t heightres);
 public:
 	void load_buildings();
 public:
 	void clear(void);
 	void generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t tree_density, uint8_t site_radius, bool walled, bool nautical);
 public:
-	const UTIL::Image<float>* get_heightmap(void) const;
-	const UTIL::Image<uint8_t>* get_normalmap(void) const;
-	const UTIL::Image<uint8_t>* get_sitemasks(void) const;
+	const util::Image<float>* get_heightmap(void) const;
+	const util::Image<uint8_t>* get_normalmap(void) const;
+	const util::Image<uint8_t>* get_sitemasks(void) const;
 	const std::vector<GEOGRAPHY::tree_t>& get_trees(void) const;
 	const std::vector<GEOGRAPHY::building_t>& get_houses(void) const;
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
-	UTIL::Image<float> heightmap;
-	UTIL::Image<float> container;
-	UTIL::Image<uint8_t> valleymap;
+	util::Image<float> heightmap;
+	util::Image<float> container;
+	util::Image<uint8_t> valleymap;
 private:
-	UTIL::Image<uint8_t> normalmap;
-	UTIL::Image<uint8_t> density;
-	UTIL::Image<uint8_t> sitemasks;
+	util::Image<uint8_t> normalmap;
+	util::Image<uint8_t> density;
+	util::Image<uint8_t> sitemasks;
 	Sitegen sitegen;
-	const MODULE::Module *m_module;
+	const module::Module *m_module;
 private:
 	std::vector<GEOGRAPHY::tree_t> m_trees;
 	std::vector<GEOGRAPHY::building_t> houses;

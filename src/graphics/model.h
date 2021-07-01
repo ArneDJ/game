@@ -8,8 +8,8 @@ struct node_t;
 struct skin_t {
 	std::string name;
 	std::vector<glm::mat4> inversebinds;
-	struct node_t *root; // skeleton root joint
-	std::vector<struct node_t*> joints;
+	node_t *root; // skeleton root joint
+	std::vector<node_t*> joints;
 };
 
 struct node_t {
@@ -17,9 +17,9 @@ struct node_t {
 	glm::mat4 transform;
 	glm::vec3 translation, scale;
 	glm::quat rotation;
-	struct node_t *parent = nullptr;
-	std::vector<struct node_t*> children;
-	struct skin_t *skeleton = nullptr;
+	node_t *parent = nullptr;
+	std::vector<node_t*> children;
+	skin_t *skeleton = nullptr;
 };
 
 // triangle mesh data
@@ -48,7 +48,7 @@ public:
 	void display(void) const;
 	void display_instanced(GLsizei count) const;
 private:
-	std::vector<struct node_t> nodes;
+	std::vector<node_t> nodes;
 	std::vector<Mesh*> meshes;
 	std::vector<const Texture*> materials;
 	void load_data(const std::string &fpath, const cgltf_data *data);
@@ -56,6 +56,6 @@ private:
 	void find_bounds(const cgltf_data *data);
 };
 
-glm::mat4 global_node_transform(const struct node_t *n);
+glm::mat4 global_node_transform(const node_t *n);
 
 };

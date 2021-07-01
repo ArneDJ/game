@@ -3,7 +3,7 @@
 
 #include "timer.h"
 
-namespace UTIL {
+namespace util {
 
 void Timer::begin()
 {

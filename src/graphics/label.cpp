@@ -89,7 +89,7 @@ void LabelManager::add(const std::string &text, const glm::vec3 &color, const gl
 
 	glm::vec2 last = { color.x, color.z };
 
-	struct label_buffer_t label;
+	label_buffer_t label;
 
 	for (int i = 0; i < text.length(); i++) {
 		texture_glyph_t *glyph = texture_font_get_glyph(font, &text.at(i));
@@ -144,7 +144,7 @@ void LabelManager::clear(void)
 	glyph_buffer.indices.clear();
 }
 
-void LabelManager::display(const UTIL::Camera *camera) const
+void LabelManager::display(const util::Camera *camera) const
 {
 	if (depthless) {
 		glDisable(GL_DEPTH_TEST);
