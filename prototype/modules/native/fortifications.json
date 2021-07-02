@@ -1,0 +1,22 @@
+{
+    "fortifications": {
+        "wood": {
+            "segment": "buildings/walls/wood/segment.glb",
+            "segment_both": "buildings/walls/wood/segment_both.glb",
+            "segment_left": "buildings/walls/wood/segment_left.glb",
+            "segment_right": "buildings/walls/wood/segment_right.glb",
+            "tower": "buildings/walls/wood/tower.glb",
+            "ramp": "buildings/walls/wood/ramp.glb",
+            "gate": "buildings/walls/wood/gate.glb"
+        },
+        "stone": {
+            "segment": "buildings/walls/stone/segment.glb",
+            "segment_both": "buildings/walls/stone/segment_both.glb",
+            "segment_left": "buildings/walls/stone/segment_left.glb",
+            "segment_right": "buildings/walls/stone/segment_right.glb",
+            "tower": "buildings/walls/stone/tower.glb",
+            "ramp": "buildings/walls/stone/ramp.glb",
+            "gate": "buildings/walls/stone/gate.glb"
+        }
+    }
+}

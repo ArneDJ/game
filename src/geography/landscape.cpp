@@ -65,16 +65,18 @@ static const uint16_t DENSITY_MAP_RES = 256;
 
 static const uint16_t SITEMASK_RES = 2048;
 
+// TODO calculate from AABB
+static const float WALL_GATE_DIST = 8.F;
+static const float WALL_SEG_DIST = 4.F;
+static const float MIN_TOWER_DIFFERENCE = 5.F;
+
 static const std::array<FastNoise::CellularReturnType, 5> RIDGE_TYPES = { FastNoise::Distance, FastNoise::Distance2, FastNoise::Distance2Add, FastNoise::Distance2Sub, FastNoise::Distance2Mul };
 static const std::array<FastNoise::FractalType, 3> DETAIL_TYPES = { FastNoise::FBM, FastNoise::Billow, FastNoise::RigidMulti };
-
 static landgen_parameters random_landgen_parameters(int32_t seed);
-
 static bool larger_building(const building_t &a, const building_t &b);
-
 static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths, float angle);
-
 static bool within_bounds(uint8_t value, const module::bounds_t<uint8_t> &bounds);
+static inline glm::quat direction_to_quat(const glm::vec2 &direction);
 
 Landscape::Landscape(const module::Module *mod, uint16_t heightres)
 {
@@ -120,6 +122,8 @@ void Landscape::clear(void)
 	for (auto &building : houses) {
 		building.transforms.clear();
 	}
+	
+	m_walls.clear();
 }
 
 void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_seed, float amplitude, uint8_t precipitation, uint8_t temperature, uint8_t tree_density, uint8_t site_radius, bool walled, bool nautical)
@@ -143,6 +147,10 @@ void Landscape::generate(long campaign_seed, uint32_t tileref, int32_t local_see
 	if (site_radius > 0) {
 		create_sitemasks(site_radius);
 		place_houses(walled, site_radius, local_seed, temperature);
+	}
+
+	if (walled) {
+		place_walls();
 	}
 
 	printf("precipitation %d\n", precipitation);
@@ -522,6 +530,122 @@ void Landscape::create_sitemasks(uint8_t radius)
 
 	sitemasks.blur(1.f);
 }
+	
+void Landscape::place_walls()
+{
+	// place the wall gates
+	wall_t gate;
+	gate.model = m_module->fortifications.wood.gate;
+	for (const auto &wall : sitegen.walls) {
+		if (wall.gate) {
+			glm::vec2 mid = geom::segment_midpoint(wall.S.P0, wall.S.P1);
+			glm::vec2 direction = glm::normalize(wall.S.P1 - wall.S.P0);
+			glm::quat rotation = direction_to_quat(direction);
+			float h = sample_heightmap(mid +  SITE_BOUNDS.min);
+			glm::vec2 leftorigin = wall.S.P0;
+			geom::transformation_t transform = {
+				glm::vec3(mid.x+SITE_BOUNDS.min.x, h, mid.y+SITE_BOUNDS.min.y),
+				rotation,
+				1.f
+			};
+			gate.transforms.push_back(transform);
+		}
+	}
+
+	// place the wall towers
+	wall_t tower;
+	tower.model = m_module->fortifications.wood.tower;
+	for (const auto &wall : sitegen.walls) {
+		glm::vec2 direction = glm::normalize(wall.S.P1 - wall.S.P0);
+		glm::quat rotation = direction_to_quat(direction);
+		glm::vec3 position = { wall.S.P0.x + SITE_BOUNDS.min.x, 0.f,  wall.S.P0.y + SITE_BOUNDS.min.y};
+		position.y = sample_heightmap(wall.S.P0 + SITE_BOUNDS.min);
+		geom::transformation_t transform = { position, rotation, 1.f };
+		tower.transforms.push_back(transform);
+	}
+
+	wall_t segment_standard;
+	segment_standard.model = m_module->fortifications.wood.segment;
+	wall_t segment_left;
+	segment_left.model = m_module->fortifications.wood.segment_left;
+	wall_t segment_right;
+	segment_right.model = m_module->fortifications.wood.segment_right;
+	wall_t segment_both;
+	segment_both.model = m_module->fortifications.wood.segment_both;
+	wall_t segment_ramp;
+	segment_ramp.model = m_module->fortifications.wood.ramp;
+	// fill the walls
+	for (const auto &wall : sitegen.walls) {
+		if (wall.gate) {
+			glm::vec2 direction = glm::normalize(wall.S.P1 - wall.S.P0);
+			glm::vec2 mid = geom::segment_midpoint(wall.S.P0, wall.S.P1);
+			geom::segment_t left = { wall.S.P0, mid - (WALL_GATE_DIST*direction) };
+			fill_wall(left, &segment_standard, &segment_left, &segment_right, &segment_both, &segment_ramp);
+			geom::segment_t right = { mid + (WALL_GATE_DIST*direction), wall.S.P1 };
+			fill_wall(right, &segment_standard, &segment_left, &segment_right, &segment_both, &segment_ramp);
+		} else {
+			fill_wall(wall.S, &segment_standard, &segment_left, &segment_right, &segment_both, &segment_ramp);
+		}
+	}
+
+	m_walls.push_back(gate);
+	m_walls.push_back(tower);
+	m_walls.push_back(segment_standard);
+	m_walls.push_back(segment_left);
+	m_walls.push_back(segment_right);
+	m_walls.push_back(segment_both);
+	m_walls.push_back(segment_ramp);
+}
+	
+void Landscape::fill_wall(geom::segment_t S, wall_t *wall, wall_t *wall_left, wall_t *wall_right, wall_t *wall_both, wall_t *ramp)
+{
+	glm::vec2 direction = glm::normalize(S.P1 - S.P0);
+	glm::quat rotation = direction_to_quat(direction);
+
+	glm::vec2 origin = S.P0;
+	float d = (1.f / WALL_SEG_DIST) * glm::distance(S.P0, S.P1);
+	float h0 = sample_heightmap(S.P0 + SITE_BOUNDS.min);
+	float h1 = sample_heightmap(S.P1 + SITE_BOUNDS.min);
+	glm::vec3 position = { origin.x + SITE_BOUNDS.min.x, 0.f, origin.y + SITE_BOUNDS.min.y };
+	position.y = sample_heightmap(glm::vec2(position.x, position.z));
+	if (fabs(h0 - h1) < MIN_TOWER_DIFFERENCE) {
+		float height = position.y;
+		for (int i = 0; i < int(d); i++) {
+			glm::vec3 position = { origin.x + SITE_BOUNDS.min.x, height, origin.y + SITE_BOUNDS.min.y };
+			geom::transformation_t transform = { position, rotation, 1.f };
+			if (i == int(d)/2) {
+				ramp->transforms.push_back(transform);
+			} else {
+				wall->transforms.push_back(transform);
+			}
+			origin += WALL_SEG_DIST * direction;
+		}
+	} else {
+		for (int i = 0; i < int(d); i++) {
+			glm::vec2 realspace = origin + SITE_BOUNDS.min;
+			glm::vec3 position = { realspace.x, 0.f, realspace.y };
+			position.y = sample_heightmap(glm::vec2(position.x, position.z));
+			glm::vec2 offset = WALL_SEG_DIST * direction;
+			geom::transformation_t transform = { position, rotation, 1.f };
+			if (i == int(d)/2) {
+				ramp->transforms.push_back(transform);
+			} else {
+				float left = sample_heightmap(realspace - offset);
+				float right = sample_heightmap(realspace + offset);
+				if (left < position.y && right < position.y) {
+					wall_both->transforms.push_back(transform);
+				} else if (left < position.y) {
+					wall_left->transforms.push_back(transform);
+				} else if (right < position.y) {
+					wall_right->transforms.push_back(transform);
+				} else {
+					wall->transforms.push_back(transform);
+				}
+			}
+			origin += offset;
+		}
+	}
+}
 
 float Landscape::sample_heightmap(const glm::vec2 &real) const
 {
@@ -595,6 +719,14 @@ static geom::quadrilateral_t building_box(glm::vec2 center, glm::vec2 halfwidths
 static bool within_bounds(uint8_t value, const module::bounds_t<uint8_t> &bounds)
 {
 	return (value >= bounds.min && value <= bounds.max);
+}
+
+static inline glm::quat direction_to_quat(const glm::vec2 &direction)
+{
+	float angle = atan2(direction.x, direction.y);
+	glm::quat rotation = glm::angleAxis(angle, glm::vec3(0.f, 1.f, 0.f));
+
+	return rotation;
 }
 
 };

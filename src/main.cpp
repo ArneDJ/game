@@ -431,6 +431,7 @@ public:
 	void load_assets(const module::Module *mod);
 	void add_creatures(const module::Module *mod);
 	void add_buildings();
+	void add_walls();
 	void add_trees();
 	void cleanup();
 	void teardown();
@@ -511,10 +512,43 @@ void Battle::add_buildings()
 
 		ordinary->add_object(model, house_entities);
 	}
+}
+	
+void Battle::add_walls()
+{
+	const auto walls = landscape->get_walls();
+	for (const auto &wall : walls) {
+		std::vector<const Entity*> wall_entities;
+		const auto model = MediaManager::load_model(wall.model);
+		// get collision shape
+		std::vector<glm::vec3> positions;
+		std::vector<uint16_t> indices;
+		uint16_t offset = 0;
+		for (const auto &mesh : model->collision_trimeshes) {
+			for (const auto &pos : mesh.positions) {
+				positions.push_back(pos);
+			}
+			for (const auto &index : mesh.indices) {
+				indices.push_back(index + offset);
+			}
+			offset = positions.size();
+		}
+		btCollisionShape *shape = physicsman.add_mesh(positions, indices);
+		// create entities
+		for (const auto &transform : wall.transforms) {
+			StationaryObject *stationary = new StationaryObject { transform.position, transform.rotation, shape };
+			stationaries.push_back(stationary);
+			wall_entities.push_back(stationary);
+		}
+
+		ordinary->add_object(model, wall_entities);
+	}
+
 	// add stationary objects to physics
 	for (const auto &stationary : stationaries) {
 		physicsman.add_body(stationary->body, physics::COLLISION_GROUP_WORLD, physics::COLLISION_GROUP_ACTOR | physics::COLLISION_GROUP_RAY | physics::COLLISION_GROUP_RAGDOLL);
 	}
+
 }
 	
 void Battle::add_trees()
@@ -914,7 +948,7 @@ void Game::prepare_battle()
 		tree_density = (precipitation > 64) ? 64 : precipitation;
 	}
 
-	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, tree_density, site_radius, false, battle.naval);
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, tree_density, site_radius, site_radius > 1, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 	
@@ -942,6 +976,7 @@ void Game::prepare_battle()
 	// add entities
 	battle.add_trees();
 	battle.add_buildings();
+	battle.add_walls();
 	battle.add_creatures(&modular);
 
 	battle.skybox.prepare();

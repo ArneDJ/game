@@ -34,6 +34,7 @@ void Module::load(const std::string &modname)
 	load_file(vegetation, path + "vegetation.json");
 	load_file(atmosphere, path + "atmosphere.json");
 	load_file(palette, path + "palette.json");
+	load_file(fortifications, path + "fortifications.json");
 }
 
 template <class T>

@@ -227,6 +227,44 @@ struct building_t {
 	}
 };
 
+struct wall_t {
+	std::string segment;
+	std::string segment_both;
+	std::string segment_left;
+	std::string segment_right;
+	std::string tower;
+	std::string ramp;
+	std::string gate;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(segment),
+			CEREAL_NVP(segment_both),
+			CEREAL_NVP(segment_left),
+			CEREAL_NVP(segment_right),
+			CEREAL_NVP(tower),
+			CEREAL_NVP(ramp),
+			CEREAL_NVP(gate)
+		);
+	}
+};
+
+struct fortifications_t {
+	wall_t wood;
+	wall_t stone;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(wood),
+			CEREAL_NVP(stone)
+		);
+	}
+};
+
 struct ragdoll_bone_import_t {
 	std::vector<std::string> targets;
 	float radius = 1.f;
@@ -307,6 +345,7 @@ public:
 	atmosphere_t atmosphere;
 	palette_t palette;
 	std::vector<building_t> houses;
+	fortifications_t fortifications;
 public:
 	void load(const std::string &modname);
 private:
