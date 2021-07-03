@@ -1,7 +1,6 @@
 {
     "houses": [
         {
-            "model": "buildings/houses/cold/small.glb",
             "precipitation": {
                 "min": 0,
                 "max": 255
@@ -9,32 +8,14 @@
             "temperature": {
                 "min": 0,
                 "max": 100
-            }
-        },
-        {
-            "model": "buildings/houses/cold/medium.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
             },
-            "temperature": {
-                "min": 0,
-                "max": 100
-            }
+	    "models": [
+            	"buildings/houses/cold/small.glb",
+            	"buildings/houses/cold/medium.glb",
+            	"buildings/houses/cold/large.glb"
+	    ]
         },
         {
-            "model": "buildings/houses/cold/large.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
-            },
-            "temperature": {
-                "min": 0,
-                "max": 100
-            }
-        },
-        {
-            "model": "buildings/houses/mudbrick/small.glb",
             "precipitation": {
                 "min": 0,
                 "max": 255
@@ -42,32 +23,14 @@
             "temperature": {
                 "min": 200,
                 "max": 255
-            }
-        },
-        {
-            "model": "buildings/houses/mudbrick/medium.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
             },
-            "temperature": {
-                "min": 200,
-                "max": 255
-            }
+            "models": [
+		"buildings/houses/mudbrick/small.glb",
+            	"buildings/houses/mudbrick/medium.glb",
+            	"buildings/houses/mudbrick/large.glb"
+	    ]
         },
         {
-            "model": "buildings/houses/mudbrick/large.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
-            },
-            "temperature": {
-                "min": 200,
-                "max": 255
-            }
-        },
-        {
-            "model": "buildings/houses/temperate/small.glb",
             "precipitation": {
                 "min": 0,
                 "max": 255
@@ -75,40 +38,13 @@
             "temperature": {
                 "min": 100,
                 "max": 200
-            }
-        },
-        {
-            "model": "buildings/houses/temperate/medium.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
             },
-            "temperature": {
-                "min": 100,
-                "max": 200
-            }
-        },
-        {
-            "model": "buildings/houses/temperate/medium_wide.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
-            },
-            "temperature": {
-                "min": 100,
-                "max": 200
-            }
-        },
-        {
-            "model": "buildings/houses/temperate/large.glb",
-            "precipitation": {
-                "min": 0,
-                "max": 255
-            },
-            "temperature": {
-                "min": 100,
-                "max": 200
-            }
+            "models": [
+		"buildings/houses/temperate/small.glb",
+            	"buildings/houses/temperate/medium.glb",
+            	"buildings/houses/temperate/medium_wide.glb",
+            	"buildings/houses/temperate/large.glb"
+	    ]
         }
     ]
 }

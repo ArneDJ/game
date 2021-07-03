@@ -2,9 +2,6 @@
     "vegetation": {
         "trees": [
             {
-                "trunk": "trees/pine_tall/trunk.glb",
-                "leaves": "trees/pine_tall/leaves.glb",
-                "billboard": "trees/pine_tall/billboard.glb",
                 "precipitation": {
                     "min": 120,
                     "max": 255
@@ -12,25 +9,21 @@
                 "temperature": {
                     "min": 10,
                     "max": 150
-                }
-            },
-            {
-                "trunk": "trees/pine_broad/trunk.glb",
-                "leaves": "trees/pine_broad/leaves.glb",
-                "billboard": "trees/pine_broad/billboard.glb",
-                "precipitation": {
-                    "min": 100,
-                    "max": 255
                 },
-                "temperature": {
-                    "min": 10,
-                    "max": 150
-                }
+		"models": [
+			{
+				"trunk": "trees/pine_tall/trunk.glb",
+				"leaves": "trees/pine_tall/leaves.glb",
+				"billboard": "trees/pine_tall/billboard.glb"
+			},
+			{
+				"trunk": "trees/pine_broad/trunk.glb",
+				"leaves": "trees/pine_broad/leaves.glb",
+				"billboard": "trees/pine_broad/billboard.glb"
+			}
+		]
             },
       	    {
-                "trunk": "trees/beech/trunk.glb",
-                "leaves": "trees/beech/leaves.glb",
-                "billboard": "trees/beech/billboard.glb",
                 "precipitation": {
                     "min": 120,
                     "max": 255
@@ -38,12 +31,16 @@
                 "temperature": {
                     "min": 100,
                     "max": 255
-                }
+                },
+		"models": [
+			{
+				"trunk": "trees/beech/trunk.glb",
+				"leaves": "trees/beech/leaves.glb",
+				"billboard": "trees/beech/billboard.glb"
+			}
+		]
             },
       	    {
-                "trunk": "trees/palm_tall/trunk.glb",
-                "leaves": "trees/palm_tall/leaves.glb",
-                "billboard": "trees/palm_tall/billboard.glb",
                 "precipitation": {
                     "min": 0,
                     "max": 255
@@ -51,7 +48,14 @@
                 "temperature": {
                     "min": 200,
                     "max": 255
-                }
+                },
+		"models": [
+			{
+				"trunk": "trees/palm_tall/trunk.glb",
+				"leaves": "trees/palm_tall/leaves.glb",
+				"billboard": "trees/palm_tall/billboard.glb"
+			}
+		]
             }
         ],
         "grasses": [

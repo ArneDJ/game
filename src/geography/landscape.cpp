@@ -96,17 +96,22 @@ Landscape::Landscape(const module::Module *mod, uint16_t heightres)
 void Landscape::load_buildings()
 {
 	for (const auto &house_info : m_module->houses) {
-		auto model = MediaManager::load_model(house_info.model);
-		glm::vec3 size = model->bound_max - model->bound_min;
-		building_t house = {
-			model,
-			size,
-			house_info.temperature
-		};
-		houses.push_back(house);
+		building_group_t building_group;
+		building_group.temperature = house_info.temperature;
+		building_group.precipitation = house_info.precipitation;
+		for (const auto &model_info : house_info.models) {
+			auto model = MediaManager::load_model(model_info);
+			glm::vec3 size = model->bound_max - model->bound_min;
+			building_t house = {
+				model,
+				size
+			};
+			building_group.buildings.push_back(house);
+		}
+		// sort house types from largest to smallest
+		std::sort(building_group.buildings.begin(), building_group.buildings.end(), larger_building);
+		houses.push_back(building_group);
 	}
-	// sort house types from largest to smallest
-	std::sort(houses.begin(), houses.end(), larger_building);
 }
 	
 void Landscape::clear(void)
@@ -119,8 +124,10 @@ void Landscape::clear(void)
 
 	m_trees.clear();
 
-	for (auto &building : houses) {
-		building.transforms.clear();
+	for (auto &group : houses) {
+		for (auto &building : group.buildings) {
+			building.transforms.clear();
+		}
 	}
 	
 	m_walls.clear();
@@ -170,7 +177,7 @@ const std::vector<tree_t>& Landscape::get_trees(void) const
 	return m_trees;
 }
 
-const std::vector<building_t>& Landscape::get_houses(void) const
+const std::vector<building_group_t>& Landscape::get_houses(void) const
 {
 	return houses;
 }
@@ -187,15 +194,18 @@ const util::Image<uint8_t>* Landscape::get_sitemasks(void) const
 
 void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperature, uint8_t tree_density) 
 {
-	printf("temperature %d\n", temperature);
 	// add valid trees
 	for (const auto &tree_info : m_module->vegetation.trees) {
+		// find out if tree species is suitable to local climate
 		if (within_bounds(precipitation, tree_info.precipitation) && within_bounds(temperature, tree_info.temperature)) {
-			tree_t tree;
-			tree.trunk = tree_info.trunk;
-			tree.leaves = tree_info.leaves;
-			tree.billboard = tree_info.billboard;
-			m_trees.push_back(tree);
+			// add the tree models to the pool
+			for (const auto &model : tree_info.models) {
+				tree_t tree;
+				tree.trunk = model.trunk;
+				tree.leaves = model.leaves;
+				tree.billboard = model.billboard;
+				m_trees.push_back(tree);
+			}
 		}
 	}
 
@@ -412,9 +422,12 @@ void Landscape::place_houses(bool walled, uint8_t radius, int32_t seed, uint8_t 
 	}
 
 	std::vector<building_t*> buildings_pool;
-	for (auto &house : houses) {
-		if (within_bounds(temperature, house.temperature)) {
-			buildings_pool.push_back(&house);	
+	for (auto &group : houses) {
+		if (within_bounds(temperature, group.temperature)) {
+			for (auto &building : group.buildings) {
+				buildings_pool.push_back(&building);	
+			}
+			break; // pick the first valid group
 		}
 	}
 	//printf("n house templates %d\n", houses.size());

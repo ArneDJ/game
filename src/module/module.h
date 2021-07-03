@@ -90,13 +90,13 @@ struct graph_parameters_t {
 
 struct worldgen_parameters_t {
 	// heightmap
-	struct height_parameters_t height;
+	height_parameters_t height;
 	// temperatures
-	struct temperature_parameters_t temperature;
+	temperature_parameters_t temperature;
 	// rain
-	struct rain_parameters_t rain;
+	rain_parameters_t rain;
 	// graph data
-	struct graph_parameters_t graph;
+	graph_parameters_t graph;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -134,9 +134,9 @@ struct weather_t {
 };
 
 struct atmosphere_t {
-	struct weather_t dawn;
-	struct weather_t day;
-	struct weather_t dusk;
+	weather_t dawn;
+	weather_t day;
+	weather_t dusk;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -145,12 +145,10 @@ struct atmosphere_t {
 	}
 };
 
-struct tree_t {
+struct tree_model_t {
 	std::string trunk;
 	std::string leaves;
 	std::string billboard;
-	struct bounds_t<uint8_t> precipitation;
-	struct bounds_t<uint8_t> temperature;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -158,7 +156,21 @@ struct tree_t {
 		archive(
 			CEREAL_NVP(trunk),
 			CEREAL_NVP(leaves),
-			CEREAL_NVP(billboard),
+			CEREAL_NVP(billboard)
+		);
+	}
+};
+
+struct tree_t {
+	bounds_t<uint8_t> precipitation;
+	bounds_t<uint8_t> temperature;
+	std::vector<tree_model_t> models;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(models),
 			CEREAL_NVP(precipitation),
 			CEREAL_NVP(temperature)
 		);
@@ -167,8 +179,8 @@ struct tree_t {
 
 struct grass_t {
 	std::string model;
-	struct bounds_t<uint8_t> precipitation;
-	struct bounds_t<uint8_t> temperature;
+	bounds_t<uint8_t> precipitation;
+	bounds_t<uint8_t> temperature;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -212,17 +224,17 @@ struct palette_t {
 };
 
 struct building_t {
-	std::string model;
-	struct bounds_t<uint8_t> precipitation;
-	struct bounds_t<uint8_t> temperature;
+	bounds_t<uint8_t> precipitation;
+	bounds_t<uint8_t> temperature;
+	std::vector<std::string> models;
 
 	template <class Archive>
 	void serialize(Archive &archive)
 	{
 		archive(
-			CEREAL_NVP(model),
 			CEREAL_NVP(precipitation),
-			CEREAL_NVP(temperature)
+			CEREAL_NVP(temperature),
+			CEREAL_NVP(models)
 		);
 	}
 };
@@ -304,8 +316,8 @@ struct ragdoll_constraint_import_t {
 struct ragdoll_joint_import_t {
 	std::string type;
 	glm::vec3 limit;
-	struct ragdoll_constraint_import_t parent;
-	struct ragdoll_constraint_import_t child;
+	ragdoll_constraint_import_t parent;
+	ragdoll_constraint_import_t child;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -320,8 +332,8 @@ struct ragdoll_joint_import_t {
 };
 
 struct ragdoll_armature_import_t {
-	std::vector<struct ragdoll_bone_import_t> bones;
-	std::vector<struct ragdoll_joint_import_t> joints;
+	std::vector<ragdoll_bone_import_t> bones;
+	std::vector<ragdoll_joint_import_t> joints;
 
 	template <class Archive>
 	void serialize(Archive &archive)

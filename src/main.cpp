@@ -166,8 +166,6 @@ private:
 	
 void Campaign::init(const util::Window *window, const shader_group_t *shaders)
 {
-	//atlas = std::make_unique<Atlas>();
-
 	const auto terragen = atlas.get_terragen();
 	worldmap = std::make_unique<gfx::Worldmap>(atlas.SCALE, &terragen->heightmap, atlas.get_watermap(), &terragen->rainmap, atlas.get_materialmasks(), atlas.get_factions());
 
@@ -485,32 +483,34 @@ void Battle::add_creatures(const module::Module *mod)
 void Battle::add_buildings()
 {
 	// add houses
-	const auto houses = landscape->get_houses();
-	for (const auto &house : houses) {
-		std::vector<const Entity*> house_entities;
-		const gfx::Model *model = house.model;
-		// get collision shape
-		std::vector<glm::vec3> positions;
-		std::vector<uint16_t> indices;
-		uint16_t offset = 0;
-		for (const auto &mesh : model->collision_trimeshes) {
-			for (const auto &pos : mesh.positions) {
-				positions.push_back(pos);
+	const auto house_groups = landscape->get_houses();
+	for (const auto &group : house_groups) {
+		for (const auto &house : group.buildings) {
+			std::vector<const Entity*> house_entities;
+			const gfx::Model *model = house.model;
+			// get collision shape
+			std::vector<glm::vec3> positions;
+			std::vector<uint16_t> indices;
+			uint16_t offset = 0;
+			for (const auto &mesh : model->collision_trimeshes) {
+				for (const auto &pos : mesh.positions) {
+					positions.push_back(pos);
+				}
+				for (const auto &index : mesh.indices) {
+					indices.push_back(index + offset);
+				}
+				offset = positions.size();
 			}
-			for (const auto &index : mesh.indices) {
-				indices.push_back(index + offset);
+			btCollisionShape *shape = physicsman.add_mesh(positions, indices);
+			// create entities
+			for (const auto &transform : house.transforms) {
+				StationaryObject *stationary = new StationaryObject { transform.position, transform.rotation, shape };
+				stationaries.push_back(stationary);
+				house_entities.push_back(stationary);
 			}
-			offset = positions.size();
-		}
-		btCollisionShape *shape = physicsman.add_mesh(positions, indices);
-		// create entities
-		for (const auto &transform : house.transforms) {
-			StationaryObject *stationary = new StationaryObject { transform.position, transform.rotation, shape };
-			stationaries.push_back(stationary);
-			house_entities.push_back(stationary);
-		}
 
-		ordinary->add_object(model, house_entities);
+			ordinary->add_object(model, house_entities);
+		}
 	}
 }
 	
@@ -934,7 +934,7 @@ void Game::prepare_battle()
 			case geography::TOWN: site_radius = 2; break;
 			}
 			*/
-			site_radius = 3;
+			site_radius = tily->river ? 3 : 1;
 		}
 	}
 
@@ -948,7 +948,7 @@ void Game::prepare_battle()
 		tree_density = (precipitation > 64) ? 64 : precipitation;
 	}
 
-	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, tree_density, site_radius, site_radius > 1, battle.naval);
+	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, tree_density, site_radius, true, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
 	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
 	

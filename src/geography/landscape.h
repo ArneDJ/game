@@ -3,8 +3,13 @@ namespace geography {
 struct building_t {
 	const gfx::Model *model;
 	glm::vec3 bounds;
-	module::bounds_t<uint8_t> temperature;
 	std::vector<geom::transformation_t> transforms;
+};
+
+struct building_group_t {
+	module::bounds_t<uint8_t> temperature;
+	module::bounds_t<uint8_t> precipitation;
+	std::vector<building_t> buildings;
 };
 
 struct wall_t {
@@ -38,7 +43,7 @@ public:
 	const util::Image<uint8_t>* get_normalmap(void) const;
 	const util::Image<uint8_t>* get_sitemasks(void) const;
 	const std::vector<tree_t>& get_trees(void) const;
-	const std::vector<building_t>& get_houses(void) const;
+	const std::vector<building_group_t>& get_houses(void) const;
 	const std::vector<wall_t>& get_walls() const { return m_walls; };
 	float sample_heightmap(const glm::vec2 &real) const;
 private:
@@ -53,7 +58,7 @@ private:
 	const module::Module *m_module;
 private:
 	std::vector<tree_t> m_trees;
-	std::vector<building_t> houses;
+	std::vector<building_group_t> houses;
 	std::vector<wall_t> m_walls;
 private:
 	void gen_heightmap(int32_t local_seed, float amplitude);
