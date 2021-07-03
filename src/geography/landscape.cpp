@@ -273,7 +273,7 @@ void Landscape::gen_forest(int32_t seed, uint8_t precipitation, uint8_t temperat
 			if (slope > 0.15f) {
 				continue;
 			}
-			position.y -= 2.f;
+			position.y -= 1.f;
 			glm::quat rotation = glm::angleAxis(glm::radians(rot_dist(gen)), glm::vec3(0.f, 1.f, 0.f));
 			// to give the appearance that mountains are larger than they really are make the trees smaller if they are on higher elevation
 			float scale = scale_dist(gen);

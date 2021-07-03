@@ -37,6 +37,11 @@
 				"trunk": "trees/beech/trunk.glb",
 				"leaves": "trees/beech/leaves.glb",
 				"billboard": "trees/beech/billboard.glb"
+			},
+			{
+				"trunk": "trees/beech_broad/trunk.glb",
+				"leaves": "trees/beech_broad/leaves.glb",
+				"billboard": "trees/beech_broad/billboard.glb"
 			}
 		]
             },
@@ -54,6 +59,11 @@
 				"trunk": "trees/palm_tall/trunk.glb",
 				"leaves": "trees/palm_tall/leaves.glb",
 				"billboard": "trees/palm_tall/billboard.glb"
+			},
+			{
+				"trunk": "trees/acacia/trunk.glb",
+				"leaves": "trees/acacia/leaves.glb",
+				"billboard": "trees/acacia/billboard.glb"
 			}
 		]
             }
