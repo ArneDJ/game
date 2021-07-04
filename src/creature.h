@@ -5,7 +5,7 @@ enum creature_animation_t {
 	CA_RUN,
 	CA_FALLING,
 	CA_LEFT_STRAFE,
-	CA_RIGHT_STRAFE,
+	CA_RIGHT_STRAFE
 };
 
 enum creature_movement_t {
@@ -13,6 +13,8 @@ enum creature_movement_t {
 	CM_LEFT,
 	CM_RIGHT,
 	CM_BACKWARD,
+	CM_LEFT_FORWARD,
+	CM_RIGHT_FORWARD
 };
 
 class Creature : public Entity {

@@ -61,10 +61,10 @@ void Saver::save(const std::string &filename, const geography::Atlas &atlas, con
 				if (!tile) { continue; }
 				if (!tile->header) { continue; }
 				const dtMeshHeader *tileheader = tile->header;
-				struct nav_tilemesh_record navrecord;
+				struct navigation_tile_record navrecord;
 				navrecord.x = tileheader->x;
 				navrecord.y = tileheader->y;
-				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data  + tile->dataSize);
+				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data + tile->dataSize);
 				navmesh_land.tilemeshes.push_back(navrecord);
 			}
 		}
@@ -86,10 +86,10 @@ void Saver::save(const std::string &filename, const geography::Atlas &atlas, con
 				if (!tile) { continue; }
 				if (!tile->header) { continue; }
 				const dtMeshHeader *tileheader = tile->header;
-				struct nav_tilemesh_record navrecord;
+				struct navigation_tile_record navrecord;
 				navrecord.x = tileheader->x;
 				navrecord.y = tileheader->y;
-				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data  + tile->dataSize);
+				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data + tile->dataSize);
 				navmesh_sea.tilemeshes.push_back(navrecord);
 			}
 		}

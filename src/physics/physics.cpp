@@ -163,9 +163,14 @@ void PhysicsManager::add_heightfield(const util::Image<uint8_t> *image, const gl
 	m_heightfields.push_back(std::move(heightfield));
 }
 
-void PhysicsManager::insert_ghost_object(btGhostObject *ghost_object)
+void PhysicsManager::insert_ghost_object(btGhostObject *object)
 {
-	m_world->addCollisionObject(ghost_object);
+	m_world->addCollisionObject(object);
+}
+
+void PhysicsManager::remove_ghost_object(btGhostObject *object)
+{
+	m_world->removeCollisionObject(object);
 }
 
 void PhysicsManager::add_object(btCollisionObject *object, int groups, int masks)

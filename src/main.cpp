@@ -1,5 +1,6 @@
 #include <memory>
 #include <iostream>
+#include <fstream>
 #include <unordered_map>
 #include <chrono>
 #include <map>
@@ -31,6 +32,7 @@
 #include "extern/cereal/types/vector.hpp"
 #include "extern/cereal/types/memory.hpp"
 #include "extern/cereal/archives/json.hpp"
+#include "extern/cereal/archives/binary.hpp"
 
 #include "extern/ozz/animation/runtime/animation.h"
 #include "extern/ozz/animation/runtime/local_to_model_job.h"
@@ -93,6 +95,7 @@
 #include "geography/landscape.h"
 #include "save.h"
 #include "army.h"
+#include "campaign.h"
 //#include "util/sound.h" // TODO replace SDL_Mixer with OpenAL
 
 enum class game_state {
@@ -126,6 +129,12 @@ struct shader_group_t {
 	gfx::Shader copy;
 };
 
+enum class campaign_scroll_status {
+	NONE,
+	FORWARD,
+	BACKWARD
+};
+
 class Campaign {
 public:
 	long seed;
@@ -143,14 +152,21 @@ public:
 	// entities
 	Entity marker;
 	std::unique_ptr<Army> player;
-	std::vector<SettlementNode*> settlements;
+	std::vector<std::unique_ptr<SettlementNode>> settlement_nodes;
+	std::vector<settlement_t> settlements;
 	std::vector<Entity*> entities;
 	bool show_factions = false;
 public:
 	void init(const util::Window *window, const shader_group_t *shaders);
+public:
+	void save(const std::string &filepath);
+	void load(const std::string &filepath);
+public:
+	void add_heightfields();
 	void load_assets();
 	void add_armies();
 	void add_trees();
+	void spawn_settlements();
 	void add_settlements();
 	void cleanup();
 	void teardown();
@@ -160,6 +176,11 @@ public:
 	void update_faction_map();
 	void offset_entities();
 	void change_player_target(const glm::vec3 &ray);
+private:
+	navigation_mesh_record m_navmesh_land;
+	navigation_mesh_record m_navmesh_sea;
+	float m_scroll_mix = 0.f;
+	enum campaign_scroll_status m_scroll_status = campaign_scroll_status::NONE;
 private:
 	void collide_camera();
 };
@@ -191,6 +212,16 @@ void Campaign::load_assets()
 	worldmap->add_material("WATER_BUMPMAP", MediaManager::load_texture("ground/water_normal.dds"));
 }
 	
+void Campaign::add_heightfields()
+{
+	const auto terragen = atlas.get_terragen();
+
+	int group = physics::COLLISION_GROUP_HEIGHTMAP;
+	int masks = physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY;
+	collisionman.add_heightfield(&terragen->heightmap, atlas.SCALE, group, masks);
+	collisionman.add_heightfield(atlas.get_watermap(), atlas.SCALE, group, masks);
+}
+	
 void Campaign::add_armies()
 {
 	player->teleport(glm::vec2(2010.f, 2010.f));
@@ -217,30 +248,26 @@ void Campaign::add_trees()
 	creatures->add_object(MediaManager::load_model("map/pines.glb"), ents);
 }
 
-void Campaign::add_settlements()
+void Campaign::spawn_settlements()
 {
-	btCollisionShape *shape = new btSphereShape(5.f);
-	collisionman.add_shape(shape);
-
 	for (const auto &tile : atlas.get_worldgraph()->tiles) {
 		if (tile.feature == geography::tile_feature::SETTLEMENT) {
 			glm::vec3 position = { tile.center.x, 0.f, tile.center.y };
 			glm::vec3 origin = { tile.center.x, atlas.SCALE.y, tile.center.y };
 			auto result = collisionman.cast_ray(origin, position, physics::COLLISION_GROUP_HEIGHTMAP);
 			position.y = result.point.y;
-			SettlementNode *node = new SettlementNode { position, glm::quat(1.f, 0.f, 0.f, 0.f), shape, tile.index };
-			settlements.push_back(node);
-			collisionman.add_ghost_object(node->ghost_object, physics::COLLISION_GROUP_GHOSTS, physics::COLLISION_GROUP_GHOSTS);
+			geom::transformation_t transform = {
+				position,
+				{ 1.f, 0.f, 0.f, 0.f },
+				1.f
+			};
+			settlement_t settlement;
+			settlement.tileID = tile.index;
+			settlement.transform = transform;
+
+			settlements.push_back(settlement);
 		}
 	}
-
-	std::vector<const Entity*> ents;
-
-	for (int i = 0; i < settlements.size(); i++) {
-		ents.push_back(settlements[i]);
-	}
-
-	ordinary->add_object(MediaManager::load_model("map/fort.glb"), ents);
 
 	// name settlements
 	std::ifstream t("modules/native/names/town.txt");
@@ -253,9 +280,31 @@ void Campaign::add_settlements()
 			pattern.append(1, c);
 		}
 	}
-	NameGen::Generator towngen(pattern.c_str());
-	for (const auto &ent : settlements) {
-		labelman->add(towngen.toString(), glm::vec3(1.f), ent->position + glm::vec3(0.f, 8.f, 0.f));
+	//NameGen::Generator namegen(pattern.c_str());
+	NameGen::Generator namegen(MIDDLE_EARTH);
+	for (auto &settlement : settlements) {
+		settlement.name = namegen.toString();
+	}
+}
+
+void Campaign::add_settlements()
+{
+	for (const auto &settlement : settlements) {
+		auto node = std::make_unique<SettlementNode>(settlement.transform.position, settlement.transform.rotation, settlement.tileID);
+		collisionman.add_ghost_object(node->ghost_object.get(), physics::COLLISION_GROUP_GHOSTS, physics::COLLISION_GROUP_GHOSTS);
+		settlement_nodes.push_back(std::move(node));
+	}
+
+	std::vector<const Entity*> ents;
+	for (int i = 0; i < settlement_nodes.size(); i++) {
+		ents.push_back(settlement_nodes[i].get());
+	}
+
+	ordinary->add_object(MediaManager::load_model("map/fort.glb"), ents);
+
+		// labels
+	for (const auto &settlement : settlements) {
+		labelman->add(settlement.name, glm::vec3(1.f), settlement.transform.position + glm::vec3(0.f, 8.f, 0.f));
 	}
 }
 	
@@ -266,9 +315,11 @@ void Campaign::cleanup()
 	}
 	entities.clear();
 
-	for (int i = 0; i < settlements.size(); i++) {
-		delete settlements[i];
+	for (auto &node : settlement_nodes) {
+		collisionman.remove_ghost_object(node->ghost_object.get());
 	}
+	settlement_nodes.clear();
+
 	settlements.clear();
 
 	labelman->clear();
@@ -287,6 +338,96 @@ void Campaign::teardown()
 	skybox.teardown();
 
 	collisionman.clear();
+}
+
+void Campaign::save(const std::string &filepath)
+{
+	// save the campaign navigation data
+	{
+		m_navmesh_land.tilemeshes.clear();
+
+		const dtNavMesh *navmesh = landnav.get_navmesh();
+		if (navmesh) {
+			const dtNavMeshParams *navparams = navmesh->getParams();
+			m_navmesh_land.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
+			m_navmesh_land.tilewidth = navparams->tileWidth;
+			m_navmesh_land.tileheight = navparams->tileHeight;
+			m_navmesh_land.maxtiles = navparams->maxTiles;
+			m_navmesh_land.maxpolys = navparams->maxPolys;
+			for (int i = 0; i < navmesh->getMaxTiles(); i++) {
+				const dtMeshTile *tile = navmesh->getTile(i);
+				if (!tile) { continue; }
+				if (!tile->header) { continue; }
+				const dtMeshHeader *tileheader = tile->header;
+				struct navigation_tile_record navrecord;
+				navrecord.x = tileheader->x;
+				navrecord.y = tileheader->y;
+				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data + tile->dataSize);
+				m_navmesh_land.tilemeshes.push_back(navrecord);
+			}
+		}
+	}
+
+	{
+		m_navmesh_sea.tilemeshes.clear();
+
+		const dtNavMesh *navmesh = seanav.get_navmesh();
+		if (navmesh) {
+			const dtNavMeshParams *navparams = navmesh->getParams();
+			m_navmesh_sea.origin = { navparams->orig[0], navparams->orig[1], navparams->orig[2] };
+			m_navmesh_sea.tilewidth = navparams->tileWidth;
+			m_navmesh_sea.tileheight = navparams->tileHeight;
+			m_navmesh_sea.maxtiles = navparams->maxTiles;
+			m_navmesh_sea.maxpolys = navparams->maxPolys;
+			for (int i = 0; i < navmesh->getMaxTiles(); i++) {
+				const dtMeshTile *tile = navmesh->getTile(i);
+				if (!tile) { continue; }
+				if (!tile->header) { continue; }
+				const dtMeshHeader *tileheader = tile->header;
+				struct navigation_tile_record navrecord;
+				navrecord.x = tileheader->x;
+				navrecord.y = tileheader->y;
+				navrecord.data.insert(navrecord.data.end(), tile->data, tile->data + tile->dataSize);
+				m_navmesh_sea.tilemeshes.push_back(navrecord);
+			}
+		}
+	}
+
+	std::ofstream stream(filepath, std::ios::binary);
+
+	if (stream.is_open()) {
+		cereal::BinaryOutputArchive archive(stream);
+		archive(atlas, seed, m_navmesh_land, m_navmesh_sea, settlements);
+	} else {
+		LOG(ERROR, "Save") << "save file " + filepath + "could not be saved";
+	}
+}
+
+void Campaign::load(const std::string &filepath)
+{
+	auto worldgraph = atlas.get_worldgraph();
+
+	std::ifstream stream(filepath, std::ios::binary);
+
+	if (stream.is_open()) {
+		cereal::BinaryInputArchive archive(stream);
+		archive(atlas, seed, m_navmesh_land, m_navmesh_sea, settlements);
+	} else {
+		LOG(ERROR, "Save") << "save file " + filepath + " could not be loaded";
+		return;
+	}
+
+	// load campaign the navigation data
+	landnav.alloc(m_navmesh_land.origin, m_navmesh_land.tilewidth, m_navmesh_land.tileheight, m_navmesh_land.maxtiles, m_navmesh_land.maxpolys);
+	for (const auto &tilemesh : m_navmesh_land.tilemeshes) {
+		landnav.load_tilemesh(tilemesh.x, tilemesh.y, tilemesh.data);
+	}
+	seanav.alloc(m_navmesh_sea.origin, m_navmesh_sea.tilewidth, m_navmesh_sea.tileheight, m_navmesh_sea.maxtiles, m_navmesh_sea.maxpolys);
+	for (const auto &tilemesh : m_navmesh_sea.tilemeshes) {
+		seanav.load_tilemesh(tilemesh.x, tilemesh.y, tilemesh.data);
+	}
+
+	worldgraph->reload_references();
 }
 	
 void Campaign::collide_camera()
@@ -322,15 +463,32 @@ void Campaign::update_camera(const util::Input *input, float sensitivity, float 
 	if (input->key_down(SDLK_a)) { camera.move_left(modifier); }
 
 	// scroll camera forward or backward
-	camera.update();
+	// smooth scroll
 	int mousewheel = input->mousewheel_y();
+
 	if (mousewheel > 0) {
-		camera.move_forward(10.0*mousewheel*modifier);
+		m_scroll_status = campaign_scroll_status::FORWARD;
 	}
 	if (mousewheel < 0) {
-		camera.move_backward(10.0*abs(mousewheel)*modifier);
+		m_scroll_status = campaign_scroll_status::BACKWARD;
+	}
+
+	if (m_scroll_status != campaign_scroll_status::NONE) {
+		m_scroll_mix += delta;
+		float smooth = glm::mix(0.f, 2.f * modifier, m_scroll_mix);
+		if (m_scroll_status == campaign_scroll_status::BACKWARD) {
+			camera.move_backward(smooth);
+		} else {
+			camera.move_forward(smooth);
+		}
+		if (m_scroll_mix > 1.f) {
+			m_scroll_status = campaign_scroll_status::NONE;
+			m_scroll_mix = 0.f;
+		}
 	}
 		
+	camera.update();
+
 	collide_camera();
 }
 	
@@ -356,11 +514,12 @@ void Campaign::offset_entities()
 	
 void Campaign::update_faction_map()
 {
+	const float ratio = camera.position.y / atlas.SCALE.y;
+	show_factions = (ratio > 2.f);
 	// map faction mode
 	float colormix = 0.f;
 	if (show_factions) {
-		colormix = camera.position.y / atlas.SCALE.y;
-		colormix = glm::smoothstep(0.5f, 2.f, colormix);
+		colormix = glm::smoothstep(0.5f, 2.f, ratio);
 		if (colormix < 0.25f) {
 			colormix = 0.f;
 		}
@@ -645,9 +804,9 @@ private:
 	bool running;
 	bool debugmode;
 	module::Module modular;
+	std::string save_directory;
 	enum game_state state;
 	game_settings_t settings;
-	Saver saver;
 	util::Window window;
 	util::Input input;
 	util::Timer timer;
@@ -756,7 +915,7 @@ bool Game::init()
 	// find the save directory on the system
 	char *savepath = SDL_GetPrefPath("archeon", "saves");
 	if (savepath) {
-		saver.change_directory(savepath);
+		save_directory = savepath;
 		SDL_free(savepath);
 	} else {
 		LOG(ERROR, "Save") << "could not find user pref path";
@@ -792,8 +951,8 @@ void Game::load_shaders()
 	shaders.billboard.compile("shaders/billboard.frag", GL_FRAGMENT_SHADER);
 	shaders.billboard.link();
 
-	shaders.tree.compile("shaders/tree.vert", GL_VERTEX_SHADER);
-	shaders.tree.compile("shaders/tree.frag", GL_FRAGMENT_SHADER);
+	shaders.tree.compile("shaders/battle/trees.vert", GL_VERTEX_SHADER);
+	shaders.tree.compile("shaders/battle/trees.frag", GL_FRAGMENT_SHADER);
 	shaders.tree.link();
 
 	shaders.font.compile("shaders/font.vert", GL_VERTEX_SHADER);
@@ -1114,17 +1273,25 @@ void Game::new_campaign()
 	const auto sea_navsoup = campaign.atlas.get_navsoup();
 	campaign.seanav.build(sea_navsoup.vertices, sea_navsoup.indices);
 	
-	saver.save("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
-	
+	campaign.add_heightfields();
+
+	campaign.spawn_settlements();
+
+	campaign.save(save_directory + "game.save");
+
 	prepare_campaign();
+
 	run_campaign();
 }
 	
 void Game::load_campaign()
 {
-	saver.load("game.save", campaign.atlas, &campaign.landnav, &campaign.seanav, campaign.seed);
+	campaign.load(save_directory + "game.save");
+
+	campaign.add_heightfields();
 
 	prepare_campaign();
+
 	run_campaign();
 }
 
@@ -1141,9 +1308,6 @@ void Game::prepare_campaign()
 	campaign.worldmap->reload_temperature(&terragen->tempmap);
 	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0002f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
 	campaign.worldmap->change_groundcolors(modular.palette.grass.min, modular.palette.grass.max, modular.palette.rock_base.min, modular.palette.rock_base.max, modular.palette.rock_desert.min, modular.palette.rock_desert.max);
-
-	campaign.collisionman.add_heightfield(&terragen->heightmap, campaign.atlas.SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY);
-	campaign.collisionman.add_heightfield(campaign.atlas.get_watermap(), campaign.atlas.SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_RAY);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };
 	campaign.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
@@ -1196,7 +1360,9 @@ void Game::run_campaign()
 		shaders.object.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 		shaders.object.uniform_vec3("CAM_POS", campaign.camera.position);
 		shaders.object.uniform_vec3("SUN_POS", glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
-		campaign.creatures->display(&campaign.camera);
+		if (!campaign.show_factions) {
+			campaign.creatures->display(&campaign.camera);
+		}
 
 		campaign.skybox.display(&campaign.camera);
 		

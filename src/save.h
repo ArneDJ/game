@@ -1,6 +1,6 @@
 
 // store navigation data
-struct nav_tilemesh_record {
+struct navigation_tile_record {
 	int x;
 	int y;
 	std::vector<uint8_t> data;
@@ -12,13 +12,13 @@ struct nav_tilemesh_record {
 	}
 };
 
-struct navmesh_record {
+struct navigation_mesh_record {
 	glm::vec3 origin; 
 	float tilewidth; 
 	float tileheight; 
 	int maxtiles; 
 	int maxpolys;
-	std::vector<struct nav_tilemesh_record> tilemeshes;
+	std::vector<struct navigation_tile_record> tilemeshes;
 
 	template <class Archive>
 	void serialize(Archive &archive)
@@ -34,6 +34,6 @@ public:
 	void load(const std::string &filename, geography::Atlas &atlas, util::Navigation *landnav, util::Navigation *seanav, long &seed);
 private:
 	std::string directory;
-	struct navmesh_record navmesh_land;
-	struct navmesh_record navmesh_sea;
+	struct navigation_mesh_record navmesh_land;
+	struct navigation_mesh_record navmesh_sea;
 };

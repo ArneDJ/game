@@ -726,7 +726,7 @@ const std::vector<geom::transformation_t>& Atlas::get_trees() const
 {
 	return trees;
 }
-	
+
 const tile_t* Atlas::tile_at_position(const glm::vec2 &position) const
 {
 	auto result = mapfield.index_in_field(position);

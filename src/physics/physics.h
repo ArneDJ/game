@@ -36,6 +36,7 @@ public:
 	void insert_body(btRigidBody *body);
 	void remove_body(btRigidBody *body);
 	void insert_ghost_object(btGhostObject *ghost_object);
+	void remove_ghost_object(btGhostObject *object);
 	void clear();
 	//
 	ray_result_t cast_ray(const glm::vec3 &origin, const glm::vec3 &end, int masks = 0);
