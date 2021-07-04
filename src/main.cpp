@@ -135,6 +135,25 @@ enum class campaign_scroll_status {
 	BACKWARD
 };
 
+struct battle_info_t {
+	uint32_t tileID = 0; // the tile where the battle is fought
+	uint32_t settlementID = 0; // settlement if present
+	int32_t local_seed = 0;
+	uint8_t precipitation = 0;
+	uint8_t temperature = 0;
+	uint8_t tree_density = 0;
+	uint8_t site_radius = 0; // radius of the town if present
+	bool fortified = false; // walls present
+	// local terrain data
+	float amplitude = 0.f; // local terrain amplitude
+	glm::vec3 regolith_color = {};
+	glm::vec3 rock_color = {};
+	// weather and atmosphere
+	float fog_factor = 0.0005f;
+	glm::vec3 ambiance_color = { 1.f, 1.f, 1.f };
+	glm::vec3 sun_position = { 0.f, 1.f, 0.f };
+};
+
 class Campaign {
 public:
 	long seed;
@@ -151,11 +170,12 @@ public:
 	gfx::Skybox skybox;
 	// entities
 	Entity marker;
-	std::unique_ptr<Army> player;
+	std::unique_ptr<ArmyNode> player;
 	std::vector<std::unique_ptr<SettlementNode>> settlement_nodes;
-	std::vector<settlement_t> settlements;
+	std::unordered_map<uint32_t, settlement_t> settlements;
 	std::vector<Entity*> entities;
 	bool show_factions = false;
+	battle_info_t battle_info;
 public:
 	void init(const util::Window *window, const shader_group_t *shaders);
 public:
@@ -179,7 +199,8 @@ public:
 private:
 	navigation_mesh_record m_navmesh_land;
 	navigation_mesh_record m_navmesh_sea;
-	float m_scroll_mix = 0.f;
+	float m_scroll_time = 0.f;
+	float m_scroll_speed = 1.f;
 	enum campaign_scroll_status m_scroll_status = campaign_scroll_status::NONE;
 private:
 	void collide_camera();
@@ -194,7 +215,7 @@ void Campaign::init(const util::Window *window, const shader_group_t *shaders)
 	creatures = std::make_unique<gfx::RenderGroup>(&shaders->object);
 
 	glm::vec2 startpos = { 2010.f, 2010.f };
-	player = std::make_unique<Army>(startpos, 40.f);
+	player = std::make_unique<ArmyNode>(startpos, 40.f);
 	
 	skybox.init(window->width, window->height);
 	
@@ -265,7 +286,9 @@ void Campaign::spawn_settlements()
 			settlement.tileID = tile.index;
 			settlement.transform = transform;
 
-			settlements.push_back(settlement);
+			settlement.population = tile.river ? 3 : 1;
+
+			settlements[tile.index] = settlement;
 		}
 	}
 
@@ -283,14 +306,14 @@ void Campaign::spawn_settlements()
 	//NameGen::Generator namegen(pattern.c_str());
 	NameGen::Generator namegen(MIDDLE_EARTH);
 	for (auto &settlement : settlements) {
-		settlement.name = namegen.toString();
+		settlement.second.name = namegen.toString();
 	}
 }
 
 void Campaign::add_settlements()
 {
 	for (const auto &settlement : settlements) {
-		auto node = std::make_unique<SettlementNode>(settlement.transform.position, settlement.transform.rotation, settlement.tileID);
+		auto node = std::make_unique<SettlementNode>(settlement.second.transform.position, settlement.second.transform.rotation, settlement.second.tileID);
 		collisionman.add_ghost_object(node->ghost_object.get(), physics::COLLISION_GROUP_GHOSTS, physics::COLLISION_GROUP_GHOSTS);
 		settlement_nodes.push_back(std::move(node));
 	}
@@ -304,7 +327,7 @@ void Campaign::add_settlements()
 
 		// labels
 	for (const auto &settlement : settlements) {
-		labelman->add(settlement.name, glm::vec3(1.f), settlement.transform.position + glm::vec3(0.f, 8.f, 0.f));
+		labelman->add(settlement.second.name, glm::vec3(1.f), settlement.second.transform.position + glm::vec3(0.f, 8.f, 0.f));
 	}
 }
 	
@@ -468,22 +491,31 @@ void Campaign::update_camera(const util::Input *input, float sensitivity, float 
 
 	if (mousewheel > 0) {
 		m_scroll_status = campaign_scroll_status::FORWARD;
+		m_scroll_time = 1.f;
+		m_scroll_speed += 0.5f;
 	}
 	if (mousewheel < 0) {
 		m_scroll_status = campaign_scroll_status::BACKWARD;
+		m_scroll_time = 1.f;
+		m_scroll_speed += 0.5f;
 	}
+			
+	m_scroll_speed = glm::clamp(m_scroll_speed, 1.f, 2.f);
 
+	// reset
 	if (m_scroll_status != campaign_scroll_status::NONE) {
-		m_scroll_mix += delta;
-		float smooth = glm::mix(0.f, 2.f * modifier, m_scroll_mix);
+		m_scroll_time -= 5.f * delta;
+
 		if (m_scroll_status == campaign_scroll_status::BACKWARD) {
-			camera.move_backward(smooth);
+			camera.move_backward(m_scroll_speed * modifier);
 		} else {
-			camera.move_forward(smooth);
+			camera.move_forward(m_scroll_speed * modifier);
 		}
-		if (m_scroll_mix > 1.f) {
+
+		if (m_scroll_time < 0.f) {
 			m_scroll_status = campaign_scroll_status::NONE;
-			m_scroll_mix = 0.f;
+			m_scroll_time = 0.f;
+			m_scroll_speed = 1.f;
 		}
 	}
 		
@@ -538,6 +570,8 @@ void Campaign::change_player_target(const glm::vec3 &ray)
 			SettlementNode *node = static_cast<SettlementNode*>(result.object->getUserPointer());
 			if (node) {
 				player->set_target_type(TARGET_SETTLEMENT);
+				battle_info.settlementID = node->get_tileref();
+				battle_info.tileID = node->get_tileref();
 			}
 		}
 		// get tile
@@ -817,8 +851,6 @@ private:
 	// graphics
 	gfx::RenderManager renderman;
 	shader_group_t shaders;
-	float fog_factor = 0.0005f; // TODO atmosphere
-	glm::vec3 ambiance_color = { 1.f, 1.f, 1.f };
 private:
 	void load_settings();
 	void set_opengl_states();
@@ -1053,7 +1085,7 @@ void Game::update_battle()
 	battle.camera.update();
 	
 	// update atmosphere
-	battle.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), ambiance_color, settings.clouds_enabled);
+	battle.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, campaign.battle_info.sun_position, campaign.battle_info.ambiance_color, settings.clouds_enabled);
 	battle.skybox.update(&battle.camera, timer.elapsed);
 }
 	
@@ -1086,14 +1118,13 @@ void Game::prepare_battle()
 		gen.discard(tileref);
 		std::uniform_int_distribution<int32_t> local_seed_distrib;
 		local_seed = local_seed_distrib(gen);
-		if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
-			/*
-			switch (tily->site) {
-			case geography::CASTLE: site_radius = 1; break;
-			case geography::TOWN: site_radius = 2; break;
-			}
-			*/
-			site_radius = tily->river ? 3 : 1;
+	}
+
+	if (campaign.player->get_target_type() == TARGET_SETTLEMENT) {
+		auto search = campaign.settlements.find(campaign.battle_info.settlementID);
+		if (search != campaign.settlements.end()) {
+			const auto &settlement = search->second;
+			site_radius = settlement.population;
 		}
 	}
 
@@ -1109,7 +1140,7 @@ void Game::prepare_battle()
 
 	battle.landscape->generate(campaign.seed, tileref, local_seed, amp, precipitation, temperature, tree_density, site_radius, true, battle.naval);
 	battle.terrain->reload(battle.landscape->get_heightmap(), battle.landscape->get_normalmap(), battle.landscape->get_sitemasks());
-	battle.terrain->change_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
+	battle.terrain->change_atmosphere(campaign.battle_info.sun_position, modular.atmosphere.day.horizon, campaign.battle_info.fog_factor, campaign.battle_info.ambiance_color);
 	
 	glm::vec3 rock_color = glm::mix(glm::vec3(0.8f), glm::vec3(1.f), temperature / 255.f);
 	
@@ -1140,7 +1171,7 @@ void Game::prepare_battle()
 
 	battle.skybox.prepare();
 
-	battle.forest->set_atmosphere(glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), modular.atmosphere.day.horizon, fog_factor, ambiance_color);
+	battle.forest->set_atmosphere(campaign.battle_info.sun_position, modular.atmosphere.day.horizon, campaign.battle_info.fog_factor, campaign.battle_info.ambiance_color);
 
 	if (battle.naval) {
 		battle.camera.position = { 3072.f, 270.f, 3072.f };
@@ -1243,7 +1274,7 @@ void Game::update_campaign()
 	campaign.offset_entities();
 
 	// update atmosphere
-	campaign.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)), ambiance_color, false);
+	campaign.skybox.colorize(modular.atmosphere.day.zenith, modular.atmosphere.day.horizon, campaign.battle_info.sun_position, campaign.battle_info.ambiance_color, false);
 	campaign.skybox.update(&campaign.camera, timer.elapsed);
 	
 	campaign.update_faction_map();
@@ -1297,6 +1328,8 @@ void Game::load_campaign()
 
 void Game::prepare_campaign()
 {
+	campaign.battle_info.sun_position = glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f));
+
 	campaign.camera.configure(0.1f, 9001.f, settings.window_width, settings.window_height, float(settings.FOV));
 	campaign.camera.project();
 
@@ -1306,7 +1339,7 @@ void Game::prepare_campaign()
 	const auto terragen = campaign.atlas.get_terragen();
 	campaign.worldmap->reload(&terragen->heightmap, campaign.atlas.get_watermap(), &terragen->rainmap, campaign.atlas.get_materialmasks(), campaign.atlas.get_factions());
 	campaign.worldmap->reload_temperature(&terragen->tempmap);
-	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0002f, glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
+	campaign.worldmap->change_atmosphere(modular.atmosphere.day.horizon, 0.0002f, campaign.battle_info.sun_position);
 	campaign.worldmap->change_groundcolors(modular.palette.grass.min, modular.palette.grass.max, modular.palette.rock_base.min, modular.palette.rock_base.max, modular.palette.rock_desert.min, modular.palette.rock_desert.max);
 
 	campaign.camera.position = { 2048.f, 200.f, 2048.f };
@@ -1359,7 +1392,7 @@ void Game::run_campaign()
 		shaders.object.uniform_float("FOG_FACTOR", 0.0002f);
 		shaders.object.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 		shaders.object.uniform_vec3("CAM_POS", campaign.camera.position);
-		shaders.object.uniform_vec3("SUN_POS", glm::normalize(glm::vec3(0.5f, 0.93f, 0.1f)));
+		shaders.object.uniform_vec3("SUN_POS", glm::normalize(campaign.battle_info.sun_position));
 		if (!campaign.show_factions) {
 			campaign.creatures->display(&campaign.camera);
 		}

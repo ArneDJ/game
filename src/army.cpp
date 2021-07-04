@@ -1,4 +1,5 @@
 #include <list>
+#include <memory>
 
 #include <glm/glm.hpp>
 #include <glm/vec3.hpp>
@@ -18,11 +19,6 @@ Pathfinder::Pathfinder(const glm::vec2 &start)
 	state = PATH_STATE_FINISHED;
 	radius = 0.f;
 	velocity = glm::vec2(0.f, 0.f);
-}
-
-Pathfinder::~Pathfinder(void) 
-{ 
-	nodes.clear(); 
 }
 
 void Pathfinder::reset(const std::list<glm::vec2> &pathway)
@@ -62,11 +58,11 @@ void Pathfinder::update(float delta, float speed)
 	}
 }
 
-glm::vec2 Pathfinder::at(void) const { return location; }
+glm::vec2 Pathfinder::at() const { return location; }
 	
-glm::vec2 Pathfinder::to(void) const { return destination; }
+glm::vec2 Pathfinder::to() const { return destination; }
 
-glm::vec2 Pathfinder::velo(void) const { return velocity; }
+glm::vec2 Pathfinder::velo() const { return velocity; }
 
 void Pathfinder::teleport(const glm::vec2 &pos)
 {
@@ -76,26 +72,21 @@ void Pathfinder::teleport(const glm::vec2 &pos)
 	location = pos;
 }
 
-Army::Army(glm::vec2 start, float speedy) : 
+ArmyNode::ArmyNode(glm::vec2 start, float speedy) : 
 	Entity(glm::vec3(start.x, 0.f, start.y), glm::quat(1.f, 0.f, 0.f, 0.f))
 {
 	speed = speedy;
-	pathfinder = new Pathfinder { start };
+	pathfinder = std::make_unique<Pathfinder>(start);
 	movement_mode = MOVEMENT_LAND;
 	target_type = TARGET_NONE;
 }
 
-Army::~Army(void) 
-{ 
-	delete pathfinder; 
-}
-
-void Army::set_path(const std::list<glm::vec2> &nodes) 
+void ArmyNode::set_path(const std::list<glm::vec2> &nodes) 
 { 
 	pathfinder->reset(nodes); 
 }
 
-void Army::update(float delta)
+void ArmyNode::update(float delta)
 {
 	pathfinder->update(delta, speed);
 
@@ -109,12 +100,12 @@ void Army::update(float delta)
 	rotation = glm::quat(R);
 }
 
-void Army::set_y_offset(float offset) 
+void ArmyNode::set_y_offset(float offset) 
 { 
 	position.y = offset; 
 }
 
-void Army::teleport(const glm::vec2 &pos) 
+void ArmyNode::teleport(const glm::vec2 &pos) 
 {
 	position.x = pos.x;
 	position.z = pos.y;
