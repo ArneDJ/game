@@ -11,6 +11,8 @@ public:
 	float farclip = 0.f;
 	float aspectratio = 0.f;
 	float FOV = 0.f; // in degrees
+	float pitch = 0.f;
+	float yaw = 0.f;
 	uint16_t width = 0;
 	uint16_t height = 0;
 public:
@@ -30,12 +32,10 @@ public:
 	void move_right(float modifier);
 	void translate(const glm::vec3 &translation);
 	// update view matrix
+	void angles_to_direction();
 	void update();
 	// normalized device coordinate position to world ray
 	glm::vec3 ndc_to_ray(const glm::vec2 &ndc) const;
-private:
-	float m_pitch = 0.f;
-	float m_yaw = 0.f;
 };
 
 };

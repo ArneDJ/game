@@ -8,7 +8,7 @@
 
 #include "camera.h"
 
-static const glm::vec3 UP_VECTOR = {0.F, 1.F, 0.F};
+static const glm::vec3 UP_VECTOR = { 0.F, 1.F, 0.F };
 static const float MAX_CAMERA_ANGLE = 1.55F;
 static const float MIN_CAMERA_ANGLE = -1.55F;
 static const float CAMERA_MOUSE_MODIFIER = 0.001F;
@@ -34,8 +34,17 @@ void Camera::direct(const glm::vec3 &dir)
 {
 	direction = glm::normalize(dir);
 	// adjust pitch and yaw to direction vector
-	m_pitch = asin(direction.y);
-	m_yaw = atan2(direction.z, direction.x);
+	pitch = asin(direction.y);
+	yaw = atan2(direction.z, direction.x);
+}
+	
+void Camera::angles_to_direction()
+{
+	direction.x = cos(yaw) * cos(pitch);
+	direction.y = sin(pitch);
+	direction.z = sin(yaw) * cos(pitch);
+
+	direction = glm::normalize(direction);
 }
 	
 void Camera::lookat(const glm::vec3 &location)
@@ -46,17 +55,13 @@ void Camera::lookat(const glm::vec3 &location)
 
 void Camera::target(const glm::vec2 &offset)
 {
-	m_yaw += offset.x * CAMERA_MOUSE_MODIFIER;
-	m_pitch -= offset.y * CAMERA_MOUSE_MODIFIER;
+	yaw += offset.x * CAMERA_MOUSE_MODIFIER;
+	pitch -= offset.y * CAMERA_MOUSE_MODIFIER;
 
-	if (m_pitch > MAX_CAMERA_ANGLE) { m_pitch = MAX_CAMERA_ANGLE; }
-	if (m_pitch < MIN_CAMERA_ANGLE) { m_pitch = MIN_CAMERA_ANGLE; }
+	if (pitch > MAX_CAMERA_ANGLE) { pitch = MAX_CAMERA_ANGLE; }
+	if (pitch < MIN_CAMERA_ANGLE) { pitch = MIN_CAMERA_ANGLE; }
 
-	direction.x = cos(m_yaw) * cos(m_pitch);
-	direction.y = sin(m_pitch);
-	direction.z = sin(m_yaw) * cos(m_pitch);
-
-	direction = glm::normalize(direction);
+	angles_to_direction();
 }
 
 void Camera::move_forward(float modifier)

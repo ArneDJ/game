@@ -30,6 +30,20 @@ struct settlement_t {
 	}
 };
 
+struct army_t {
+	std::string name;
+	glm::vec2 position;
+
+	template <class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			name, 
+			position
+		);
+	}
+};
+
 class SettlementNode : public Entity {
 public:
 	std::unique_ptr<btGhostObject> ghost_object;

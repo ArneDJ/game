@@ -173,8 +173,10 @@ public:
 	std::unique_ptr<ArmyNode> player;
 	std::vector<std::unique_ptr<SettlementNode>> settlement_nodes;
 	std::unordered_map<uint32_t, settlement_t> settlements;
+	army_t player_army;
 	std::vector<Entity*> entities;
 	bool show_factions = false;
+	bool factions_visible = false;
 	battle_info_t battle_info;
 public:
 	void init(const util::Window *window, const shader_group_t *shaders);
@@ -191,7 +193,7 @@ public:
 	void cleanup();
 	void teardown();
 public:
-	void update_camera(const util::Input *input, float sensitivity, float delta);
+	void update_camera(const util::Input *input, const util::Window *window, float sensitivity, float delta);
 	void update_labels();
 	void update_faction_map();
 	void offset_entities();
@@ -214,8 +216,7 @@ void Campaign::init(const util::Window *window, const shader_group_t *shaders)
 	ordinary = std::make_unique<gfx::RenderGroup>(&shaders->debug);
 	creatures = std::make_unique<gfx::RenderGroup>(&shaders->object);
 
-	glm::vec2 startpos = { 2010.f, 2010.f };
-	player = std::make_unique<ArmyNode>(startpos, 40.f);
+	player = std::make_unique<ArmyNode>(player_army.position, 40.f);
 	
 	skybox.init(window->width, window->height);
 	
@@ -245,7 +246,8 @@ void Campaign::add_heightfields()
 	
 void Campaign::add_armies()
 {
-	player->teleport(glm::vec2(2010.f, 2010.f));
+	player->teleport(player_army.position);
+	player->scale = 2.f;
 
 	std::vector<const Entity*> ents;
 	ents.push_back(player.get());
@@ -420,7 +422,7 @@ void Campaign::save(const std::string &filepath)
 
 	if (stream.is_open()) {
 		cereal::BinaryOutputArchive archive(stream);
-		archive(atlas, seed, m_navmesh_land, m_navmesh_sea, settlements);
+		archive(atlas, seed, m_navmesh_land, m_navmesh_sea, settlements, player_army);
 	} else {
 		LOG(ERROR, "Save") << "save file " + filepath + "could not be saved";
 	}
@@ -434,7 +436,7 @@ void Campaign::load(const std::string &filepath)
 
 	if (stream.is_open()) {
 		cereal::BinaryInputArchive archive(stream);
-		archive(atlas, seed, m_navmesh_land, m_navmesh_sea, settlements);
+		archive(atlas, seed, m_navmesh_land, m_navmesh_sea, settlements, player_army);
 	} else {
 		LOG(ERROR, "Save") << "save file " + filepath + " could not be loaded";
 		return;
@@ -465,7 +467,7 @@ void Campaign::collide_camera()
 	}
 }
 	
-void Campaign::update_camera(const util::Input *input, float sensitivity, float delta)
+void Campaign::update_camera(const util::Input *input, const util::Window *window, float sensitivity, float delta)
 {
 	glm::vec2 rel_mousecoords = sensitivity * input->rel_mousecoords();
 	camera.target(rel_mousecoords);
@@ -473,6 +475,20 @@ void Campaign::update_camera(const util::Input *input, float sensitivity, float 
 	float zoomlevel = camera.position.y / atlas.SCALE.y;
 	zoomlevel = glm::clamp(zoomlevel, 0.f, 2.f);
 	float modifier = 200.f * delta * (zoomlevel*zoomlevel);
+
+	// camera look 
+	if (input->mouse_grabbed() == false) {
+		glm::vec2 abs_mousecoords = input->abs_mousecoords() / glm::vec2(float(window->width), float(window->height));
+		if (abs_mousecoords.x > 0.99f) {
+			camera.target(glm::vec2(30.f, 0.f));
+		} else if (abs_mousecoords.x < 0.01f) {
+			camera.target(glm::vec2(-30.f, 0.f));
+		} else if (abs_mousecoords.y > 0.99f) { // horizontal look overrides vertical
+			camera.target(glm::vec2(0.f, 20.f));
+		} else if (abs_mousecoords.y < 0.01f) {
+			camera.target(glm::vec2(0.f, -20.f));
+		}
+	}
 
 	if (input->key_down(SDLK_w)) { 
 		glm::vec2 dir = glm::normalize(glm::vec2(camera.direction.x, camera.direction.z));
@@ -499,17 +515,18 @@ void Campaign::update_camera(const util::Input *input, float sensitivity, float 
 		m_scroll_time = 1.f;
 		m_scroll_speed += 0.5f;
 	}
-			
+				
 	m_scroll_speed = glm::clamp(m_scroll_speed, 1.f, 2.f);
 
 	// reset
 	if (m_scroll_status != campaign_scroll_status::NONE) {
+		float pitch = glm::mix(-1.55f, -0.5f, 1.f - (camera.position.y / (4.f * atlas.SCALE.y)));
 		m_scroll_time -= 5.f * delta;
 
 		if (m_scroll_status == campaign_scroll_status::BACKWARD) {
-			camera.move_backward(m_scroll_speed * modifier);
+			camera.position.y += m_scroll_speed * modifier;
 		} else {
-			camera.move_forward(m_scroll_speed * modifier);
+			camera.position.y -= m_scroll_speed * modifier;
 		}
 
 		if (m_scroll_time < 0.f) {
@@ -517,8 +534,11 @@ void Campaign::update_camera(const util::Input *input, float sensitivity, float 
 			m_scroll_time = 0.f;
 			m_scroll_speed = 1.f;
 		}
+
+		camera.pitch = glm::clamp(pitch, -1.55f, -0.1f);
+		camera.angles_to_direction();
 	}
-		
+
 	camera.update();
 
 	collide_camera();
@@ -547,10 +567,10 @@ void Campaign::offset_entities()
 void Campaign::update_faction_map()
 {
 	const float ratio = camera.position.y / atlas.SCALE.y;
-	show_factions = (ratio > 2.f);
+	factions_visible = (ratio > 2.f) && show_factions;
 	// map faction mode
 	float colormix = 0.f;
-	if (show_factions) {
+	if (factions_visible) {
 		colormix = glm::smoothstep(0.5f, 2.f, ratio);
 		if (colormix < 0.25f) {
 			colormix = 0.f;
@@ -1237,7 +1257,7 @@ void Game::update_campaign()
 		state = game_state::EXIT;
 	}
 	
-	campaign.update_camera(&input, settings.look_sensitivity, timer.delta);
+	campaign.update_camera(&input, &window, settings.look_sensitivity, timer.delta);
 
 	if (input.key_pressed(SDL_BUTTON_RIGHT) == true && input.mouse_grabbed() == false) {
 		glm::vec3 ray = campaign.camera.ndc_to_ray(input.abs_mousecoords());
@@ -1245,6 +1265,7 @@ void Game::update_campaign()
 	}
 
 	campaign.player->update(timer.delta);
+	campaign.player_army.position = { campaign.player->position.x, campaign.player->position.z };
 
 	if (debugmode) {
 		ImGui_ImplOpenGL3_NewFrame();
@@ -1257,6 +1278,7 @@ void Game::update_campaign()
 		ImGui::Text("player position: %f, %f, %f", campaign.player->position.x, campaign.player->position.y, campaign.player->position.z);
 		if (ImGui::Button("Show factions")) { campaign.show_factions = !campaign.show_factions; }
 		if (ImGui::Button("Battle scene")) { state = game_state::BATTLE; }
+		if (ImGui::Button("Save game")) { campaign.save(save_directory + "game.save"); }
 		if (ImGui::Button("Title screen")) { state = game_state::TITLE; }
 		if (ImGui::Button("Exit Game")) { state = game_state::EXIT; }
 		ImGui::End();
@@ -1307,6 +1329,9 @@ void Game::new_campaign()
 	campaign.add_heightfields();
 
 	campaign.spawn_settlements();
+
+	campaign.player_army.position = { 2010.f, 2010.f };
+	campaign.player_army.name = "Player's Army";
 
 	campaign.save(save_directory + "game.save");
 
@@ -1393,7 +1418,7 @@ void Game::run_campaign()
 		shaders.object.uniform_vec3("FOG_COLOR", modular.atmosphere.day.horizon);
 		shaders.object.uniform_vec3("CAM_POS", campaign.camera.position);
 		shaders.object.uniform_vec3("SUN_POS", glm::normalize(campaign.battle_info.sun_position));
-		if (!campaign.show_factions) {
+		if (!campaign.factions_visible) {
 			campaign.creatures->display(&campaign.camera);
 		}
 
