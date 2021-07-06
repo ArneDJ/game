@@ -1,8 +1,8 @@
 
-enum PATHFINDER_STATE : uint8_t {
-	PATH_STATE_FINISHED,
-	PATH_STATE_MOVING,
-	PATH_STATE_NEXT
+enum class pathfind_state : uint8_t {
+	FINISHED,
+	MOVING,
+	NEXT
 };
 
 class Pathfinder {
@@ -14,6 +14,7 @@ public:
 	glm::vec2 to() const;
 	glm::vec2 velo() const;
 	void teleport(const glm::vec2 &pos);
+	enum pathfind_state state() const;
 private:
 	std::list<glm::vec2> nodes;
 	glm::vec2 location;
@@ -21,7 +22,7 @@ private:
 	glm::vec2 origin;
 	glm::vec2 velocity;
 	float radius;
-	enum PATHFINDER_STATE state;
+	enum pathfind_state m_state;
 };
 
 enum ARMY_MOVEMENT_MODE : uint8_t {

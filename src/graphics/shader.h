@@ -21,3 +21,15 @@ private:
 };
 
 };
+
+
+struct shader_group_t {
+	gfx::Shader object;
+	gfx::Shader creature;
+	gfx::Shader debug;
+	gfx::Shader tree;
+	gfx::Shader billboard;
+	gfx::Shader font;
+	gfx::Shader depth;
+	gfx::Shader copy;
+};
