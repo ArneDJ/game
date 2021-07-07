@@ -29,12 +29,16 @@ class Navigation
 public:
 	Navigation();
 	~Navigation();
-	const dtNavMesh* get_navmesh() const { return navmesh; };	
+public:
+	const dtNavMesh* get_navmesh() const { return navmesh; }	
+	dtNavMesh* get_navmesh() { return navmesh; }	
+ 	const dtNavMeshQuery* get_navquery() const { return navquery; }
+public:
 	bool alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys);
 	void cleanup();
 	bool build(const std::vector<float> &vertices, const std::vector<int> &indices);
 	void load_tilemesh(int x, int y, const std::vector<uint8_t> &data);
-	
+public:	
 	void find_2D_path(const glm::vec2 &startpos, const glm::vec2 &endpos, std::list<glm::vec2> &pathways) const;
 	void find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos, std::vector<glm::vec3> &pathways) const;
 	poly_result_t point_on_navmesh(const glm::vec3 &point) const;

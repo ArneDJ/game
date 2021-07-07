@@ -88,6 +88,7 @@
 #include "debugger.h"
 #include "geography/sitegen.h"
 #include "geography/landscape.h"
+#include "crowd.h"
 #include "army.h"
 #include "battle.h"
 
@@ -153,6 +154,8 @@ void Battle::add_creatures(const module::Module *mod)
 	std::vector<const Entity*> ents;
 	ents.push_back(player);
 	creatures->add_object(MediaManager::load_model("human.glb"), ents);
+
+	crowd_manager->add_agent(player->position, glm::vec3(2997.f, 42.f, 3065.f), navigation.get_navquery());
 }
 	
 void Battle::add_buildings()
@@ -397,6 +400,8 @@ void Battle::create_navigation()
 	heightmap_to_triangle_soup(&central_heightmap, landscape->SCALE.y, vertex_soup, index_soup, AGENT_NAV_AREA.min.x, AGENT_NAV_AREA.min.y, (AGENT_NAV_AREA.max.x-AGENT_NAV_AREA.min.x)/float(central_heightmap.width()));
 	
 	navigation.build(vertex_soup, index_soup);
+
+	crowd_manager = std::make_unique<CrowdManager>(navigation.get_navmesh());
 }
 
 

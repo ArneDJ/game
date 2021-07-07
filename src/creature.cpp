@@ -147,6 +147,19 @@ void Creature::move(const glm::vec3 &view, bool forward, bool backward, bool rig
 
 	m_bumper->set_velocity(m_velocity.x, m_velocity.z);
 }
+	
+void Creature::move(const glm::vec2 &velocity)
+{
+	if (velocity.x != 0.f || velocity.y != 0.f) {
+		m_direction = glm::normalize(velocity);
+	}
+	m_current_movement = CM_FORWARD;
+
+	m_velocity.x = m_speed * velocity.x;
+	m_velocity.z = m_speed * velocity.y;
+
+	m_bumper->set_velocity(m_velocity.x, m_velocity.z);
+}
 
 void Creature::jump()
 {
@@ -184,6 +197,7 @@ void Creature::sync(float delta)
 			change_animation(CA_IDLE);
 		}
 	}
+		change_animation(CA_IDLE);
 
 	if (m_animation_mix < 1.f) {
 		m_animation_mix += 4.f * delta;

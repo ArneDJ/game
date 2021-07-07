@@ -94,6 +94,7 @@
 #include "geography/sitegen.h"
 #include "geography/landscape.h"
 #include "army.h"
+#include "crowd.h"
 
 #include "campaign.h"
 #include "battle.h"
@@ -141,6 +142,7 @@ private:
 	// graphics
 	gfx::RenderManager renderman;
 	shader_group_t shaders;
+	Entity debug_cylinder;
 private:
 	void load_settings();
 	void set_opengl_states();
@@ -357,7 +359,7 @@ void Game::update_battle()
 		ImGui::End();
 	}
 
-	battle.player->move(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
+	//battle.player->move(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
 	if (input.key_down(SDLK_SPACE)) {
 		battle.player->jump();
 	}
@@ -365,13 +367,45 @@ void Game::update_battle()
 	input.update_keymap();
 
 	// update creatures
+	for (int i = 0; i < 1; i++) {
+		//if (time_to_update && result.found) {
+		//crowd->retarget_agent(i, result.position, result.poly);
+		//}
+		glm::vec3 agent_pos = battle.crowd_manager->agent_position(i);
+		glm::vec3 creature_pos = battle.player->position;
+		//glm::vec2 botpos2 = {creature_pos.x, creature_pos.z};
+		//glm::vec2 agentpos2 = {agent_pos.x, agent_pos.z};
+		float dist = glm::distance(agent_pos, creature_pos);
+		if (dist > 5.f) {
+			struct target_result target = battle.crowd_manager->agent_target(i);
+			battle.crowd_manager->teleport_agent(i, creature_pos);
+			battle.crowd_manager->retarget_agent(i, target.position, target.ref);
+		}
+		/*
+		} else {
+			glm::vec3 v = battle.crowd_manager->agent_velocity(i);
+			float speed = glm::clamp(1.f/dist, 0.01f, 8.f);
+			glm::vec3 botv = bt_to_vec3(battle.player->get_body()->getLinearVelocity());
+			glm::vec2 disp = glm::vec2(agent_pos.x, agent_pos.z) - glm::vec2(creature_pos.x, creature_pos.z);
+			battle.player->move(glm::vec2(v.x, v.z)+8.f*glm::vec2(disp.x, disp.y));
+			//creatures[i]->bumper->update(delta);
+			battle.crowd_manager->agent_speed(i, 2.f);
+		}
+		*/
+		glm::vec2 disp = glm::vec2(agent_pos.x, agent_pos.z) - glm::vec2(creature_pos.x, creature_pos.z);
+		battle.player->move(glm::vec2(disp.x, disp.y));
+	}
+	debug_cylinder.position = battle.crowd_manager->agent_position(0);
+	debug_cylinder.scale = 0.2f;
 	battle.player->update(battle.physicsman.get_world());
 
 	battle.physicsman.update(timer.delta);
 
 	battle.player->sync(timer.delta);
 
-	//battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
+	battle.crowd_manager->update(timer.delta);
+	//battle.camera.translate(battle.crowd_manager->agent_position(0));
+	battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
 	battle.camera.update();
 	
 	// update atmosphere
@@ -471,7 +505,10 @@ void Game::prepare_battle()
 	}
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
 	
-	debugger.add_navmesh(battle.navigation.get_navmesh());
+	//debugger.add_navmesh(battle.navigation.get_navmesh());
+	std::vector<const Entity*> ents;
+	ents.push_back(&debug_cylinder);
+	battle.ordinary->add_object(MediaManager::load_model("cylinder.glb"), ents);
 }
 
 void Game::run_battle()
@@ -500,6 +537,7 @@ void Game::run_battle()
 		
 		battle.terrain->display_grass(&battle.camera);
 
+		/*
 		if (debugmode) {
 			shaders.debug.use();
 			shaders.debug.uniform_mat4("VP", battle.camera.VP);
@@ -507,6 +545,7 @@ void Game::run_battle()
 			shaders.debug.uniform_bool("INSTANCED", false);
 			debugger.render_navmeshes();
 		}
+		*/
 
 		if (battle.naval) {
 			renderman.bind_depthmap(GL_TEXTURE2);

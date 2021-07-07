@@ -18,6 +18,7 @@ public:
 	std::vector<Entity> entities;
 	// navigation
 	util::Navigation navigation;
+	std::unique_ptr<CrowdManager> crowd_manager;
 public:
 	void init(const module::Module *mod, const util::Window *window, const shader_group_t *shaders);
 	void load_assets(const module::Module *mod);
