@@ -1,5 +1,10 @@
 namespace geography {
 
+struct navigation_soup_t {
+	std::vector<float> vertices;
+	std::vector<int> indices;
+};
+
 // graph structure of the holding
 struct holding_t {
 	uint32_t ID;
@@ -12,11 +17,6 @@ struct holding_t {
 	{
 		archive(ID, center, lands, neighbors);
 	}
-};
-
-struct navigation_soup_t {
-	std::vector<float> vertices;
-	std::vector<int> indices;
 };
 
 class Atlas {

@@ -371,7 +371,7 @@ void Game::update_battle()
 
 	battle.player->sync(timer.delta);
 
-	battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
+	//battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
 	battle.camera.update();
 	
 	// update atmosphere
@@ -451,14 +451,14 @@ void Game::prepare_battle()
 	battle.terrain->change_grass(grasscolor, grass_present);
 	battle.terrain->change_rock_color(rock_color);
 
+	// navigation
+	battle.create_navigation();
+
 	// first add the heightfield
 	battle.physicsman.add_heightfield(battle.landscape->get_heightmap(), battle.landscape->SCALE, physics::COLLISION_GROUP_HEIGHTMAP, physics::COLLISION_GROUP_ACTOR | physics::COLLISION_GROUP_RAY | physics::COLLISION_GROUP_RAGDOLL);
 
 	// add entities
-	battle.add_trees();
-	battle.add_buildings();
-	battle.add_walls();
-	battle.add_creatures(&modular);
+	battle.add_entities(&modular);
 
 	battle.skybox.prepare();
 
@@ -470,6 +470,8 @@ void Game::prepare_battle()
 		battle.camera.position = glm::vec3(3072.f, 200.f, 3072.f);
 	}
 	battle.camera.lookat(glm::vec3(0.f, 0.f, 0.f));
+	
+	debugger.add_navmesh(battle.navigation.get_navmesh());
 }
 
 void Game::run_battle()
@@ -498,6 +500,14 @@ void Game::run_battle()
 		
 		battle.terrain->display_grass(&battle.camera);
 
+		if (debugmode) {
+			shaders.debug.use();
+			shaders.debug.uniform_mat4("VP", battle.camera.VP);
+			shaders.debug.uniform_mat4("MODEL", glm::mat4(1.f));
+			shaders.debug.uniform_bool("INSTANCED", false);
+			debugger.render_navmeshes();
+		}
+
 		if (battle.naval) {
 			renderman.bind_depthmap(GL_TEXTURE2);
 			battle.terrain->display_water(&battle.camera, timer.elapsed);
@@ -516,6 +526,7 @@ void Game::run_battle()
 	
 	if (debugmode) {
 		debugger.delete_boxes();
+		debugger.delete_navmeshes();
 	}
 
 	battle.cleanup();
