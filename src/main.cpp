@@ -359,44 +359,35 @@ void Game::update_battle()
 		ImGui::End();
 	}
 
-	//battle.player->move(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
+	//battle.player->control(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
 	if (input.key_down(SDLK_SPACE)) {
 		battle.player->jump();
 	}
 
 	input.update_keymap();
 
-	// update creatures
+	// update nav agents
 	for (int i = 0; i < 1; i++) {
 		//if (time_to_update && result.found) {
 		//crowd->retarget_agent(i, result.position, result.poly);
 		//}
 		glm::vec3 agent_pos = battle.crowd_manager->agent_position(i);
 		glm::vec3 creature_pos = battle.player->position;
-		//glm::vec2 botpos2 = {creature_pos.x, creature_pos.z};
-		//glm::vec2 agentpos2 = {agent_pos.x, agent_pos.z};
 		float dist = glm::distance(agent_pos, creature_pos);
 		if (dist > 5.f) {
 			struct target_result target = battle.crowd_manager->agent_target(i);
 			battle.crowd_manager->teleport_agent(i, creature_pos);
 			battle.crowd_manager->retarget_agent(i, target.position, target.ref);
 		}
-		/*
-		} else {
-			glm::vec3 v = battle.crowd_manager->agent_velocity(i);
-			float speed = glm::clamp(1.f/dist, 0.01f, 8.f);
-			glm::vec3 botv = bt_to_vec3(battle.player->get_body()->getLinearVelocity());
-			glm::vec2 disp = glm::vec2(agent_pos.x, agent_pos.z) - glm::vec2(creature_pos.x, creature_pos.z);
-			battle.player->move(glm::vec2(v.x, v.z)+8.f*glm::vec2(disp.x, disp.y));
-			//creatures[i]->bumper->update(delta);
-			battle.crowd_manager->agent_speed(i, 2.f);
-		}
-		*/
-		glm::vec2 disp = glm::vec2(agent_pos.x, agent_pos.z) - glm::vec2(creature_pos.x, creature_pos.z);
-		battle.player->move(glm::vec2(disp.x, disp.y));
+		const float margin = 0.02f; // nav agent needs to be ahead of creature so it needs a higher speed
+		battle.crowd_manager->agent_speed(i, 6.f + margin);
 	}
-	debug_cylinder.position = battle.crowd_manager->agent_position(0);
-	debug_cylinder.scale = 0.2f;
+	// update creatures
+	for (int i = 0; i < 1; i++) {
+		glm::vec3 agent_pos = battle.crowd_manager->agent_position(i);
+		battle.player->stick_to_agent(agent_pos);
+	}
+
 	battle.player->update(battle.physicsman.get_world());
 
 	battle.physicsman.update(timer.delta);
@@ -404,6 +395,9 @@ void Game::update_battle()
 	battle.player->sync(timer.delta);
 
 	battle.crowd_manager->update(timer.delta);
+
+	debug_cylinder.position = battle.crowd_manager->agent_position(0);
+	debug_cylinder.scale = 0.2f;
 	//battle.camera.translate(battle.crowd_manager->agent_position(0));
 	battle.camera.translate(battle.player->position - (5.f * battle.camera.direction));
 	battle.camera.update();

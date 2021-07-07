@@ -24,8 +24,9 @@ public:
 public:
 	Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const module::ragdoll_armature_import_t &armature);
 	btRigidBody* get_body() const;
-	void move(const glm::vec3 &view, bool forward, bool backward, bool right, bool left);
+	void control(const glm::vec3 &view, bool forward, bool backward, bool right, bool left);
 	void move(const glm::vec2 &velocity);
+	void stick_to_agent(const glm::vec3 &agent_position);
 	void jump();
 	void update(const btDynamicsWorld *world);
 	void sync(float delta);

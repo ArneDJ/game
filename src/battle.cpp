@@ -140,7 +140,7 @@ void Battle::add_entities(const module::Module *mod)
 	
 void Battle::add_creatures(const module::Module *mod)
 {
-	glm::vec3 end = glm::vec3(3072.f, 0.f, 3072.f);
+	glm::vec3 end = glm::vec3(2700.f, 0.f, 3000.f);
 	glm::vec3 origin = { end.x, landscape->SCALE.y, end.z };
 	auto result = physicsman.cast_ray(origin, end, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_WORLD);
 	if (result.hit) {
@@ -155,7 +155,10 @@ void Battle::add_creatures(const module::Module *mod)
 	ents.push_back(player);
 	creatures->add_object(MediaManager::load_model("human.glb"), ents);
 
-	crowd_manager->add_agent(player->position, glm::vec3(2997.f, 42.f, 3065.f), navigation.get_navquery());
+	glm::vec3 target_end = glm::vec3(3072.f, 0.f, 3072.f);
+	glm::vec3 target_origin = { target_end.x, landscape->SCALE.y, target_end.z };
+	result = physicsman.cast_ray(target_origin, target_end, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_WORLD);
+	crowd_manager->add_agent(player->position, result.point, navigation.get_navquery());
 }
 	
 void Battle::add_buildings()

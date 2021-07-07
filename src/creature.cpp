@@ -114,7 +114,22 @@ btRigidBody* Creature::get_body() const
 	return m_bumper->body();
 }
 
-void Creature::move(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
+// carrot on a stick
+void Creature::stick_to_agent(const glm::vec3 &agent_position)
+{
+	glm::vec2 current = { position.x, position.z };
+	glm::vec2 target = { agent_position.x, agent_position.z };
+
+	if (glm::distance(current, target) > 0.2f) {
+		glm::vec2 disp = target - current;
+		disp = glm::normalize(disp);
+
+		move(disp);
+		m_direction = disp;
+	}
+}
+
+void Creature::control(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)
 {
 	glm::vec2 direction = {0.f, 0.f};
 	glm::vec2 dir = glm::normalize(glm::vec2(view.x, view.z));
@@ -142,21 +157,14 @@ void Creature::move(const glm::vec3 &view, bool forward, bool backward, bool rig
 	}
 
 	m_direction = dir;
-	m_velocity.x = m_speed * direction.x;
-	m_velocity.z = m_speed * direction.y;
 
-	m_bumper->set_velocity(m_velocity.x, m_velocity.z);
+	move(direction);
 }
 	
-void Creature::move(const glm::vec2 &velocity)
+void Creature::move(const glm::vec2 &direction)
 {
-	if (velocity.x != 0.f || velocity.y != 0.f) {
-		m_direction = glm::normalize(velocity);
-	}
-	m_current_movement = CM_FORWARD;
-
-	m_velocity.x = m_speed * velocity.x;
-	m_velocity.z = m_speed * velocity.y;
+	m_velocity.x = m_speed * direction.x;
+	m_velocity.z = m_speed * direction.y;
 
 	m_bumper->set_velocity(m_velocity.x, m_velocity.z);
 }

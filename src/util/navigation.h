@@ -43,6 +43,7 @@ public:
 	void find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos, std::vector<glm::vec3> &pathways) const;
 	poly_result_t point_on_navmesh(const glm::vec3 &point) const;
 private:
+	//std::unique_ptr<dtNavMesh> navmesh;
 	dtNavMesh *navmesh = nullptr;
  	dtNavMeshQuery *navquery = nullptr;
 private:
