@@ -133,50 +133,20 @@ Navigation::Navigation()
 	cfg.height = cfg.tileSize + cfg.borderSize*2;
 	cfg.detailSampleDist = DETAIL_SAMPLE_DIST < 0.9f ? 0 : cfg.cs * DETAIL_SAMPLE_DIST;
 	cfg.detailSampleMaxError = CELL_HEIGHT * DETAIL_SAMPLE_MAX_ERROR;
-
-	context = new rcContext { false };
-}
-
-Navigation::~Navigation()
-{
-	cleanup();
-
-	if (context) { 
-		delete context; 
-		context = nullptr;
-	}
 }
 
 void Navigation::cleanup()
 {
-	if (navmesh) {
-		dtFreeNavMesh(navmesh);
-		navmesh = nullptr;
-	}
-	if (navquery) {
-		dtFreeNavMeshQuery(navquery);
-		navquery = nullptr;
-	}
-
 	verts.clear();
 	tris.clear();
-
-	if (chunky_mesh) { 
-		delete chunky_mesh; 
-		chunky_mesh = nullptr;
-	}
 }
 
 bool Navigation::alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys)
 {
-	navquery = new dtNavMeshQuery;
-	chunky_mesh = new rcChunkyTriMesh;
+	navquery = std::make_unique<dtNavMeshQuery>();
+	chunky_mesh = std::make_unique<rcChunkyTriMesh>();
 
-	navmesh = dtAllocNavMesh();
-	if (!navmesh) {
-		LOG(ERROR, "Navigation") << "Build tiled navigation: could not allocate navmesh";
-		return false;
-	}
+	navmesh = std::make_unique<dtNavMesh>();
 
 	dtNavMeshParams params;
 	rcVcopy(params.orig, glm::value_ptr(origin));
@@ -191,7 +161,7 @@ bool Navigation::alloc(const glm::vec3 &origin, float tilewidth, float tileheigh
 		return false;
 	}
 	
-	status = navquery->init(navmesh, 2048);
+	status = navquery->init(navmesh.get(), 2048);
 	if (dtStatusFailed(status)) {
 		LOG(ERROR, "Navigation") << "Build tiled navigation: could not init Detour navmesh query";
 		return false;
@@ -202,14 +172,14 @@ bool Navigation::alloc(const glm::vec3 &origin, float tilewidth, float tileheigh
 
 bool Navigation::build(const std::vector<float> &vertices, const std::vector<int> &indices)
 {
-	navquery = new dtNavMeshQuery;
-	chunky_mesh = new rcChunkyTriMesh;
+	navquery = std::make_unique<dtNavMeshQuery>();
+	chunky_mesh = std::make_unique<rcChunkyTriMesh>();
 
 	// populate verts and tris:
 	verts.insert(verts.begin(), vertices.begin(), vertices.end());
 	tris.insert(tris.begin(), indices.begin(), indices.end());
 
-	rcCreateChunkyTriMesh(verts.data(), tris.data(), tris.size()/3, 256, chunky_mesh);
+	rcCreateChunkyTriMesh(verts.data(), tris.data(), tris.size()/3, 256, chunky_mesh.get());
 
 	int gw = 0, gh = 0;
 	float bmin[3];
@@ -234,11 +204,7 @@ bool Navigation::build(const std::vector<float> &vertices, const std::vector<int
 	max_tiles = 1 << tile_bits;
 	max_polys_per_tile = 1 << poly_bits;
 
-	navmesh = dtAllocNavMesh();
-	if (!navmesh) {
-		LOG(ERROR, "Navigation") << "Build tiled navigation: could not allocate navmesh";
-		return false;
-	}
+	navmesh = std::make_unique<dtNavMesh>();
 
 	dtNavMeshParams params;
 	rcVcopy(params.orig, bmin);
@@ -253,7 +219,7 @@ bool Navigation::build(const std::vector<float> &vertices, const std::vector<int
 		return false;
 	}
 	
-	status = navquery->init(navmesh, 2048);
+	status = navquery->init(navmesh.get(), 2048);
 	if (dtStatusFailed(status)) {
 		LOG(ERROR, "Navigation") << "Build tiled navigation: could not init Detour navmesh query";
 		return false;
@@ -294,7 +260,7 @@ void Navigation::build_all_tiles()
 	
 	// Start the build process.
 	for (int y = 0; y < th; ++y) {
-		threads.push_back(std::thread(add_tile_mesh_rows, y, tw, tcs, bmin, bmax, verts.data(), verts.size(), chunky_mesh, &cfg, navmesh));
+		threads.push_back(std::thread(add_tile_mesh_rows, y, tw, tcs, bmin, bmax, verts.data(), verts.size(), chunky_mesh.get(), &cfg, navmesh.get()));
 	}
 
 	for (std::thread &th : threads) {

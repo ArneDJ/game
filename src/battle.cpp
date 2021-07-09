@@ -108,7 +108,7 @@ void Battle::init(const module::Module *mod, const util::Window *window, const s
 	load_assets(mod);
 
 	ordinary = std::make_unique<gfx::RenderGroup>(&shaders->debug);
-	creatures = std::make_unique<gfx::RenderGroup>(&shaders->creature);
+	creature_scenery = std::make_unique<gfx::RenderGroup>(&shaders->creature);
 
 	skybox.init(window->width, window->height);
 	
@@ -153,12 +153,29 @@ void Battle::add_creatures(const module::Module *mod)
 
 	std::vector<const Entity*> ents;
 	ents.push_back(player);
-	creatures->add_object(MediaManager::load_model("human.glb"), ents);
-
 	glm::vec3 target_end = glm::vec3(3072.f, 0.f, 3072.f);
 	glm::vec3 target_origin = { target_end.x, landscape->SCALE.y, target_end.z };
 	result = physicsman.cast_ray(target_origin, target_end, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_WORLD);
-	crowd_manager->add_agent(player->position, result.point, navigation.get_navquery());
+	//crowd_manager->add_agent(player->position, result.point, navigation.get_navquery());
+
+	glm::vec3 target_point = result.point;
+
+	for (int i = 0; i < 10; i++) {
+		for (int j = 0; j < 10; j++) {
+			glm::vec3 position = { 2700.f + (i+i), 0.f, 3000.f + (j+j) };
+			glm::vec3 up = { position.x, landscape->SCALE.y, position.z };
+			result = physicsman.cast_ray(position, up, physics::COLLISION_GROUP_HEIGHTMAP | physics::COLLISION_GROUP_WORLD);
+			position = result.point;
+			position.y += 2.f;
+			auto creature = std::make_unique<Creature>(position, glm::quat(1.f, 0.f, 0.f, 0.f), MediaManager::load_model("human.glb"), mod->test_armature);
+			physicsman.add_body(creature->get_body(), physics::COLLISION_GROUP_ACTOR, physics::COLLISION_GROUP_ACTOR | physics::COLLISION_GROUP_WORLD | physics::COLLISION_GROUP_HEIGHTMAP);
+			//ents.push_back(creature.get());
+			crowd_manager->add_agent(position, target_point, navigation.get_navquery());
+			creatures.push_back(std::move(creature));
+		}
+	}
+	
+	creature_scenery->add_object(MediaManager::load_model("human.glb"), ents);
 }
 	
 void Battle::add_buildings()
@@ -290,6 +307,9 @@ void Battle::remove_physics_bodies()
 	}
 
 	physicsman.remove_body(player->get_body());
+	for (auto &creature : creatures) {
+		physicsman.remove_body(creature->get_body());
+	}
 	if (player->m_ragdoll_mode) {
 		player->remove_ragdoll(physicsman.get_world());
 	}
@@ -302,10 +322,11 @@ void Battle::cleanup()
 	remove_physics_bodies();
 
 	delete player;
+	creatures.clear();
 
 	physicsman.clear();
 	ordinary->clear();
-	creatures->clear();
+	creature_scenery->clear();
 
 	// delete stationaries
 	for (int i = 0; i < stationaries.size(); i++) {

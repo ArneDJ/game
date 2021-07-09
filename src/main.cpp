@@ -359,7 +359,7 @@ void Game::update_battle()
 		ImGui::End();
 	}
 
-	//battle.player->control(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
+	battle.player->control(battle.camera.direction, input.key_down(SDLK_w), input.key_down(SDLK_s), input.key_down(SDLK_d), input.key_down(SDLK_a));
 	if (input.key_down(SDLK_SPACE)) {
 		battle.player->jump();
 	}
@@ -367,12 +367,13 @@ void Game::update_battle()
 	input.update_keymap();
 
 	// update nav agents
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < battle.creatures.size(); i++) {
 		//if (time_to_update && result.found) {
 		//crowd->retarget_agent(i, result.position, result.poly);
 		//}
 		glm::vec3 agent_pos = battle.crowd_manager->agent_position(i);
-		glm::vec3 creature_pos = battle.player->position;
+		//glm::vec3 creature_pos = battle.player->position;
+		glm::vec3 creature_pos = battle.creatures[i]->position;
 		float dist = glm::distance(agent_pos, creature_pos);
 		if (dist > 5.f) {
 			struct target_result target = battle.crowd_manager->agent_target(i);
@@ -383,15 +384,22 @@ void Game::update_battle()
 		battle.crowd_manager->agent_speed(i, 6.f + margin);
 	}
 	// update creatures
-	for (int i = 0; i < 1; i++) {
+	for (int i = 0; i < battle.creatures.size(); i++) {
 		glm::vec3 agent_pos = battle.crowd_manager->agent_position(i);
-		battle.player->stick_to_agent(agent_pos);
+		//battle.player->stick_to_agent(agent_pos);
+		battle.creatures[i]->stick_to_agent(agent_pos);
 	}
 
+	for (auto &creature : battle.creatures) {
+		creature->update(battle.physicsman.get_world());
+	}
 	battle.player->update(battle.physicsman.get_world());
 
 	battle.physicsman.update(timer.delta);
 
+	for (auto &creature : battle.creatures) {
+		creature->sync(timer.delta);
+	}
 	battle.player->sync(timer.delta);
 
 	battle.crowd_manager->update(timer.delta);
@@ -446,7 +454,8 @@ void Game::prepare_battle()
 		}
 	}
 
-	glm::vec3 grasscolor = glm::mix(glm::vec3(1.5f)*modular.palette.grass.min, modular.palette.grass.max, precipitation / 255.f);
+	glm::vec3 fresh_grass = glm::mix(glm::vec3(1.5f)*modular.palette.grass.min, modular.palette.grass.max, 0.8f);
+	glm::vec3 grasscolor = glm::mix(glm::vec3(1.5f)*modular.palette.grass.min, fresh_grass, precipitation / 255.f);
 
 	if (feature == geography::tile_feature::WOODS) {
 		tree_density = 255;
@@ -521,7 +530,26 @@ void Game::run_battle()
 		const auto instancebuf = battle.player->joints();
 		instancebuf->bind(GL_TEXTURE20);
 		shaders.creature.uniform_bool("RAGDOLL", battle.player->m_ragdoll_mode);
-		battle.creatures->display(&battle.camera);
+		battle.creature_scenery->display(&battle.camera);
+
+		shaders.creature.use();
+		shaders.creature.uniform_mat4("VP", battle.camera.VP);
+		shaders.creature.uniform_bool("INSTANCED", false);
+
+		for (const auto &creature : battle.creatures) {
+			const auto joints = creature->joints();
+			joints->bind(GL_TEXTURE20);
+			shaders.creature.uniform_bool("RAGDOLL", creature->m_ragdoll_mode);
+
+			glm::mat4 T = glm::translate(glm::mat4(1.f), creature->position);
+			glm::mat4 R = glm::mat4(creature->rotation);
+			glm::mat4 S = glm::scale(glm::mat4(1.f), glm::vec3(creature->scale));
+			glm::mat4 M = T * R * S;
+			glm::mat4 MVP = battle.camera.VP * M;
+			shaders.creature.uniform_mat4("MVP", MVP);
+			shaders.creature.uniform_mat4("MODEL", M);
+			creature->m_model->display();
+		}
 
 		battle.forest->display(&battle.camera);
 

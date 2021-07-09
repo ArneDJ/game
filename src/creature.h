@@ -21,6 +21,7 @@ class Creature : public Entity {
 public:
 	float m_animation_mix = 0.f;
 	bool m_ragdoll_mode = false;
+	const gfx::Model *m_model;
 public:
 	Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model *model, const module::ragdoll_armature_import_t &armature);
 	btRigidBody* get_body() const;
@@ -34,7 +35,6 @@ public:
 	void add_ragdoll(btDynamicsWorld *world);
 	void remove_ragdoll(btDynamicsWorld *world);
 private:
-	const gfx::Model *m_model;
 	std::unique_ptr<physics::Bumper> m_bumper;
 	std::vector<std::pair<uint32_t, uint32_t>> m_targets;
 	physics::Ragdoll m_ragdoll;

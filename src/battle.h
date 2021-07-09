@@ -7,12 +7,13 @@ public:
 	std::unique_ptr<geography::Landscape> landscape;
 	// graphics
 	std::unique_ptr<gfx::RenderGroup> ordinary;
-	std::unique_ptr<gfx::RenderGroup> creatures;
+	std::unique_ptr<gfx::RenderGroup> creature_scenery;
 	std::unique_ptr<gfx::Terrain> terrain;
 	std::unique_ptr<gfx::Forest> forest;
 	gfx::Skybox skybox;
 	// entities
 	Creature *player;
+	std::vector<std::unique_ptr<Creature>> creatures;
 	std::vector<StationaryObject*> stationaries;
 	std::vector<StationaryObject*> tree_stationaries;
 	std::vector<Entity> entities;

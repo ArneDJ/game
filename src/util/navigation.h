@@ -28,11 +28,10 @@ class Navigation
 {
 public:
 	Navigation();
-	~Navigation();
 public:
-	const dtNavMesh* get_navmesh() const { return navmesh; }	
-	dtNavMesh* get_navmesh() { return navmesh; }	
- 	const dtNavMeshQuery* get_navquery() const { return navquery; }
+	const dtNavMesh* get_navmesh() const { return navmesh.get(); }	
+	dtNavMesh* get_navmesh() { return navmesh.get(); }	
+ 	const dtNavMeshQuery* get_navquery() const { return navquery.get(); }
 public:
 	bool alloc(const glm::vec3 &origin, float tilewidth, float tileheight, int maxtiles, int maxpolys);
 	void cleanup();
@@ -43,22 +42,18 @@ public:
 	void find_3D_path(const glm::vec3 &startpos, const glm::vec3 &endpos, std::vector<glm::vec3> &pathways) const;
 	poly_result_t point_on_navmesh(const glm::vec3 &point) const;
 private:
-	//std::unique_ptr<dtNavMesh> navmesh;
-	dtNavMesh *navmesh = nullptr;
- 	dtNavMeshQuery *navquery = nullptr;
+	std::unique_ptr<dtNavMesh> navmesh;
+	std::unique_ptr<dtNavMeshQuery> navquery;
 private:
 	rcConfig cfg;	
 	int max_tiles;
 	int max_polys_per_tile;
 	int tile_tri_count;
-	rcContext *context = nullptr;
 	float BOUNDS_MIN[3];
 	float BOUNDS_MAX[3];
-
 	std::vector<float> verts;
 	std::vector<int> tris;
-	
-	rcChunkyTriMesh *chunky_mesh = nullptr;
+	std::unique_ptr<rcChunkyTriMesh> chunky_mesh;
 private:
 	void build_all_tiles();
 	void remove_all_tiles();

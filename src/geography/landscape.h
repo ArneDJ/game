@@ -26,7 +26,7 @@ struct tree_t {
 
 class Landscape {
 public:
-	glm::vec3 SCALE = { 6144.F, 512.F, 6144.F };
+	glm::vec3 SCALE = { 6144.F, 1024.F, 6144.F };
 	const geom::rectangle_t SITE_BOUNDS = {
 		{ 2048.F, 2048.F },
 		{ 4096.F, 4096.F }

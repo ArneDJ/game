@@ -65,7 +65,7 @@ Creature::Creature(const glm::vec3 &pos, const glm::quat &rot, const gfx::Model 
 
 	m_current_movement = CM_FORWARD;
 
-	m_bumper = std::make_unique<physics::Bumper>(pos, 0.5f, 2.f);
+	m_bumper = std::make_unique<physics::Bumper>(pos, 0.3f, 1.8f);
 
 	const std::vector<std::pair<uint32_t, std::string>> animations = {
 		std::make_pair(CA_IDLE, "modules/native/media/animations/human/idle.ozz"),

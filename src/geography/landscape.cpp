@@ -47,13 +47,13 @@ struct landgen_parameters {
 static const float MIN_AMPLITUDE = 0.1F;
 static const float MAX_AMPLITUDE = 1.F;
 
-static const float MIN_MOUNTAIN_FREQ = 0.003F;
-static const float MAX_MOUNTAIN_FREQ = 0.01F;
+static const float MIN_MOUNTAIN_FREQ = 0.0015F;
+static const float MAX_MOUNTAIN_FREQ = 0.005F;
 static const float MIN_MOUNTAIN_PERTURB = 20.F;
 static const float MAX_MOUNTAIN_PERTURB = 50.F;
 static const float MIN_DETAIL_PERTURB = 150.F;
 static const float MAX_DETAIL_PERTURB = 200.F;
-static const float DETAIL_FREQ = 0.002F;
+static const float DETAIL_FREQ = 0.001F;
 static const float DETAIL_PERTURB_FREQ = 0.001F;
 static const int DETAIL_OCTAVES = 6;
 static const float DETAIL_LACUNARITY = 2.5F;
@@ -321,7 +321,7 @@ void Landscape::create_valleymap(void)
 			for (const auto &section : district.sections) {
 				glm::vec2 b = (section->j0->position + SITE_BOUNDS.min) / realscale;
 				glm::vec2 c = (section->j1->position + SITE_BOUNDS.min) / realscale;
-				valleymap.draw_triangle(imagescale * a, imagescale * b, imagescale * c, util::CHANNEL_RED, 128);
+				valleymap.draw_triangle(imagescale * a, imagescale * b, imagescale * c, util::CHANNEL_RED, 100);
 			}
 		}
 	}
