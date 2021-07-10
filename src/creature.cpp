@@ -115,11 +115,12 @@ btRigidBody* Creature::get_body() const
 }
 
 // carrot on a stick
-void Creature::stick_to_agent(const glm::vec3 &agent_position)
+void Creature::stick_to_agent(const glm::vec3 &agent_position, const glm::vec3 &agent_velocity)
 {
 	glm::vec2 current = { position.x, position.z };
 	glm::vec2 target = { agent_position.x, agent_position.z };
 
+	/*
 	if (glm::distance(current, target) > 0.2f) {
 		glm::vec2 disp = target - current;
 		disp = glm::normalize(disp);
@@ -127,6 +128,16 @@ void Creature::stick_to_agent(const glm::vec3 &agent_position)
 		move(disp);
 		m_direction = disp;
 	}
+	*/
+	if (agent_velocity.x != 0.f || agent_velocity.z != 0.f) {
+		glm::vec2 direction = { agent_velocity.x, agent_velocity.z };
+		m_direction = glm::normalize(direction);
+	}
+
+	m_velocity.x = agent_velocity.x;
+	m_velocity.z = agent_velocity.z;
+
+	m_bumper->set_velocity(m_velocity.x, m_velocity.z);
 }
 
 void Creature::control(const glm::vec3 &view, bool forward, bool backward, bool right, bool left)

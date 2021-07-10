@@ -386,8 +386,8 @@ void Game::update_battle()
 	// update creatures
 	for (int i = 0; i < battle.creatures.size(); i++) {
 		glm::vec3 agent_pos = battle.crowd_manager->agent_position(i);
-		//battle.player->stick_to_agent(agent_pos);
-		battle.creatures[i]->stick_to_agent(agent_pos);
+		glm::vec3 agent_vel = battle.crowd_manager->agent_velocity(i);
+		battle.creatures[i]->stick_to_agent(agent_pos, agent_vel);
 	}
 
 	for (auto &creature : battle.creatures) {

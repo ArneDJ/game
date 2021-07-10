@@ -27,7 +27,7 @@ public:
 	btRigidBody* get_body() const;
 	void control(const glm::vec3 &view, bool forward, bool backward, bool right, bool left);
 	void move(const glm::vec2 &velocity);
-	void stick_to_agent(const glm::vec3 &agent_position);
+	void stick_to_agent(const glm::vec3 &agent_position, const glm::vec3 &agent_velocity);
 	void jump();
 	void update(const btDynamicsWorld *world);
 	void sync(float delta);
